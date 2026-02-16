@@ -6,6 +6,7 @@ import Constellation from "@/components/base/Constellation";
 import SplashScreen from "@/components/core/SplashScreen";
 import { headers } from "next/headers";
 import ContextProvider from "@/Providers/ReownProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
       >
+        <Analytics />
         <ContextProvider cookies={cookies}>
           {/* Fixed starry background */}
           <Constellation className="fixed inset-0 w-full h-full -z-10" />
