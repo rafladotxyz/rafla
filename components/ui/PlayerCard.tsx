@@ -17,7 +17,7 @@ export function PlayersCard({
   minPlayers,
 }: PlayersCardProps) {
   return (
-    <div className="bg-[#0A0A0A]  py-6 px-4 rounded-xl border-4 border-[#141414] p-6 h-197 w-74.25 ">
+    <div className="bg-[#0A0A0A]  py-6 px-4 rounded-xl border-4 border-[#141414] h-197 w-74.25 ">
       {/* Header */}
       <div className="flex items-center  w-66.25 h-7.25 justify-between mb-6">
         <div className="flex items-center gap-2 text-[#E8E8E8]">
@@ -26,7 +26,7 @@ export function PlayersCard({
         </div>
 
         {/* Player Count Badge */}
-        <div className="w-8 h-8 rounded-full bg-[#78350F] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-[#78350F]/60 flex items-center justify-center">
           <span className="text-sm font-bold text-[#FCD34D]">
             {totalPlayers}
           </span>
