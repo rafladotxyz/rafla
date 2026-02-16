@@ -9,7 +9,7 @@ interface PlayerRowProps {
 
 export const PlayerRow = memo(function PlayerRow({ player }: PlayerRowProps) {
   return (
-    <div className="flex items-center w-66.25 h-10 border border-[#141414] justify-between rounded-lg py-2">
+    <div className="flex items-center w-66.25 h-10 px-3 border border-[#141414] justify-between rounded-lg py-2">
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div

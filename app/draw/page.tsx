@@ -22,7 +22,7 @@ export default function DrawGamePage({ params }: DrawGamePageProps) {
 
   return (
     <div className="px-4 py-0">
-      <div className="w-312 h-auto ml-auto mr-auto">
+      <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader chain="Base" />
       </div>
 
