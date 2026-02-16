@@ -17,9 +17,9 @@ export function PlayersCard({
   minPlayers,
 }: PlayersCardProps) {
   return (
-    <div className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-6 h-fit">
+    <div className="bg-white [#0A0A0A]  py-[24px] px-[16px] rounded-xl border-4 border-[#141414] p-6 h-[788px] w-[297px] ">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center  w-[265px] h-[29px]justify-between mb-6">
         <div className="flex items-center gap-2 text-[#E8E8E8]">
           <Users className="w-5 h-5" />
           <span className="text-sm font-medium">Total players</span>
