@@ -26,7 +26,7 @@ export default function DrawGamePage({ params }: DrawGamePageProps) {
 
       {/* Tabs */}
       <GameTabs />
-      <div className=" bg-white/0 items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
+      <div className="bg-white/0 items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
         <PlayersCard
           players={players}
           totalPlayers={gameState.totalPlayers}
