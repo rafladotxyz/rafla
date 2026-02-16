@@ -21,7 +21,7 @@ export default function DrawGamePage({ params }: DrawGamePageProps) {
   };
 
   return (
-    <div className="px-4 py-2">
+    <div className="px-4 py-0">
       <GameHeader chain="Base" />
 
       {/* Tabs */}
