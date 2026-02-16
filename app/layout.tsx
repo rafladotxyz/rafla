@@ -26,16 +26,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersObj = await headers();
+  const cookies = headersObj.get("cookie");
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
       >
-        <ContextProvider cookies={null}>
+        <ContextProvider cookies={cookies}>
           {/* Fixed starry background */}
           <Constellation className="fixed inset-0 w-full h-full -z-10" />
 
-          <main className="relative z-10 pt-32 py-5">{children}</main>
+          <main className="relative z-10 pt-32 py-32">{children}</main>
         </ContextProvider>
       </body>
     </html>
