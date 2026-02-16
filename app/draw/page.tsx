@@ -21,12 +21,12 @@ export default function DrawGamePage({ params }: DrawGamePageProps) {
   };
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-4 py-2">
       <GameHeader chain="Base" />
 
       {/* Tabs */}
       <GameTabs />
-      <div className=" bg-white/0 items-center justify-between flex w-[1248px] gap-20 h-[918px]">
+      <div className=" bg-white/0 items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
         <PlayersCard
           players={players}
           totalPlayers={gameState.totalPlayers}
