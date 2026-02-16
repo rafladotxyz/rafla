@@ -37,6 +37,36 @@ export function useGameState(roomId: string) {
       avatar: "🎯",
       color: "#EF4444",
     },
+    {
+      id: "4",
+      address: "0x8d02...17fghp",
+      avatar: "🎯",
+      color: "#EF4444",
+    },
+    {
+      id: "5",
+      address: "0x8d02...17fghp",
+      avatar: "🎯",
+      color: "#EF4444",
+    },
+    {
+      id: "6",
+      address: "0x8d02...17fghp",
+      avatar: "🎯",
+      color: "#EF4444",
+    },
+    {
+      id: "7",
+      address: "0x8d02...17fghp",
+      avatar: "🎯",
+      color: "#EF4444",
+    },
+    {
+      id: "8",
+      address: "0x8d02...17fghp",
+      avatar: "🎯",
+      color: "#EF4444",
+    },
   ]);
 
   const [loading, setLoading] = useState(false);
