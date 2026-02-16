@@ -1,7 +1,6 @@
 import { ExploreGames } from "@/components/core/home/explore";
 import { Hero } from "@/components/core/home/hero";
 import { Navbar } from "@/components/layout/Navbar";
-import Image from "next/image";
 
 export default function Home() {
   return (

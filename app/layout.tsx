@@ -39,7 +39,7 @@ export default async function RootLayout({
           {/* Fixed starry background */}
           <Constellation className="fixed inset-0 w-full h-full -z-10" />
 
-          <main className="relative z-10 pt-32 py-32">{children}</main>
+          <main className="relative z-10 pt-32 ">{children}</main>
         </ContextProvider>
       </body>
     </html>
