@@ -21,7 +21,7 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
   };
 
   return (
-    <div className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-5">
+    <div className="bg-[#2A2A2A] rounded-2xl border border-[#1A1A1A] p-5">
       <label className="text-sm font-medium text-[#A3A3A3] block mb-3">
         Room Link
       </label>
@@ -36,7 +36,7 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
 
         <button
           onClick={copyToClipboard}
-          className="flex-shrink-0 p-2 hover:bg-[#2A2A2A] rounded transition-colors"
+          className="shrink-0 p-2 hover:bg-[#2A2A2A] rounded transition-colors"
           title={copied ? "Copied!" : "Copy to clipboard"}
         >
           {copied ? (

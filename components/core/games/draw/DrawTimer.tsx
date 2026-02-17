@@ -1,8 +1,8 @@
 "use client";
 
-import { useTimer } from "../../hooks/useTimer";
-import { CircularProgress } from "./CircularProgress";
-import { LiveBadge } from "./LiveBadge";
+import { useTimer } from "../../../../hooks/useTimer";
+import { CircularProgress } from "../CircularProgress";
+import { LiveBadge } from "../LiveBadge";
 
 interface DrawTimerProps {
   drawTime: number;
