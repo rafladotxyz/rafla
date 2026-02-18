@@ -2,7 +2,7 @@ import Image from "next/image";
 import AlertIcon from "@/assets/alertIcon.svg";
 export const Disclaimer = ({ toggle }: { toggle?: () => void }) => {
   return (
-    <div className="min-w-screen fixed z-999 backdrop-blur-3xl min-h-screen flex items-center justify-center">
+    <div className="min-w-screen fixed z-999 backdrop-blur-xs min-h-screen flex items-center justify-center">
       <DisclaimerCard toggle={toggle} />
     </div>
   );
