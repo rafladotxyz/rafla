@@ -2,7 +2,7 @@ import Image from "next/image";
 import AlertIcon from "@/assets/alertIcon.svg";
 export const Disclaimer = ({ toggle }: { toggle?: () => void }) => {
   return (
-    <div className="min-w-screen backdrop-blur-3xl min-h-screen flex items-center justify-center">
+    <div className="min-w-screen fixed z-999 backdrop-blur-3xl min-h-screen flex items-center justify-center">
       <DisclaimerCard toggle={toggle} />
     </div>
   );
@@ -13,7 +13,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
     <div className="fixed flex min-w-85 min-h-112.25 rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 ">
       <div className="flex flex-col items-center min-w-77 min-h-66.25 gap-6">
         {/** Alert  Icon */}
-        <div className="flex-col min-w-34 min-h-22 gap-3">
+        <div className="flex-col items-center justify-center min-w-34 min-h-22 gap-3">
           <Image src={AlertIcon} height={48} width={48} alt="Alert icon" />
           <div className="min-w-34 min-h-7">
             <p className="text-[20px] font-semibold text-[#D9D9D9]">
@@ -37,7 +37,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
           </p>
         </div>
         {/** Confirm  */}
-        <div className=" flex min-w-77 min-h-15 gap[8px] ">
+        <div className="flex min-w-70 min-h-15 gap-2">
           <div className="flex min-w-5 min-h-7 py-1 px-1 gap-1">
             <div className="w-5 h-5"></div>
           </div>
