@@ -9,7 +9,7 @@ interface PricePoolCardProps {
 
 export function PricePoolCard({ amount }: PricePoolCardProps) {
   return (
-    <div className="bg-[#0A0A0A] rounded-2xl border border-[#141414] p-6">
+    <div className="bg-[#0A0A0A] rounded-xl border-2 border-[#141414] p-6">
       <p className="text-[14px] font-medium text-[#CBCBCB] mb-3">Price Pool</p>
 
       <div className="flex items-center gap-3">

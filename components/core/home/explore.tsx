@@ -6,9 +6,11 @@ import Spin from "@/assets/roulete.svg";
 import Head from "@/assets/head.svg";
 import { ArrowDownRight } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Game {
   name: string;
+  imageUrl: string;
   url: string;
   about: string;
 }
@@ -17,24 +19,34 @@ export const ExploreGames = () => {
   const games: Game[] = [
     {
       name: "Rafla Spin",
-      url: Spin,
+      imageUrl: Spin,
+      url: "/spin",
       about: "All eyes on the wheel, one big spin, one lucky winner.",
     },
     {
       name: "Rafla Flip",
-      url: Head,
+      imageUrl: Head,
+      url: "/flip",
       about: "Heads or tails? Pick a side, one moment, one answer, one winner.",
     },
     {
       name: "Rafla Draw",
-      url: Draw,
+      imageUrl: Draw,
+      url: "/draw",
       about:
         "Seconds away from a life-changing moment. Take your spot before the timer hits zero.",
     },
   ];
 
+  const router = useRouter();
+
+  const handleRoute = (route: string) => {
+    console.log("Routing to :", route);
+    router.push(route);
+  };
+
   return (
-    <div className="w-full max-w-[976px] mx-auto mt-20 flex flex-col px-4">
+    <div className="w-full max-w-244 mx-auto mt-20 flex flex-col px-4">
       <div className="w-full mb-6">
         <h2 className="text-[18px] font-normal text-[#D9D9D9]">
           Explore Games
@@ -46,7 +58,9 @@ export const ExploreGames = () => {
             key={idx}
             name={game.name}
             about={game.about}
+            imageUrl={game.imageUrl}
             url={game.url}
+            routeHandler={handleRoute}
           />
         ))}
       </div>
@@ -57,11 +71,15 @@ export const ExploreGames = () => {
 const ExploreCard = ({
   name,
   url,
+  imageUrl,
   about,
+  routeHandler,
 }: {
   name: string;
   url: string;
+  imageUrl: string;
   about: string;
+  routeHandler: (route: string) => void;
 }) => {
   const [isActive, setIsActive] = useState(false);
 
@@ -70,24 +88,25 @@ const ExploreCard = ({
       className="group relative w-full flex flex-col border border-[#141414] backdrop-blur-xs rounded-xl p-4 cursor-pointer overflow-hidden transition-all duration-500 hover:border-[#2A2A2A] hover:shadow-2xl hover:shadow-white/10 hover:-translate-y-1"
       onMouseEnter={() => setIsActive(true)}
       onMouseLeave={() => setIsActive(false)}
+      onClick={() => routeHandler(url)}
     >
       {/* Animated Border Shimmer */}
       <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer-slow" />
+        <div className="absolute inset-0 rounded-xl bg-linear-to-r from-transparent via-white/5 to-transparent animate-shimmer-slow" />
       </div>
 
       {/* Main Shimmer Effect */}
       <div
         className={`absolute inset-0 transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-linear-to-r from-transparent via-white/10 to-transparent" />
       </div>
 
       {/* Secondary Shimmer (Delayed) */}
       <div
         className={`absolute inset-0 transition-opacity duration-300 delay-150 ${isActive ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1200 delay-200 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1200 delay-200 bg-linear-to-r from-transparent via-white/5 to-transparent" />
       </div>
 
       {/* Radial Glow Effect */}
@@ -97,7 +116,7 @@ const ExploreCard = ({
       <div className="relative w-full rounded-2xl overflow-hidden mb-4 flex items-center justify-center bg-[#0A0A0A] transition-transform duration-500 group-hover:scale-[1.03] z-10">
         <Image
           className="w-full h-full object-cover transition-all duration-500 group-hover:brightness-110 group-hover:contrast-105"
-          src={url}
+          src={imageUrl}
           height={180}
           width={350}
           alt={name}
@@ -105,10 +124,10 @@ const ExploreCard = ({
         />
 
         {/* Image Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         {/* Shine Effect on Image */}
-        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-linear-to-r from-transparent via-white/20 to-transparent" />
       </div>
 
       {/* Content */}
@@ -143,9 +162,9 @@ const ExploreCard = ({
       </div>
 
       {/* Bottom Accent Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] overflow-hidden">
+      <div className="absolute bottom-0 left-0 right-0 h-px overflow-hidden">
         <div
-          className={`h-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ${
+          className={`h-full bg-linear-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ${
             isActive ? "translate-x-0" : "-translate-x-full"
           }`}
         />
