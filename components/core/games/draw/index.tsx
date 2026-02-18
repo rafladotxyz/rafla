@@ -1,11 +1,11 @@
 import { DrawTimer } from "@/components/core/games/draw/DrawTimer";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { GameTabs } from "@/components/core/games/GameTabs";
-import { PlayersCard } from "@/components/core/games/PlayerCard";
+import { PlayersCard } from "@/components/core/games/cards/PlayerCard";
 import { RightPanel } from "@/components/core/games/RightPanelCard";
 import { useGameState } from "@/hooks/useGameState";
 import { useState } from "react";
-import { Disclaimer } from "../DisclaimerCard";
+import { Disclaimer } from "../cards/DisclaimerCard";
 import { Toast } from "@/components/ui/Toast";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
