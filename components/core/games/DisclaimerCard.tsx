@@ -11,9 +11,9 @@ export const Disclaimer = ({ toggle }: { toggle?: () => void }) => {
 const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
   return (
     <div className="fixed flex min-w-85 min-h-112.25 rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 ">
-      <div className="flex flex-col min-w-77 min-h-66.25 gap-6">
+      <div className="flex flex-col items-center min-w-77 min-h-66.25 gap-6">
         {/** Alert  Icon */}
-        <div className="flex min-w-34 min-h-22 gap-3">
+        <div className="flex-col min-w-34 min-h-22 gap-3">
           <Image src={AlertIcon} height={48} width={48} alt="Alert icon" />
           <div className="min-w-34 min-h-7">
             <p className="text-[20px] font-semibold text-[#D9D9D9]">
@@ -41,7 +41,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
           <div className="flex min-w-5 min-h-7 py-1 px-1 gap-1">
             <div className="w-5 h-5"></div>
           </div>
-          <p className="min-w-70 min-h-15 text-[#737373] text-[13px]">
+          <p className="min-w-70 min-h-15 text-[#737373] text-[13px] text-center">
             By continuing, you confirm you are 18+ and understand the risks
             involved in chance-based games.
           </p>
@@ -49,7 +49,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
         {/** bottom */}
         <button
           onClick={toggle}
-          className="flex min-w-77 min-h-11 rounded-xl text- py-3 px-3 gap-1 bg-linear-to-r "
+          className="flex items-center justify-center min-w-77 min-h-11 rounded-xl text- py-3 px-3 gap-1 bg-[#FFFFFF] "
         >
           <p className="min-w-15.5 min-h-5 text-[14px] text-center text-[#0A0A0A]">{`Let's Play`}</p>
         </button>
