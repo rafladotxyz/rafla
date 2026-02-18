@@ -6,9 +6,11 @@ import { RightPanel } from "@/components/core/games/RightPanelCard";
 import { useGameState } from "@/hooks/useGameState";
 import { useState } from "react";
 import { Disclaimer } from "../DisclaimerCard";
+import { Toast } from "@/components/ui/Toast";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
+  const [showToast, setShowToast] = useState<boolean>(true);
   const { gameState, players, loading, addEntry } = useGameState(
     roomId || "3455654",
   );
@@ -27,7 +29,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader chain="Base" />
       </div>
-
+      {showToast && <Toast message="Hello Toast" isSuccess />}
       {/* Tabs */}
       <GameTabs />
       <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
