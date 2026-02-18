@@ -11,7 +11,7 @@ export const Disclaimer = ({ toggle }: { toggle?: () => void }) => {
 const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
   return (
     <div className="fixed flex max-w-85 max-h-112.25 rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 ">
-      <div className="flex flex-col items-center min-w-77 min-h-66.25 gap-6">
+      <div className="flex flex-col items-center max-w-77 max-h-66.25 gap-6">
         {/** Alert  Icon */}
         <div className="flex-col items-center justify-center max-w-34 max-h-22 gap-3">
           <Image src={AlertIcon} height={48} width={48} alt="Alert icon" />
