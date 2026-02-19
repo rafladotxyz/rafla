@@ -10,10 +10,7 @@ interface ConstellationProps {
 
 const PnlGroup: React.FC<ConstellationProps> = ({ className }) => {
   return (
-    <div
-      className={`${className} absolute -z-10 pointer-events-none`}
-      aria-hidden
-    >
+    <div className={`${className} absolute pointer-events-none`} aria-hidden>
       <Image
         src={Texture}
         width={741.3}
