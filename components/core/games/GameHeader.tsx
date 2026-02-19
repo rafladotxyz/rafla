@@ -1,15 +1,12 @@
 "use client";
 
+import { useAppKitNetwork } from "@reown/appkit/react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface GameHeaderProps {
-  chain?: string;
-}
-
-export function GameHeader({ chain = "Base" }: GameHeaderProps) {
+export function GameHeader() {
   const router = useRouter();
-
+  const { caipNetwork } = useAppKitNetwork();
   return (
     <div className="flex items-center mt-6 justify-between mb-6">
       {/* Go Back Button */}
@@ -27,7 +24,9 @@ export function GameHeader({ chain = "Base" }: GameHeaderProps) {
       {/* Chain Badge */}
       <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#141414] backdrop-blur-sm">
         <div className="w-4 h-4 rounded bg-blue-500" />
-        <span className="text-sm text-[#E8E8E8]">{chain}</span>
+        <span className="text-sm text-[#E8E8E8]">
+          {caipNetwork?.name || "Base"}
+        </span>
       </div>
     </div>
   );

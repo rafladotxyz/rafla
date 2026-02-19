@@ -6,17 +6,17 @@ import { useAppKit } from "@reown/appkit/react";
 import {
   useWalletInfo,
   useAppKitAccount,
-  useAppKitConnections,
+  useAppKitNetwork,
 } from "@reown/appkit/react";
 export const Navbar = () => {
   const { open } = useAppKit();
   const walletInfo = useWalletInfo();
-  const account = useAppKitAccount();
-  const networks = useAppKitConnections();
+  const { isConnected, status, address } = useAppKitAccount();
+  const { caipNetwork } = useAppKitNetwork();
 
   console.log("Wallet Info:", walletInfo);
-  console.log("Account:", account);
-  console.log("Networks:", networks);
+  console.log("Account:", { isConnected, status, address });
+  console.log("Networks:", caipNetwork?.name);
   const handleConnect = () => {
     open();
   };
@@ -25,15 +25,22 @@ export const Navbar = () => {
       <div className="w-24 h-[43.88px] ">
         <Image height={43} width={96} src={Logo} alt="rafla logo" />
       </div>
-      {account.isConnected ? (
+      {isConnected ? (
         <div
           onClick={() => handleConnect()}
           className="w-28.75 h-11 py-3 px-4 rounded-xl flex items-center justify-between text-xs bg-[#0A0A0A] text-black border border-[#1A1A1A] drop-shadow-[#242628] cursor-pointer"
         >
           <div className="w-5 h-5">
-            <Image height={20} width={20} src={Base} alt="Base logo" />
+            <Image
+              height={20}
+              width={20}
+              src={caipNetwork?.assets?.imageUrl || Base}
+              alt="Base logo"
+            />
           </div>
-          <p className="text-[#D9D9D9] text-[14px]">{"Base"}</p>
+          <p className="text-[#D9D9D9] text-[14px]">
+            {caipNetwork?.name || "Base"}
+          </p>
         </div>
       ) : (
         <button
