@@ -16,7 +16,7 @@ export const Navbar = () => {
 
   console.log("Wallet Info:", walletInfo);
   console.log("Account:", { isConnected, status, address });
-  console.log("Networks:", caipNetwork?.name);
+  console.log("Networks:", caipNetwork);
   const handleConnect = () => {
     open();
   };
