@@ -7,10 +7,12 @@ import { useGameState } from "@/hooks/useGameState";
 import { useState } from "react";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { Toast } from "@/components/ui/Toast";
+import { WinOrLoss } from "../cards/WinOrLossCard";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
-  const [showToast, setShowToast] = useState<boolean>(true);
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
   const { gameState, players, loading, addEntry } = useGameState(
     roomId || "3455654",
   );
@@ -21,6 +23,16 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
   const toggleDisclaimer = () => {
     setIsDisclaimer(false);
+    setShowToast(true);
+  };
+
+  const toggleToast = () => {
+    setShowToast(false);
+    setShowWinLoss(true);
+  };
+
+  const toggleWinLoss = () => {
+    setShowWinLoss(false);
   };
 
   return (
@@ -29,7 +41,10 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader chain="Base" />
       </div>
-      {showToast && <Toast message="Hello Toast" isSuccess />}
+      {showToast && (
+        <Toast message="Hello Toast" isSuccess handleClick={toggleToast} />
+      )}
+      {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       {/* Tabs */}
       <GameTabs />
       <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">

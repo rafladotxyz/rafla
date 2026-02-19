@@ -2,7 +2,15 @@ import Group from "@/components/base/Group";
 import Image from "next/image";
 import Win from "@/assets/won.svg";
 
-export const WinOrLoss = () => {
+export const WinOrLoss = ({ handleClick }: { handleClick: () => void }) => {
+  return (
+    <div className="min-w-screen fixed z-999 backdrop-blur-xs min-h-screen flex items-center justify-center">
+      <WinOrLossCard handleClick={handleClick} />
+    </div>
+  );
+};
+
+const WinOrLossCard = ({ handleClick }: { handleClick: () => void }) => {
   return (
     <div className="w-103.5 h-132 flex gap-1 border-[1.5px] border-[#282828] fixed bg-[#0A0A0A] rounded-3xl">
       <Group className="fixed inset-0 w-full h-full -z-10" />
@@ -23,7 +31,10 @@ export const WinOrLoss = () => {
             </p>
           </div>
           <div className="w-91.5 h-25">
-            <button className="flex items-center justify-center w-91.5 border h-11 rounded-xl text- py-3 px-3 gap-1 text-[] bg-[#FFFFFF] ">
+            <button
+              onClick={handleClick}
+              className="flex items-center justify-center w-91.5 border h-11 rounded-xl text- py-3 px-3 gap-1 text-[] bg-[#FFFFFF] "
+            >
               Enter next draw
             </button>
             <button className="flex items-center justify-center w-91.5 border h-11 rounded-xl text- py-3 px-3 gap-1 text-white backdrop-blur-lg ">
