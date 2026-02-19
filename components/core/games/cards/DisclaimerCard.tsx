@@ -14,9 +14,15 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
       <div className="flex flex-col items-center w-77 h-66.25 gap-6">
         {/** Alert  Icon */}
         <div className="flex-col items-center justify-center w-34 h-22 gap-3">
-          <Image src={AlertIcon} height={48} width={48} alt="Alert icon" />
-          <div className="w-34 h-7">
-            <p className="text-[20px] font-semibold text-[#D9D9D9]">
+          <Image
+            src={AlertIcon}
+            height={48}
+            width={48}
+            alt="Alert icon"
+            className="ml-auto mr-auto"
+          />
+          <div className="w-34 h-7 flex items-center justify-center">
+            <p className="text-[20px] w-34 font-semibold text-[#D9D9D9]">
               Before you Play
             </p>
           </div>
