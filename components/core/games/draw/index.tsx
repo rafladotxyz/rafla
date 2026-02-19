@@ -8,11 +8,13 @@ import { useState } from "react";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { Toast } from "@/components/ui/Toast";
 import { WinOrLoss } from "../cards/WinOrLossCard";
+import { PnL } from "../cards/PnLCard";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
   const [showToast, setShowToast] = useState<boolean>(false);
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
+  const [showPnl, setShowPnl] = useState<boolean>(false);
   const { gameState, players, loading, addEntry } = useGameState(
     roomId || "3455654",
   );
@@ -33,12 +35,18 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
   const toggleWinLoss = () => {
     setShowWinLoss(false);
+    setShowPnl(true);
+  };
+
+  const togglePnl = () => {
+    setShowPnl(false);
   };
 
   return (
     <div className="px-4 py-0">
       {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
       {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
+      {showPnl && <PnL handleClick={togglePnl} />}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader chain="Base" />
         {showToast && (
