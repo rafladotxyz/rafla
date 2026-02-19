@@ -22,7 +22,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
             className="ml-auto mr-auto"
           />
 
-          <p className="w-34 h-auto text-[20px] font-semibold text-[#D9D9D9] flex items-center justify-center">
+          <p className="w-34 h-auto text-[20px] bg-white font-semibold text-[#D9D9D9] flex items-center justify-center">
             Before you Play
           </p>
         </div>
