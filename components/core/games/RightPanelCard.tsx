@@ -20,7 +20,7 @@ export function RightPanel({
   pricePool,
   yourEntry,
   potentialWin,
-  isPrivate = false,
+  isPrivate,
   roomLink,
   entryAmount,
   loading,

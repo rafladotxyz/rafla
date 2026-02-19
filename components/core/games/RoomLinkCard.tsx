@@ -22,7 +22,7 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
   };
 
   return (
-    <GlassCard className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-5">
+    <GlassCard className="bg-[#0A0A0A] p-5">
       <label className="text-sm font-medium text-[#A3A3A3] block mb-3">
         Room Link
       </label>
