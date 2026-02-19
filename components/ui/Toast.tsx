@@ -12,7 +12,7 @@ export const Toast = ({
   return (
     <div
       onClick={handleClick}
-      className={`inline-flex items-center h-8 rounded-full py-1.5 px-3 gap-1.5 cursor-pointer select-none transition-opacity active:opacity-70 ${
+      className={`inline-flex items-center h-8 rounded-lg py-1.5 px-3 gap-1.5 cursor-pointer select-none transition-opacity active:opacity-70 ${
         isSuccess ? "bg-[#EFFAF6]" : "bg-[#FEF2F2]"
       }`}
     >
