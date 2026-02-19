@@ -1,48 +1,86 @@
+"use client";
 import Group from "@/components/base/Group";
 import Image from "next/image";
 import Win from "@/assets/won.svg";
+import Loss from "@/assets/loss.svg";
 
-export const WinOrLoss = ({ handleClick }: { handleClick: () => void }) => {
+interface WinOrLossProps {
+  handleClick: () => void;
+  isWin?: boolean;
+  amount?: string;
+  winnerAddress?: string;
+}
+
+export const WinOrLoss = ({
+  handleClick,
+  isWin = true,
+  amount = "$109.25",
+  winnerAddress = "0x9i0j...1k21",
+}: WinOrLossProps) => {
   return (
-    <div className="min-w-screen fixed z-999 backdrop-blur-xs min-h-screen flex items-center justify-center">
-      <WinOrLossCard handleClick={handleClick} />
+    <div className="fixed inset-0 z-999 backdrop-blur-sm flex items-center justify-center">
+      <WinOrLossCard
+        handleClick={handleClick}
+        isWin={isWin}
+        amount={amount}
+        winnerAddress={winnerAddress}
+      />
     </div>
   );
 };
 
-const WinOrLossCard = ({ handleClick }: { handleClick: () => void }) => {
+const WinOrLossCard = ({
+  handleClick,
+  isWin,
+  amount,
+  winnerAddress,
+}: WinOrLossProps) => {
   return (
-    <div className="w-103.5 h-132 flex gap-1 border-[1.5px] border-[#282828] fixed bg-[#0A0A0A] rounded-3xl">
-      <Group className="fixed inset-0 w-103.5  h-44 -z-10" />
-      <div className="w-103.5 h-107.5 flex flex-col items-center justify-between">
-        <Image src={Win} height={149} width={94} alt="won or loose" />
-        <div className="w-91.5 h-63.75 gap-6 flex flex-col">
-          <div className="w-39.75 h-32.75 flex-col items-center justify-between">
-            <div className="w-39.75 h-27.5">
-              <p className="w-39.75 h-13.25 text-[48px] text-[#737373]">
-                You Lost
-              </p>
-              <p className="w-39.75 h-13.25 text-[48px] text-[#DF1C41]">
-                -$5.00
-              </p>
-            </div>
-            <p className="w-39.75 h-5 text-[13px] text-[#737373]">
-              Winner: 0x9i0j...1k21
-            </p>
-          </div>
-          <div className="w-91.5 h-25">
-            <button
-              onClick={handleClick}
-              className="flex items-center justify-center w-91.5 border h-11 rounded-xl text- py-3 px-3 gap-1 text-[] bg-[#FFFFFF] "
-            >
-              Enter next draw
-            </button>
-            <button className="flex items-center justify-center w-91.5 border h-11 rounded-xl text- py-3 px-3 gap-1 text-white backdrop-blur-lg ">
-              Share
-            </button>
-          </div>
-        </div>
+    <div className="relative w-[414px] flex flex-col items-center border-[1.5px] border-[#282828] bg-[#0A0A0A] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
+      {/* Background texture — relative to card, not fixed */}
+      <Group className="absolute top-0 left-0 w-full h-44 -z-10" />
+
+      {/* Trophy / loss icon */}
+      <div className="mt-8 mb-6">
+        <Image
+          src={isWin ? Win : Loss}
+          height={149}
+          width={94}
+          alt={isWin ? "You won" : "You lost"}
+        />
+      </div>
+
+      {/* Text section */}
+      <div className="flex flex-col items-center gap-1 mb-8">
+        <p className="text-[48px] font-semibold leading-tight text-[#737373]">
+          {isWin ? "You won" : "You Lost"}
+        </p>
+        <p
+          className={`text-[48px] font-bold leading-tight ${
+            isWin ? "text-[#1C9DF7]" : "text-[#DF1C41]"
+          }`}
+        >
+          {isWin ? `+${amount}` : `-${amount}`}
+        </p>
+        <p className="text-[13px] text-[#737373] mt-1">
+          Winner: {winnerAddress}
+        </p>
+      </div>
+
+      {/* Buttons */}
+      <div className="w-full flex flex-col gap-3">
+        <button
+          onClick={handleClick}
+          className="w-full h-11 rounded-xl bg-white text-black text-sm font-medium flex items-center justify-center"
+        >
+          Enter {isWin ? "another" : "next"} draw
+        </button>
+        <button className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center backdrop-blur-lg">
+          Share
+        </button>
       </div>
     </div>
   );
 };
+
+export default WinOrLoss;
