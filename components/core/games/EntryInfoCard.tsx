@@ -39,6 +39,13 @@ export function EntryInfoCard({ yourEntry, potentialWin }: EntryInfoCardProps) {
     <div className="border-[#1A1A1A] rounded-xl border-2 bg-[#2A2A2A] p-5 space-y-1">
       <InfoRow label="Your Entry" value={yourEntry} />
       <InfoRow label="Potential Win" value={potentialWin} highlight />
+      {/* Corner Accents */}
+      <div
+        className={`absolute top-0 left-0 w-8 h-8 border-l border-t border-white/20 rounded-tl-xl transition-opacity duration-300 opacity-100`}
+      />
+      <div
+        className={`absolute bottom-0 right-0 w-8 h-8 border-r border-b border-white/20 rounded-br-xl transition-opacity duration-300 opacity-100`}
+      />
     </div>
   );
 }

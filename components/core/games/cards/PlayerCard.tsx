@@ -2,8 +2,8 @@
 
 import { Users } from "lucide-react";
 import { Player } from "@/type/types";
-import { PlayerRow } from "./PlayerRow";
-import { MinPlayersWarning } from "./MinPlayersWarning";
+import { PlayerRow } from "@/components/core/games/PlayerRow";
+import { MinPlayersWarning } from "@/components/core/games/MinPlayersWarning";
 
 interface PlayersCardProps {
   players: Player[];
