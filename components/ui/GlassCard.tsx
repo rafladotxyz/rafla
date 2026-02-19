@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-//import { cn } from "@/lib/utils"; // or however you handle classnames
+//import { cn } from "@/lib/utils";
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -15,10 +15,9 @@ export function GlassCard({ children, className, onClick }: GlassCardProps) {
   return (
     <div
       className={`
-        relative overflow-hidden rounded-xl border-2 border-[#141414] transition-all duration-500
-        hover:border-[#2A2A2A] hover:shadow-2xl hover:shadow-white/10 hover:-translate-y-1
+        group relative overflow-hidden rounded-xl border-2 border-[#141414] transition-all duration-500 hover:border-[#2A2A2A] hover:shadow-2xl hover:shadow-white/10 hover:-translate-y-1
         ${onClick && "cursor-pointer"}
-        ${className}
+        ${className || ""}
       `}
       onMouseEnter={() => setIsActive(true)}
       onMouseLeave={() => setIsActive(false)}
@@ -78,7 +77,7 @@ export function GlassCard({ children, className, onClick }: GlassCardProps) {
         />
       </div>
 
-      {/* Content sits on top of everything */}
+      {/* Content */}
       <div className="relative z-10">{children}</div>
     </div>
   );
