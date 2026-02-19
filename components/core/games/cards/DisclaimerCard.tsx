@@ -21,11 +21,10 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
             alt="Alert icon"
             className="ml-auto mr-auto"
           />
-          <div className="w-34 h-7 flex items-center justify-center">
-            <p className="text-[20px] w-34 font-semibold text-[#D9D9D9]">
-              Before you Play
-            </p>
-          </div>
+
+          <p className="w-34 h-7 text-[20px] font-semibold text-[#D9D9D9] flex items-center justify-center">
+            Before you Play
+          </p>
         </div>
         {/** Content */}
         <div className="w-77 h-38.25 gap-4">

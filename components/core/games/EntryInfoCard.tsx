@@ -37,7 +37,7 @@ interface EntryInfoCardProps {
 
 export function EntryInfoCard({ yourEntry, potentialWin }: EntryInfoCardProps) {
   return (
-    <GlassCard className="border-[#2A2A2A]  bg-[#1A1A1A] p-5 space-y-1">
+    <GlassCard className="border-2 border-[#141414] bg-[#2A2A2A] p-5 space-y-1">
       <InfoRow label="Your Entry" value={yourEntry} />
       <InfoRow label="Potential Win" value={potentialWin} highlight />
       {/* Corner Accents */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { GlassCard } from "@/components/ui/GlassCard";
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 
@@ -21,7 +22,7 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
   };
 
   return (
-    <div className="bg-[#2A2A2A] rounded-2xl border border-[#1A1A1A] p-5">
+    <GlassCard className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-5">
       <label className="text-sm font-medium text-[#A3A3A3] block mb-3">
         Room Link
       </label>
@@ -46,6 +47,6 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
           )}
         </button>
       </div>
-    </div>
+    </GlassCard>
   );
 }
