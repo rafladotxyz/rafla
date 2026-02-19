@@ -13,7 +13,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
     <div className="fixed flex w-85 h-112.25 rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 ">
       <div className="flex flex-col items-center w-77 h-66.25 gap-6">
         {/** Alert  Icon */}
-        <div className="flex-col items-center justify-center w-34 h-22 gap-3">
+        <div className="flex-col items-center  justify-center w-34 h-22 gap-3">
           <Image
             src={AlertIcon}
             height={48}
@@ -22,7 +22,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
             className="ml-auto mr-auto"
           />
 
-          <p className="w-34 h-auto text-[20px] bg-white font-semibold text-[#D9D9D9] flex items-center justify-center">
+          <p className="w-34 h-[28px] text-[20px] bg-white/0 font-semibold text-[#D9D9D9]">
             Before you Play
           </p>
         </div>
