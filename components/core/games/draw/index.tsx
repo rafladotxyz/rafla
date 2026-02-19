@@ -48,7 +48,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       {showPnl && <PnL handleClick={togglePnl} />}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
-        <GameHeader chain="Base" />
+        <GameHeader />
         {showToast && (
           <Toast message="Hello Toast" isSuccess handleClick={toggleToast} />
         )}
