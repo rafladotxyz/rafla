@@ -1,5 +1,6 @@
 import PnlGroup from "@/components/base/PnlGroup";
-
+import Image from "next/image";
+import Logo from "@/assets/Logo.svg";
 interface PnLProps {
   isWin?: boolean;
   amount?: string;
@@ -80,57 +81,18 @@ const DummyQR = () => (
   </svg>
 );
 
-// Dummy Rafla logo — replace with your real SVG/Image asset
-const DummyRaflaLogo = () => (
-  <svg
-    width="72"
-    height="36"
-    viewBox="0 0 72 36"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <defs>
-      <linearGradient
-        id="raflaGrad"
-        x1="0"
-        y1="0"
-        x2="72"
-        y2="36"
-        gradientUnits="userSpaceOnUse"
-      >
-        <stop offset="0%" stopColor="#FF6FD8" />
-        <stop offset="50%" stopColor="#9B59F5" />
-        <stop offset="100%" stopColor="#3BC4F2" />
-      </linearGradient>
-    </defs>
-    <text
-      x="2"
-      y="28"
-      fontFamily="Georgia, serif"
-      fontSize="30"
-      fontStyle="italic"
-      fontWeight="bold"
-      fill="url(#raflaGrad)"
-    >
-      Rafla
-    </text>
-    <circle cx="68" cy="8" r="3" fill="#FFD700" opacity="0.85" />
-    <circle cx="63" cy="16" r="1.5" fill="#FFD700" opacity="0.5" />
-  </svg>
-);
-
 const PnLCard = ({
   isWin = true,
   amount = "$109.25",
   handleClick,
 }: PnLProps) => {
   return (
-    <div className="relative flex flex-col w-[714px] rounded-2xl overflow-hidden">
+    <div className="relative flex flex-col w-[714px] bg-[#0A0A0A] rounded-2xl overflow-hidden">
       {/* Background texture — absolute, fills entire card */}
       <PnlGroup className="absolute inset-0 w-full h-full" />
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col flex-1 px-14 pt-16 pb-8 gap-8">
+      <div className="relative z-10 flex flex-col flex-1 px-14 pt-16 pb-8 gap-8 ml-auto mr-auto">
         {/* Win/Loss text + amount */}
         <div className="flex flex-col gap-1">
           <p className="text-[24px] text-[#737373]">
@@ -157,7 +119,7 @@ const PnLCard = ({
             <DummyQR />
           </div>
           <div className="flex flex-col items-center gap-1">
-            <DummyRaflaLogo />
+            <Image src={Logo} height={43.88} width={96} alt="logo" />
             <p className="text-white text-[16px] font-semibold tracking-wide">
               Draw
             </p>
