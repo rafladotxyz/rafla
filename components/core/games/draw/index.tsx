@@ -38,6 +38,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   return (
     <div className="px-4 py-0">
       {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
+      {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader chain="Base" />
         {showToast && (
@@ -45,7 +46,6 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
         )}
       </div>
 
-      {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       {/* Tabs */}
       <GameTabs />
       <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
