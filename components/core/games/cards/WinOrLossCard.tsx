@@ -36,11 +36,11 @@ const WinOrLossCard = ({
   winnerAddress,
 }: WinOrLossProps) => {
   return (
-    <div className="relative w-[414px] flex flex-col items-center border-[1.5px] border-[#282828] bg-[#0A0A0A]/0 rounded-3xl overflow-hidden px-6 pb-8 pt-0">
+    <div className="relative w-103.5 bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
       {/* Background texture — relative to card, not fixed */}
 
       {/* Texture sits on top of a dark bg in the top section only */}
-      <div className="absolute top-0 left-0 w-full h-44 bg-[#0A0A0A]">
+      <div className="absolute top-0 left-0 w-full h-44">
         <Group className="w-full h-full" /> {/* no z-index fighting */}
       </div>
       {/* Trophy / loss icon */}
