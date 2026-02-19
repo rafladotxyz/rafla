@@ -1,4 +1,4 @@
-import { BadgeAlertIcon, BadgeCheckIcon } from "lucide-react";
+import { CheckCircleIcon, XCircleIcon } from "lucide-react";
 
 export const Toast = ({
   isSuccess,
@@ -12,14 +12,22 @@ export const Toast = ({
   return (
     <div
       onClick={handleClick}
-      className="flex min-w-25 h-8.25 rounded-lg py-2 px-3 gap-1 bg-[#EFFAF6]"
+      className={`inline-flex items-center h-8 rounded-full py-1.5 px-3 gap-1.5 cursor-pointer select-none transition-opacity active:opacity-70 ${
+        isSuccess ? "bg-[#EFFAF6]" : "bg-[#FEF2F2]"
+      }`}
     >
       {isSuccess ? (
-        <BadgeCheckIcon color="#002B0D" size={16} />
+        <CheckCircleIcon size={16} color="#34D399" strokeWidth={2.5} />
       ) : (
-        <BadgeAlertIcon size={16} color="red" />
+        <XCircleIcon size={16} color="#F87171" strokeWidth={2.5} />
       )}
-      <p className="text-[12px] text-[#000000] ">{message}</p>
+      <p
+        className={`text-[12px] font-medium leading-none ${
+          isSuccess ? "text-[#065F46]" : "text-[#991B1B]"
+        }`}
+      >
+        {message}
+      </p>
     </div>
   );
 };
