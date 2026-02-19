@@ -8,6 +8,7 @@ import { AddEntryButton } from "./AddEntryButton";
 interface RightPanelProps {
   pricePool: number;
   yourEntry: number;
+  isPrivate?: boolean;
   potentialWin: number;
   roomLink: string;
   entryAmount: number;
@@ -19,6 +20,7 @@ export function RightPanel({
   pricePool,
   yourEntry,
   potentialWin,
+  isPrivate = false,
   roomLink,
   entryAmount,
   loading,
@@ -28,7 +30,7 @@ export function RightPanel({
     <div className="space-y-4">
       <PricePoolCard amount={pricePool} />
       <EntryInfoCard yourEntry={yourEntry} potentialWin={potentialWin} />
-      <RoomLinkCard roomLink={roomLink} />
+      {isPrivate && <RoomLinkCard roomLink={roomLink} />}
       <AddEntryButton
         amount={entryAmount}
         loading={loading}
