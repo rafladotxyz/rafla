@@ -3,12 +3,17 @@ import { BadgeAlertIcon, BadgeCheckIcon } from "lucide-react";
 export const Toast = ({
   isSuccess,
   message,
+  handleClick,
 }: {
   isSuccess: boolean;
   message: string;
+  handleClick?: () => void;
 }) => {
   return (
-    <div className="flex min-w-25 h-8.25 rounded-lg py-2 px-3 gap-1 bg-[#EFFAF6]">
+    <div
+      onClick={handleClick}
+      className="flex min-w-25 h-8.25 rounded-lg py-2 px-3 gap-1 bg-[#EFFAF6]"
+    >
       {isSuccess ? (
         <BadgeCheckIcon color="#002B0D" size={16} />
       ) : (
