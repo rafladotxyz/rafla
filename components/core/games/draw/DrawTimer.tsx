@@ -35,9 +35,6 @@ export function DrawTimer({ drawTime, isLive }: DrawTimerProps) {
       </div>
 
       {/* Glow Effect */}
-      <div className="absolute inset-0 -z-10 opacity-20">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#F97316] blur-[120px] rounded-full" />
-      </div>
     </div>
   );
 }
