@@ -38,7 +38,7 @@ export const Navbar = () => {
               alt="Base logo"
             />
           </div>
-          <p className="text-[#D9D9D9] text-[14px]">
+          <p className="text-[#D9D9D9] w-auto text-[14px]">
             {caipNetwork?.name || "Base"}
           </p>
         </div>
