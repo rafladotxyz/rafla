@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
 import Logo from "@/assets/Logo.svg";
-import Base from "@/assets/Base.svg";
+import Base from "@/assets/base.png";
+import BaseSepolia from "@/assets/baseSepolia.png";
 import { useAppKit } from "@reown/appkit/react";
 import {
   useWalletInfo,
@@ -13,7 +14,16 @@ export const Navbar = () => {
   const walletInfo = useWalletInfo();
   const { isConnected, status, address } = useAppKitAccount();
   const { caipNetwork } = useAppKitNetwork();
-
+  const getNetworkIcon = (name: string) => {
+    switch (name) {
+      case "Base Sepolia":
+        return BaseSepolia;
+      case "Base":
+        return Base;
+      default:
+        return Base; // Fallback icon
+    }
+  };
   console.log("Wallet Info:", walletInfo);
   console.log("Account:", { isConnected, status, address });
   console.log("Networks:", caipNetwork);
@@ -30,16 +40,16 @@ export const Navbar = () => {
           onClick={() => handleConnect()}
           className="w-auto h-11 py-3 px-4 rounded-xl flex items-center justify-between text-xs bg-[#0A0A0A] text-black border border-[#1A1A1A] drop-shadow-[#242628] cursor-pointer"
         >
-          <div className="w-5 h-5">
+          <div className="w-5 h-5 ml-2 mr-2">
             <Image
               height={20}
               width={20}
-              src={caipNetwork?.assets?.imageUrl || Base}
+              src={getNetworkIcon(caipNetwork?.name || "Base")}
               alt="Base logo"
             />
           </div>
           <p className="text-[#D9D9D9] w-auto text-[14px]">
-            {caipNetwork?.name || "Base"}
+            {caipNetwork?.name}
           </p>
         </div>
       ) : (
