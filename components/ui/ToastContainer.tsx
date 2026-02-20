@@ -1,5 +1,4 @@
-// ─── Toast Container — drop this once anywhere in your layout ────────────────
-
+"use client";
 import { useToastStore } from "@/store/useToastStore";
 import { Toast } from "./Toast";
 
