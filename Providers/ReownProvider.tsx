@@ -26,7 +26,7 @@ const metadata = {
 const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [baseSepolia],
+  networks: [baseSepolia, base],
   defaultNetwork: baseSepolia,
   metadata: metadata,
   features: {
