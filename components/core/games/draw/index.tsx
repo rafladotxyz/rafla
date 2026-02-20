@@ -9,11 +9,13 @@ import { Disclaimer } from "../cards/DisclaimerCard";
 import { Toast } from "@/components/ui/Toast";
 import { WinOrLoss } from "../cards/WinOrLossCard";
 import { PnL } from "../cards/PnLCard";
+import { CreateRoom } from "../cards/CreateRoomCard";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
   const [showToast, setShowToast] = useState<boolean>(false);
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
+  const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
   const { gameState, players, loading, addEntry } = useGameState(
     roomId || "3455654",
@@ -40,6 +42,11 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
   const togglePnl = () => {
     setShowPnl(false);
+    setShowCreateRoom(true);
+  };
+
+  const toggleCreateRoom = () => {
+    setShowCreateRoom(false);
   };
 
   return (
@@ -47,6 +54,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
       {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       {showPnl && <PnL handleClick={togglePnl} />}
+      {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader />
         {showToast && (

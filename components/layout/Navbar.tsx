@@ -46,6 +46,7 @@ export const Navbar = () => {
               width={20}
               src={getNetworkIcon(caipNetwork?.name || "Base")}
               alt="Base logo"
+              className="rounded-full"
             />
           </div>
           <p className="text-[#D9D9D9] w-auto text-[14px]">
