@@ -1,17 +1,24 @@
 import { CheckCircleIcon, XCircleIcon } from "lucide-react";
 
-export const Toast = ({
-  isSuccess,
-  message,
-  handleClick,
-}: {
-  isSuccess: boolean;
+type ToastType = "success" | "error";
+
+interface Toast {
+  id: string;
   message: string;
-  handleClick?: () => void;
+  type: ToastType;
+}
+
+export const Toast = ({
+  toast,
+  onDismiss,
+}: {
+  toast: Toast;
+  onDismiss: (id: string) => void;
 }) => {
+  const isSuccess = toast.type === "success";
   return (
     <div
-      onClick={handleClick}
+      onClick={onDismiss.bind(null, toast.id)}
       className={`inline-flex items-center h-8 rounded-lg py-1.5 px-3 gap-1.5 cursor-pointer select-none transition-opacity ml-auto mr-auto active:opacity-70 ${
         isSuccess ? "bg-[#EFFAF6]" : "bg-[#FEF2F2]"
       }`}
@@ -26,7 +33,7 @@ export const Toast = ({
           isSuccess ? "text-[#065F46]" : "text-[#991B1B]"
         }`}
       >
-        {message}
+        {toast.message}
       </p>
     </div>
   );

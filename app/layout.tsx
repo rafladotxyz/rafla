@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
 import Constellation from "@/components/base/Constellation";
-import SplashScreen from "@/components/core/SplashScreen";
 import { headers } from "next/headers";
 import ContextProvider from "@/Providers/ReownProvider";
 import { Analytics } from "@vercel/analytics/next";
+import { ToastContainer } from "@/components/ui/ToastContainer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +35,7 @@ export default async function RootLayout({
       >
         <Analytics />
         <ContextProvider cookies={cookies}>
+          <ToastContainer />
           {/* Fixed starry background */}
           <Constellation className="fixed inset-0 w-full h-full -z-10" />
 
