@@ -6,7 +6,6 @@ import { RightPanel } from "@/components/core/games/RightPanelCard";
 import { useGameState } from "@/hooks/useGameState";
 import { useState } from "react";
 import { Disclaimer } from "../cards/DisclaimerCard";
-import { Toast } from "@/components/ui/Toast";
 import { WinOrLoss } from "../cards/WinOrLossCard";
 import { PnL } from "../cards/PnLCard";
 import { CreateRoom } from "../cards/CreateRoomCard";

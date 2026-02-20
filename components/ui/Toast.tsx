@@ -1,3 +1,4 @@
+"use client";
 import { CheckCircleIcon, XCircleIcon } from "lucide-react";
 
 type ToastType = "success" | "error";
