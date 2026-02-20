@@ -28,7 +28,7 @@ export const Navbar = () => {
       {isConnected ? (
         <div
           onClick={() => handleConnect()}
-          className="w-28.75 h-11 py-3 px-4 rounded-xl flex items-center justify-between text-xs bg-[#0A0A0A] text-black border border-[#1A1A1A] drop-shadow-[#242628] cursor-pointer"
+          className="w-auto h-11 py-3 px-4 rounded-xl flex items-center justify-between text-xs bg-[#0A0A0A] text-black border border-[#1A1A1A] drop-shadow-[#242628] cursor-pointer"
         >
           <div className="w-5 h-5">
             <Image
