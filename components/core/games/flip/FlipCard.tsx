@@ -18,14 +18,12 @@ export const FlipCard = ({
 
   const canFlip = selectedSide !== null && selectedPrice !== null;
 
-  // e.g. "$5" → "5", used to build button label
-  const priceValue = selectedPrice?.replace("$", "") ?? "5";
   const winValue = selectedPrice
     ? `$${parseInt(selectedPrice.replace("$", "")) * 2}`
     : "$10";
 
   return (
-    <div className="flex flex-col gap-3 w-[405px]">
+    <div className="flex flex-col backdrop-blur-md rounded-xl border border-[#141414] gap-3 w-101.25">
       {/* Title */}
       <p className="text-[16px] font-semibold text-[#D9D9D9]">Make your Call</p>
 

@@ -55,7 +55,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
 
       {/* Tabs */}
       <GameTabs />
-      <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
+      <div className="items-center justify-center flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
         <FlipCard />
       </div>
     </div>
