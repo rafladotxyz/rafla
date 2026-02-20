@@ -13,7 +13,6 @@ import { CreateRoom } from "../cards/CreateRoomCard";
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
-  const [showToast, setShowToast] = useState<boolean>(false);
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
@@ -27,11 +26,6 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
   const toggleDisclaimer = () => {
     setIsDisclaimer(false);
-    setShowToast(true);
-  };
-
-  const toggleToast = () => {
-    setShowToast(false);
     setShowWinLoss(true);
   };
 
@@ -56,10 +50,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       {showPnl && <PnL handleClick={togglePnl} />}
       {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
-        <GameHeader />
-        {showToast && (
-          <Toast message="Hello Toast" isSuccess handleClick={toggleToast} />
-        )}
+        <GameHeader gameName="Rafla Draw" />
       </div>
 
       {/* Tabs */}

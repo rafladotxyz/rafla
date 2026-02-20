@@ -9,9 +9,12 @@ import {
   useAppKitAccount,
   useAppKitNetwork,
 } from "@reown/appkit/react";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/useToast";
 export const Navbar = () => {
   const { open } = useAppKit();
   const walletInfo = useWalletInfo();
+  const { showToast } = useToast();
   const { isConnected, status, address } = useAppKitAccount();
   const { caipNetwork } = useAppKitNetwork();
   const getNetworkIcon = (name: string) => {
@@ -27,6 +30,12 @@ export const Navbar = () => {
   console.log("Wallet Info:", walletInfo);
   console.log("Account:", { isConnected, status, address });
   console.log("Networks:", caipNetwork);
+  useEffect(() => {
+    if (status === "connected") {
+      showToast("Wallet connected successfully!", "success");
+    }
+  }, [status, showToast]);
+  
   const handleConnect = () => {
     open();
   };
