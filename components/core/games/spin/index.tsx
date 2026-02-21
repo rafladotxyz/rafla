@@ -68,7 +68,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
       <GameTabs />
 
-      <div className="items-center justify-center bg-white  flex w-312 gap-20 h-229.5 ml-auto mr-auto">
+      <div className="items-center justify-center bg-white  flex w-312 gap-20 h-auto py-20  ml-auto mr-auto">
         <SpinWheel onResult={handleSpinResult} />
       </div>
     </div>
