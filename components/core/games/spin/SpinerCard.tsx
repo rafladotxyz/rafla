@@ -4,20 +4,22 @@ import Yay from "@/assets/yay.svg";
 import Breakeven from "@/assets/eq.svg";
 import Nay from "@/assets/nay.svg";
 import Image from "next/image";
+
 type Segment = {
   label: string;
-  emoji: string;
+  asset: string;
   color: string;
 };
 
 const SEGMENTS: Segment[] = [
-  { label: "You Lose!", emoji: Yay, color: "#1a1a1a" },
-  { label: "Breakeven!", emoji: Breakeven, color: "#222222" },
-  { label: "Yaay $2 won!", emoji: Nay, color: "#111111" },
+  { label: "You Lose!", asset: Nay, color: "#1a1a1a" },
+  { label: "Breakeven!", asset: Breakeven, color: "#222222" },
+  { label: "Yaay $2 won!", asset: Yay, color: "#111111" },
 ];
 
-const SPIN_DURATION = 4000; // ms
+const SPIN_DURATION = 4000;
 const MIN_SPINS = 5;
+const IMG_SIZE = 56;
 
 export const SpinWheel = ({
   betAmount = "$1",
@@ -33,16 +35,11 @@ export const SpinWheel = ({
 
   const spin = () => {
     if (spinning) return;
-
     setSpinning(true);
     setLanded(null);
 
-    // Pick a random segment (0, 1, or 2)
     const segmentIndex = Math.floor(Math.random() * SEGMENTS.length);
-    const segmentAngle = 360 / SEGMENTS.length; // 120deg each
-
-    // Calculate the extra rotation to land on segmentIndex
-    // Each segment center offset from top: segmentIndex * 120 + 60
+    const segmentAngle = 360 / SEGMENTS.length;
     const targetOffset = segmentIndex * segmentAngle + segmentAngle / 2;
     const extraSpins = MIN_SPINS * 360;
     const newRotation =
@@ -61,11 +58,15 @@ export const SpinWheel = ({
     }, SPIN_DURATION);
   };
 
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const cx = 210;
+  const cy = 210;
+  const r = 210;
+
   return (
     <div className="flex flex-col items-center gap-4 select-none">
-      {/* Wheel wrapper */}
       <div className="relative w-[420px] h-[420px]">
-        {/* Pointer triangle at top */}
+        {/* Pointer */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10"
           style={{
@@ -94,15 +95,9 @@ export const SpinWheel = ({
             xmlns="http://www.w3.org/2000/svg"
           >
             {SEGMENTS.map((seg, i) => {
-              const total = SEGMENTS.length;
-              const angle = 360 / total;
-              const startAngle = i * angle - 90; // start from top
+              const angle = 360 / SEGMENTS.length;
+              const startAngle = i * angle - 90;
               const endAngle = startAngle + angle;
-
-              const toRad = (deg: number) => (deg * Math.PI) / 180;
-              const cx = 210;
-              const cy = 210;
-              const r = 210;
 
               const x1 = cx + r * Math.cos(toRad(startAngle));
               const y1 = cy + r * Math.sin(toRad(startAngle));
@@ -124,26 +119,32 @@ export const SpinWheel = ({
                     stroke="#333"
                     strokeWidth="1.5"
                   />
-                  {/* Emoji */}
-                  <text
-                    x={lx}
-                    y={ly - 18}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="36"
+
+                  {/* 
+                    foreignObject is the correct way to embed React/HTML content
+                    (like Next.js <Image>) inside an SVG. You cannot use <Image>
+                    inside <text> — that caused your React error #31.
+                  */}
+                  <foreignObject
+                    x={lx - IMG_SIZE / 2}
+                    y={ly - IMG_SIZE - 8}
+                    width={IMG_SIZE}
+                    height={IMG_SIZE}
                     transform={`rotate(${textRotation}, ${lx}, ${ly})`}
                   >
                     <Image
-                      src={seg.emoji}
+                      src={seg.asset}
                       alt={seg.label}
-                      width={36}
-                      height={36}
+                      width={IMG_SIZE}
+                      height={IMG_SIZE}
+                      style={{ objectFit: "contain" }}
                     />
-                  </text>
-                  {/* Label */}
+                  </foreignObject>
+
+                  {/* Label text */}
                   <text
                     x={lx}
-                    y={ly + 26}
+                    y={ly + 20}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fontSize="13"
@@ -158,8 +159,8 @@ export const SpinWheel = ({
               );
             })}
 
-            {/* Center circle */}
-            <circle cx="210" cy="210" r="12" fill="#333" />
+            {/* Center dot */}
+            <circle cx={cx} cy={cy} r="12" fill="#333" />
           </svg>
         </div>
       </div>
@@ -168,10 +169,10 @@ export const SpinWheel = ({
       <button
         onClick={spin}
         disabled={spinning}
-        className={`w-[420px] h-12 rounded-2xl text-[15px] font-medium transition-colors border border-[#282828] ${
+        className={`w-105 h-12 rounded-2xl text-[15px] font-medium transition-colors border border-[#282828] ${
           spinning
             ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed"
-            : "bg-[#1a1a1a] text-[#D9D9D9] hover:bg-[#222] cursor-pointer"
+            : "bg-[#D9D9D9] text-[#1a1a1a] hover:bg-[#222] cursor-pointer"
         }`}
       >
         {spinning ? "Spinning..." : `Spin with ${betAmount} to find out`}
@@ -179,8 +180,9 @@ export const SpinWheel = ({
 
       {/* Result badge */}
       {landed && !spinning && (
-        <div className="px-4 py-2 rounded-full bg-[#1a1a1a] border border-[#282828] text-[14px] text-[#D9D9D9]">
-          {landed.emoji} {landed.label}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1a1a1a] border border-[#282828] text-[14px] text-[#D9D9D9]">
+          <Image src={landed.asset} alt={landed.label} width={20} height={20} />
+          {landed.label}
         </div>
       )}
     </div>

@@ -23,12 +23,10 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
   const toggleDisclaimer = () => {
     setIsDisclaimer(false);
-    setShowWinLoss(true);
   };
 
   const toggleWinLoss = () => {
-    setShowWinLoss(false);
-    setShowPnl(true);
+    setShowWinLoss(true);
   };
 
   const togglePnl = () => {
@@ -53,7 +51,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       {/* Tabs */}
       <GameTabs />
       <div className="items-center justify-center flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
-        <SpinWheel />
+        <SpinWheel onResult={toggleWinLoss} />
       </div>
     </div>
   );
