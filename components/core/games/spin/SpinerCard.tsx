@@ -1,6 +1,9 @@
 "use client";
 import { useState, useRef } from "react";
-
+import Yay from "@/assets/yay.svg";
+import Breakeven from "@/assets/eq.svg";
+import Nay from "@/assets/nay.svg";
+import Image from "next/image";
 type Segment = {
   label: string;
   emoji: string;
@@ -8,9 +11,9 @@ type Segment = {
 };
 
 const SEGMENTS: Segment[] = [
-  { label: "You Lose!", emoji: "🪨", color: "#1a1a1a" },
-  { label: "Breakeven!", emoji: "⚖️", color: "#222222" },
-  { label: "Yaay $2 won!", emoji: "🏆", color: "#111111" },
+  { label: "You Lose!", emoji: Yay, color: "#1a1a1a" },
+  { label: "Breakeven!", emoji: Breakeven, color: "#222222" },
+  { label: "Yaay $2 won!", emoji: Nay, color: "#111111" },
 ];
 
 const SPIN_DURATION = 4000; // ms
@@ -130,7 +133,12 @@ export const SpinWheel = ({
                     fontSize="36"
                     transform={`rotate(${textRotation}, ${lx}, ${ly})`}
                   >
-                    {seg.emoji}
+                    <Image
+                      src={seg.emoji}
+                      alt={seg.label}
+                      width={36}
+                      height={36}
+                    />
                   </text>
                   {/* Label */}
                   <text
