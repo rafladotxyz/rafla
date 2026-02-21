@@ -15,12 +15,12 @@ type ResultState = "win" | "loss" | "breakeven";
 
 interface WinOrLossProps {
   handleClick: () => void;
+  onShare?: () => void; // ✅ new prop
   segment?: Segment;
   amount?: string;
   winnerAddress?: string;
 }
 
-// Derive the result state from the segment label
 const getResultState = (segment?: Segment): ResultState => {
   if (!segment) return "loss";
   if (segment.label === "Yaay $2 won!") return "win";
@@ -63,6 +63,7 @@ const RESULT_CONFIG: Record<
 
 export const SWinOrLoss = ({
   handleClick,
+  onShare,
   segment,
   amount = "$2.00",
   winnerAddress = "0x9i0j...1k21",
@@ -71,6 +72,7 @@ export const SWinOrLoss = ({
     <div className="fixed inset-0 z-999 backdrop-blur-sm flex items-center justify-center">
       <WinOrLossCard
         handleClick={handleClick}
+        onShare={onShare}
         segment={segment}
         amount={amount}
         winnerAddress={winnerAddress}
@@ -81,6 +83,7 @@ export const SWinOrLoss = ({
 
 const WinOrLossCard = ({
   handleClick,
+  onShare,
   segment,
   amount,
   winnerAddress,
@@ -116,12 +119,11 @@ const WinOrLossCard = ({
           {config.amountPrefix}
           {amount}
         </p>
-        {result !== "breakeven" && (
+        {result !== "breakeven" ? (
           <p className="text-[13px] text-[#737373] mt-1">
             Winner: {winnerAddress}
           </p>
-        )}
-        {result === "breakeven" && (
+        ) : (
           <p className="text-[13px] text-[#737373] mt-1">
             Your entry has been refunded
           </p>
@@ -136,7 +138,11 @@ const WinOrLossCard = ({
         >
           {config.buttonLabel}
         </button>
-        <button className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center backdrop-blur-lg">
+        {/* ✅ Share button now calls onShare */}
+        <button
+          onClick={onShare}
+          className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center backdrop-blur-lg"
+        >
           Share
         </button>
       </div>

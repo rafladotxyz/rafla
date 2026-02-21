@@ -19,18 +19,12 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
-
-  console.log("Room ID:", roomId); //
-  // ✅ Store the landed segment so we can pass it to SWinOrLoss
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>(
     undefined,
   );
 
-  const toggleDisclaimer = () => {
-    setIsDisclaimer(false);
-  };
+  const toggleDisclaimer = () => setIsDisclaimer(false);
 
-  // ✅ Receive the segment from SpinWheel, store it, then show the result card
   const handleSpinResult = (segment: Segment) => {
     setLandedSegment(segment);
     setShowWinLoss(true);
@@ -41,22 +35,28 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedSegment(undefined);
   };
 
-  const togglePnl = () => {
-    setShowPnl(false);
-    setShowCreateRoom(true);
+  // ✅ Closes win/loss card and opens PnL card
+  const handleShare = () => {
+    setShowWinLoss(false);
+    setShowPnl(true);
   };
 
-  const toggleCreateRoom = () => {
-    setShowCreateRoom(false);
+  const togglePnl = () => {
+    setShowPnl(false);
   };
+
+  const toggleCreateRoom = () => setShowCreateRoom(false);
 
   return (
     <div className="px-4 py-0">
       {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
 
-      {/* ✅ Pass landedSegment to SWinOrLoss */}
       {showWinLoss && (
-        <SWinOrLoss segment={landedSegment} handleClick={handleWinLossClose} />
+        <SWinOrLoss
+          segment={landedSegment}
+          handleClick={handleWinLossClose}
+          onShare={handleShare} // ✅ wired up here
+        />
       )}
 
       {showPnl && <PnL handleClick={togglePnl} />}
@@ -69,7 +69,6 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       <GameTabs />
 
       <div className="items-center justify-center flex w-312 gap-20 h-229.5 ml-auto mr-auto">
-        {/* ✅ Pass handleSpinResult as onResult */}
         <SpinWheel onResult={handleSpinResult} />
       </div>
     </div>

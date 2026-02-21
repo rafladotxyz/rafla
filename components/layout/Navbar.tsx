@@ -4,18 +4,14 @@ import Logo from "@/assets/Logo.svg";
 import Base from "@/assets/base.png";
 import BaseSepolia from "@/assets/baseSepolia.png";
 import { useAppKit } from "@reown/appkit/react";
-import {
-  useWalletInfo,
-  useAppKitAccount,
-  useAppKitNetwork,
-} from "@reown/appkit/react";
+import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/useToast";
 export const Navbar = () => {
   const { open } = useAppKit();
-  const walletInfo = useWalletInfo();
+
   const { showToast } = useToast();
-  const { isConnected, status, address } = useAppKitAccount();
+  const { isConnected, status } = useAppKitAccount();
   const { caipNetwork } = useAppKitNetwork();
   const getNetworkIcon = (name: string) => {
     switch (name) {
@@ -27,15 +23,13 @@ export const Navbar = () => {
         return Base; // Fallback icon
     }
   };
-  console.log("Wallet Info:", walletInfo);
-  console.log("Account:", { isConnected, status, address });
-  console.log("Networks:", caipNetwork);
+
   useEffect(() => {
     if (status === "connected") {
       showToast("Wallet connected successfully!", "success");
     }
   }, [status, showToast]);
-  
+
   const handleConnect = () => {
     open();
   };
