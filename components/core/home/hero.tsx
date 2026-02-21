@@ -1,6 +1,6 @@
 export const Hero = () => {
   return (
-    <div className="flex flex-col items-center justify-center gap-6 pt-6 px-4">
+    <div className="flex flex-col items-center justify-center gap-6 pt-10 px-4">
       {/* Main Heading */}
       <div className="text-center space-y-0">
         <h1 className="text-5xl md:text-6xl font-medium text-[#E8E8E8] leading-tight">
