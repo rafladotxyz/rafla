@@ -23,7 +23,7 @@ export const FlipCard = ({
     : "$10";
 
   return (
-    <div className="flex flex-col backdrop-blur-md  py-6 px-6  gap-3 w-101.25">
+    <div className="flex flex-col backdrop-blur-md  py-0 px-6  gap-3 w-101.25">
       {/* Title */}
       <p className="text-[16px] font-semibold text-[#D9D9D9]">Make your Call</p>
 
