@@ -65,7 +65,7 @@ export const SpinWheel = ({
 
   return (
     <div className="flex flex-col items-center gap-4 select-none">
-      <div className="relative w-[420px] h-[420px]">
+      <div className="relative w-105 h-105">
         {/* Pointer */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10"
