@@ -23,6 +23,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     undefined,
   );
 
+  const [pnlData, setPnlData] = useState<{
+    amount: string;
+    isWin: boolean;
+  } | null>(null);
+
   const toggleDisclaimer = () => setIsDisclaimer(false);
 
   const handleSpinResult = (segment: Segment) => {
@@ -36,7 +41,8 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   };
 
   // ✅ Closes win/loss card and opens PnL card
-  const handleShare = () => {
+  const handleShare = (amount: string, isWin: boolean) => {
+    setPnlData({ amount, isWin });
     setShowWinLoss(false);
     setShowPnl(true);
   };
@@ -59,7 +65,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      {showPnl && <PnL handleClick={togglePnl} />}
+      {showPnl && (
+        <PnL
+          handleClick={togglePnl}
+          amount={pnlData?.amount || "$0"}
+          isWin={pnlData?.isWin || false}
+        />
+      )}
       {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
 
       <div className="w-312 h-auto ml-auto py-4 mr-auto">

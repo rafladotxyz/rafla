@@ -1,8 +1,5 @@
 "use client";
 import { create } from "zustand";
-import { CheckCircleIcon, XCircleIcon, XIcon } from "lucide-react";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 type ToastType = "success" | "error";
 
@@ -19,8 +16,6 @@ interface ToastStore {
   error: (message: string) => void;
   dismiss: (id: string) => void;
 }
-
-// ─── Store ───────────────────────────────────────────────────────────────────
 
 const TOAST_DURATION = 3500;
 

@@ -76,7 +76,6 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           isWin={pnlData?.isWin || false}
           handleClick={() => {
             setShowPnl(false);
-            setShowCreateRoom(true);
           }}
         />
       )}
