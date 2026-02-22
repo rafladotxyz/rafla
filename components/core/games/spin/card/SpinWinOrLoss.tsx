@@ -17,7 +17,7 @@ interface WinOrLossProps {
   handleClick: () => void;
   onShare: (amount: string, isWin: boolean) => void;
   segment?: Segment;
-  amount?: string;
+  amount?: string; // ✅ now receives amount from parent
   winnerAddress?: string;
 }
 
@@ -65,11 +65,11 @@ export const SWinOrLoss = ({
   handleClick,
   onShare,
   segment,
-  amount,
+  amount = "$0", // ✅ safe default
   winnerAddress = "0x9i0j...1k21",
 }: WinOrLossProps) => {
   return (
-    <div className="fixed inset-0 z-999 backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
       <WinOrLossCard
         handleClick={handleClick}
         onShare={onShare}
@@ -85,14 +85,14 @@ const WinOrLossCard = ({
   handleClick,
   onShare,
   segment,
-  amount,
+  amount = "$0",
   winnerAddress,
 }: WinOrLossProps) => {
   const result = getResultState(segment);
   const config = RESULT_CONFIG[result];
 
   return (
-    <div className="relative w-103.5 bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
+    <div className="relative w-[414px] bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
       {/* Background texture */}
       <div className="absolute top-0 left-0 w-full h-44">
         <Group className="w-full h-full" />
@@ -113,17 +113,14 @@ const WinOrLossCard = ({
         <p className="text-[48px] font-semibold leading-tight text-[#737373]">
           {config.heading}
         </p>
+        {/* ✅ amount now correctly shown with prefix */}
         <p
           className={`text-[48px] font-bold leading-tight ${config.amountColor}`}
         >
           {config.amountPrefix}
           {amount}
         </p>
-        {result !== "breakeven" ? (
-          <p className="text-[13px] text-[#737373] mt-1">
-            Winner: {winnerAddress}
-          </p>
-        ) : (
+        {result !== "breakeven" ? null : (
           <p className="text-[13px] text-[#737373] mt-1">
             Your entry has been refunded
           </p>
@@ -138,9 +135,9 @@ const WinOrLossCard = ({
         >
           {config.buttonLabel}
         </button>
-        {/* ✅ Share button now calls onShare */}
+        {/* ✅ passes correct amount and win state up to parent */}
         <button
-          onClick={() => onShare(amount || "", result === "win")}
+          onClick={() => onShare(amount, result === "win")}
           className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center backdrop-blur-lg"
         >
           Share

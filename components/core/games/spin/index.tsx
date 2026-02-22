@@ -12,6 +12,14 @@ type Segment = {
   label: string;
   asset: string;
   color: string;
+  strokeColor: string;
+};
+
+// ✅ Extract the money amount from each segment label
+const getAmountFromSegment = (segment: Segment): string => {
+  if (segment.label === "Yaay $2 won!") return "$2.00";
+  if (segment.label === "Breakeven!") return "$1.00";
+  return "$1.00";
 };
 
 export const SpinView = ({ roomId }: { roomId?: string }) => {
@@ -19,9 +27,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
+
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>(
     undefined,
   );
+  const [landedAmount, setLandedAmount] = useState<string>("$0"); // ✅ track amount separately
 
   const [pnlData, setPnlData] = useState<{
     amount: string;
@@ -31,26 +41,25 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const toggleDisclaimer = () => setIsDisclaimer(false);
 
   const handleSpinResult = (segment: Segment) => {
+    const amount = getAmountFromSegment(segment); // ✅ derive amount from segment
     setLandedSegment(segment);
+    setLandedAmount(amount); // ✅ store so SWinOrLoss can receive it
     setShowWinLoss(true);
   };
 
   const handleWinLossClose = () => {
     setShowWinLoss(false);
     setLandedSegment(undefined);
+    setLandedAmount("$0");
   };
 
-  // ✅ Closes win/loss card and opens PnL card
   const handleShare = (amount: string, isWin: boolean) => {
-    setPnlData({ amount, isWin });
+    setPnlData({ amount, isWin }); // ✅ store for PnL card
     setShowWinLoss(false);
     setShowPnl(true);
   };
 
-  const togglePnl = () => {
-    setShowPnl(false);
-  };
-
+  const togglePnl = () => setShowPnl(false);
   const toggleCreateRoom = () => setShowCreateRoom(false);
 
   return (
@@ -60,18 +69,20 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       {showWinLoss && (
         <SWinOrLoss
           segment={landedSegment}
+          amount={landedAmount} // ✅ now passed correctly
           handleClick={handleWinLossClose}
-          onShare={handleShare} // ✅ wired up here
+          onShare={handleShare}
         />
       )}
 
       {showPnl && (
         <PnL
           handleClick={togglePnl}
-          amount={pnlData?.amount || "$0"}
-          isWin={pnlData?.isWin || false}
+          amount={pnlData?.amount || "$0"} // ✅ correct amount in PnL
+          isWin={pnlData?.isWin ?? false}
         />
       )}
+
       {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
 
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
@@ -80,7 +91,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
       <GameTabs />
 
-      <div className="items-center justify-center  flex w-312 gap-20 h-auto py-12  ml-auto mr-auto">
+      <div className="items-center justify-center flex w-312 gap-20 h-auto py-12 ml-auto mr-auto">
         <SpinWheel onResult={handleSpinResult} />
       </div>
     </div>
