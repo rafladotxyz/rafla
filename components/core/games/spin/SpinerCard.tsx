@@ -9,17 +9,33 @@ type Segment = {
   label: string;
   asset: string;
   color: string;
+  strokeColor: string;
 };
 
 const SEGMENTS: Segment[] = [
-  { label: "You Lose!", asset: Nay, color: "#1a1a1a" },
-  { label: "Breakeven!", asset: Breakeven, color: "#222222" },
-  { label: "Yaay $2 won!", asset: Yay, color: "#111111" },
+  { label: "You Lose!", asset: Nay, color: "#161616", strokeColor: "#2a2a2a" },
+  {
+    label: "Breakeven!",
+    asset: Breakeven,
+    color: "#1e1e1e",
+    strokeColor: "#2a2a2a",
+  },
+  {
+    label: "Yaay $2 won!",
+    asset: Yay,
+    color: "#121212",
+    strokeColor: "#2a2a2a",
+  },
 ];
 
 const SPIN_DURATION = 4000;
 const MIN_SPINS = 5;
-const IMG_SIZE = 56;
+
+const SIZE = 500;
+const cx = SIZE / 2;
+const cy = SIZE / 2;
+const r = SIZE / 2 - 4;
+const IMG_SIZE = 64;
 
 export const SpinWheel = ({
   betAmount = "$1",
@@ -59,28 +75,29 @@ export const SpinWheel = ({
   };
 
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const cx = 210;
-  const cy = 210;
-  const r = 210;
 
   return (
-    <div className="flex flex-col items-center gap-4 select-none">
-      <div className="relative w-105 h-105">
-        {/* Pointer */}
+    <div className="flex flex-col items-center gap-5 select-none">
+      {/* Wheel wrapper */}
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+        {/* Pointer — fixed above wheel center */}
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10"
+          className="absolute left-1/2 z-20"
           style={{
+            top: -10,
+            transform: "translateX(-50%)",
             width: 0,
             height: 0,
-            borderLeft: "12px solid transparent",
-            borderRight: "12px solid transparent",
-            borderTop: "20px solid #D9D9D9",
+            borderLeft: "14px solid transparent",
+            borderRight: "14px solid transparent",
+            borderTop: "24px solid #D9D9D9",
+            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.9))",
           }}
         />
 
-        {/* Spinning wheel */}
+        {/* Spinning container */}
         <div
-          className="w-full h-full rounded-full overflow-hidden border-4 border-[#2a2a2a] shadow-2xl"
+          className="w-full h-full rounded-full"
           style={{
             transform: `rotate(${rotation}deg)`,
             transition: spinning
@@ -89,11 +106,21 @@ export const SpinWheel = ({
           }}
         >
           <svg
-            viewBox="0 0 420 420"
-            width="420"
-            height="420"
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            width={SIZE}
+            height={SIZE}
             xmlns="http://www.w3.org/2000/svg"
           >
+            {/* Outer ring */}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke="#2a2a2a"
+              strokeWidth="6"
+            />
+
             {SEGMENTS.map((seg, i) => {
               const angle = 360 / SEGMENTS.length;
               const startAngle = i * angle - 90;
@@ -105,32 +132,37 @@ export const SpinWheel = ({
               const y2 = cy + r * Math.sin(toRad(endAngle));
 
               const midAngle = toRad(startAngle + angle / 2);
-              const labelR = r * 0.58;
+
+              // Image center — closer to middle
+              const imgR = r * 0.45;
+              const ix = cx + imgR * Math.cos(midAngle);
+              const iy = cy + imgR * Math.sin(midAngle);
+
+              // Label — further out toward edge
+              const labelR = r * 0.72;
               const lx = cx + labelR * Math.cos(midAngle);
               const ly = cy + labelR * Math.sin(midAngle);
+
               const textRotation = startAngle + angle / 2 + 90;
 
               return (
                 <g key={i}>
-                  {/* Segment fill */}
+                  {/* Segment */}
                   <path
                     d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
                     fill={seg.color}
-                    stroke="#333"
-                    strokeWidth="1.5"
+                    stroke={seg.strokeColor}
+                    strokeWidth="1"
                   />
 
-                  {/* 
-                    foreignObject is the correct way to embed React/HTML content
-                    (like Next.js <Image>) inside an SVG. You cannot use <Image>
-                    inside <text> — that caused your React error #31.
-                  */}
+                  {/* Asset image */}
                   <foreignObject
-                    x={lx - IMG_SIZE / 2}
-                    y={ly - IMG_SIZE - 8}
+                    x={ix - IMG_SIZE / 2}
+                    y={iy - IMG_SIZE / 2}
                     width={IMG_SIZE}
                     height={IMG_SIZE}
-                    transform={`rotate(${textRotation}, ${lx}, ${ly})`}
+                    transform={`rotate(${textRotation}, ${ix}, ${iy})`}
+                    style={{ overflow: "visible" }}
                   >
                     <Image
                       src={seg.asset}
@@ -141,16 +173,17 @@ export const SpinWheel = ({
                     />
                   </foreignObject>
 
-                  {/* Label text */}
+                  {/* Label */}
                   <text
                     x={lx}
-                    y={ly + 20}
+                    y={ly}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fontSize="13"
-                    fill="#D9D9D9"
+                    fill="#CBCBCB"
                     fontWeight="500"
                     fontFamily="sans-serif"
+                    letterSpacing="0.3"
                     transform={`rotate(${textRotation}, ${lx}, ${ly})`}
                   >
                     {seg.label}
@@ -159,8 +192,34 @@ export const SpinWheel = ({
               );
             })}
 
-            {/* Center dot */}
-            <circle cx={cx} cy={cy} r="12" fill="#333" />
+            {/* Divider lines */}
+            {SEGMENTS.map((_, i) => {
+              const angle = (360 / SEGMENTS.length) * i - 90;
+              const x2 = cx + r * Math.cos(toRad(angle));
+              const y2 = cy + r * Math.sin(toRad(angle));
+              return (
+                <line
+                  key={`div-${i}`}
+                  x1={cx}
+                  y1={cy}
+                  x2={x2}
+                  y2={y2}
+                  stroke="#2a2a2a"
+                  strokeWidth="1.5"
+                />
+              );
+            })}
+
+            {/* Center hub */}
+            <circle
+              cx={cx}
+              cy={cy}
+              r="16"
+              fill="#1a1a1a"
+              stroke="#333"
+              strokeWidth="2"
+            />
+            <circle cx={cx} cy={cy} r="7" fill="#333" />
           </svg>
         </div>
       </div>
@@ -169,22 +228,23 @@ export const SpinWheel = ({
       <button
         onClick={spin}
         disabled={spinning}
-        className={`w-105 h-12 rounded-2xl text-[15px] font-medium transition-colors border border-[#282828] ${
+        style={{ width: SIZE }}
+        className={`h-12 rounded-2xl text-[15px] font-medium transition-all border ${
           spinning
-            ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed"
-            : "bg-[#D9D9D9] text-[#1a1a1a] hover:bg-[#222] cursor-pointer"
+            ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed border-[#282828]"
+            : "bg-[#E8E8E8] text-[#0a0a0a] hover:bg-white cursor-pointer border-transparent"
         }`}
       >
         {spinning ? "Spinning..." : `Spin with ${betAmount} to find out`}
       </button>
 
-      {/* Result badge */}
+      {/* Result badge 
       {landed && !spinning && (
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1a1a1a] border border-[#282828] text-[14px] text-[#D9D9D9]">
           <Image src={landed.asset} alt={landed.label} width={20} height={20} />
           {landed.label}
         </div>
-      )}
+      )}*/}
     </div>
   );
 };
