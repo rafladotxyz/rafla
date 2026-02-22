@@ -18,13 +18,13 @@ export const FlipResultCard = ({
   landedSide: CoinSide;
   amount: string;
   onFlipAgain: () => void;
-  onShare: () => void;
+  onShare: (amount: string, isWin: boolean) => void;
 }) => {
   const isWin = result === "win";
   const winAmount = `$${parseInt(amount.replace("$", "")) * 2}.00`;
   const lossAmount = amount.replace("$", "$") + ".00";
   const isHeads = landedSide === "heads";
-
+  const displayAmount = isWin ? winAmount : lossAmount;
   return (
     <div className="relative w-[414px] bg-[#141414] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-8">
       {/* Background texture */}
@@ -69,7 +69,7 @@ export const FlipResultCard = ({
           Flip Again
         </button>
         <button
-          onClick={onShare}
+          onClick={() => onShare(displayAmount, isWin)} // ✅ passes data up
           className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center"
         >
           Share
