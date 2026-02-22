@@ -16,8 +16,8 @@ interface PnLProps {
 }
 
 export const PnL = ({
-  isWin = true,
-  amount = "$109.25",
+  isWin,
+  amount,
   handleClick,
   shareUrl = "https://rafla.xyz",
 }: PnLProps) => {
