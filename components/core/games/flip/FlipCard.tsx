@@ -1,35 +1,33 @@
-"use client";
 import Image from "next/image";
 import { useState } from "react";
 import head from "@/assets/head1.svg";
 import tail from "@/assets/tail.svg";
 
-const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
-
 type CoinSide = "heads" | "tails";
+type FlipResult = "win" | "loss";
+type ViewState = "select" | "flipping" | "result";
+
+const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
+const FLIP_DURATION = 2500; // ms
 
 export const FlipCard = ({
   onFlip,
 }: {
-  onFlip?: (side: CoinSide, amount: string) => void;
+  onFlip: (side: CoinSide, amount: string) => void;
 }) => {
   const [selectedSide, setSelectedSide] = useState<CoinSide | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
 
   const canFlip = selectedSide !== null && selectedPrice !== null;
-
   const winValue = selectedPrice
     ? `$${parseInt(selectedPrice.replace("$", "")) * 2}`
     : "$10";
 
   return (
-    <div className="flex flex-col backdrop-blur-md  py-0 px-6  gap-3 w-101.25">
-      {/* Title */}
+    <div className="flex flex-col gap-3 w-[405px]">
       <p className="text-[16px] font-semibold text-[#D9D9D9]">Make your Call</p>
 
-      {/* HEADS / TAILS row */}
       <div className="flex gap-2">
-        {/* HEADS */}
         <button
           onClick={() => setSelectedSide("heads")}
           className={`flex-1 flex flex-col items-start rounded-2xl border p-4 gap-2 transition-colors ${
@@ -44,7 +42,6 @@ export const FlipCard = ({
           <p className="text-[14px] text-[#CBCBCB]">HEADS</p>
         </button>
 
-        {/* TAILS */}
         <button
           onClick={() => setSelectedSide("tails")}
           className={`flex-1 flex flex-col items-start rounded-2xl border p-4 gap-2 transition-colors ${
@@ -60,7 +57,6 @@ export const FlipCard = ({
         </button>
       </div>
 
-      {/* Price selector */}
       <div className="flex gap-2">
         {PRICE_OPTIONS.map((price) => (
           <button
@@ -77,10 +73,9 @@ export const FlipCard = ({
         ))}
       </div>
 
-      {/* Flip CTA */}
       <button
         disabled={!canFlip}
-        onClick={() => canFlip && onFlip?.(selectedSide!, selectedPrice!)}
+        onClick={() => canFlip && onFlip(selectedSide!, selectedPrice!)}
         className={`w-full h-12 rounded-2xl text-[15px] font-medium transition-colors ${
           canFlip
             ? "bg-white text-[#0A0A0A] cursor-pointer"

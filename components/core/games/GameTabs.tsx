@@ -5,7 +5,7 @@ import { useState } from "react";
 type TabType = "public" | "private";
 
 export function GameTabs() {
-  const [activeTab, setActiveTab] = useState<TabType>("private");
+  const [activeTab, setActiveTab] = useState<TabType>("public");
 
   return (
     <div className="flex items-center justify-center gap-8 mb-8">
