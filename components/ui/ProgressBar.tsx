@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-const BAR_COLOR = "#229EFF"; // your Rafla blue
+const BAR_COLOR = "#D946EF"; // your Rafla blue
 
 const HEIGHT = 3; // px
 
