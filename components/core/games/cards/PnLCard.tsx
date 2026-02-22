@@ -1,142 +1,148 @@
+"use client";
 import PnlGroup from "@/components/base/PnlGroup";
 import Image from "next/image";
 import Logo from "@/assets/Logo.svg";
+import { useRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
+
+// Install deps if not already:
+// npm install qrcode.react html2canvas
+
 interface PnLProps {
   isWin?: boolean;
   amount?: string;
   handleClick?: () => void;
+  shareUrl?: string; // URL to encode in QR — defaults to RAFLA.XYZ
 }
 
 export const PnL = ({
   isWin = true,
   amount = "$109.25",
   handleClick,
+  shareUrl = "https://rafla.xyz",
 }: PnLProps) => {
   return (
     <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
-      <PnLCard isWin={isWin} amount={amount} handleClick={handleClick} />
+      <PnLCard
+        isWin={isWin}
+        amount={amount}
+        handleClick={handleClick}
+        shareUrl={shareUrl}
+      />
     </div>
   );
 };
-
-// Dummy QR code as inline SVG — replace with real QR lib when ready
-const DummyQR = () => (
-  <svg
-    width="96"
-    height="96"
-    viewBox="0 0 90 90"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect width="90" height="90" fill="white" rx="4" />
-    {/* Top-left finder */}
-    <rect x="6" y="6" width="24" height="24" rx="2" fill="black" />
-    <rect x="10" y="10" width="16" height="16" rx="1" fill="white" />
-    <rect x="13" y="13" width="10" height="10" rx="1" fill="black" />
-    {/* Top-right finder */}
-    <rect x="60" y="6" width="24" height="24" rx="2" fill="black" />
-    <rect x="64" y="10" width="16" height="16" rx="1" fill="white" />
-    <rect x="67" y="13" width="10" height="10" rx="1" fill="black" />
-    {/* Bottom-left finder */}
-    <rect x="6" y="60" width="24" height="24" rx="2" fill="black" />
-    <rect x="10" y="64" width="16" height="16" rx="1" fill="white" />
-    <rect x="13" y="67" width="10" height="10" rx="1" fill="black" />
-    {/* Data modules */}
-    {[36, 42, 48, 54, 63, 69, 75].map((x, i) => (
-      <rect key={`r1${i}`} x={x} y="6" width="3" height="3" fill="black" />
-    ))}
-    {[39, 45, 57, 66, 72, 78].map((x, i) => (
-      <rect key={`r2${i}`} x={x} y="12" width="3" height="3" fill="black" />
-    ))}
-    {[36, 51, 60, 63, 75, 81].map((x, i) => (
-      <rect key={`r3${i}`} x={x} y="18" width="3" height="3" fill="black" />
-    ))}
-    {[39, 48, 54, 69, 78].map((x, i) => (
-      <rect key={`r4${i}`} x={x} y="24" width="3" height="3" fill="black" />
-    ))}
-    {[6, 12, 18, 36, 45, 54, 60, 66, 75, 81].map((x, i) => (
-      <rect key={`r5${i}`} x={x} y="36" width="3" height="3" fill="black" />
-    ))}
-    {[9, 15, 39, 48, 57, 63, 72, 78].map((x, i) => (
-      <rect key={`r6${i}`} x={x} y="42" width="3" height="3" fill="black" />
-    ))}
-    {[6, 18, 36, 42, 51, 60, 69, 75].map((x, i) => (
-      <rect key={`r7${i}`} x={x} y="48" width="3" height="3" fill="black" />
-    ))}
-    {[12, 45, 54, 63, 72, 81].map((x, i) => (
-      <rect key={`r8${i}`} x={x} y="54" width="3" height="3" fill="black" />
-    ))}
-    {[36, 39, 48, 57, 66, 75].map((x, i) => (
-      <rect key={`r9${i}`} x={x} y="60" width="3" height="3" fill="black" />
-    ))}
-    {[42, 51, 60, 69, 78, 81].map((x, i) => (
-      <rect key={`r10${i}`} x={x} y="66" width="3" height="3" fill="black" />
-    ))}
-    {[39, 45, 54, 63, 72].map((x, i) => (
-      <rect key={`r11${i}`} x={x} y="72" width="3" height="3" fill="black" />
-    ))}
-    {[36, 48, 57, 66, 75, 81].map((x, i) => (
-      <rect key={`r12${i}`} x={x} y="78" width="3" height="3" fill="black" />
-    ))}
-  </svg>
-);
 
 const PnLCard = ({
   isWin = true,
   amount = "$109.25",
   handleClick,
+  shareUrl = "https://rafla.xyz",
 }: PnLProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // ─── Download as image ──────────────────────────────────────────────────────
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+
+    // Dynamically import html2canvas to avoid SSR issues
+    const html2canvas = (await import("html2canvas")).default;
+
+    const canvas = await html2canvas(cardRef.current, {
+      background: "#0A0A0A",
+      useCORS: true,
+      allowTaint: true,
+    });
+
+    const link = document.createElement("a");
+    link.download = `rafla-pnl-${isWin ? "win" : "loss"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  // ─── Share on Twitter ───────────────────────────────────────────────────────
+  const handleTwitterShare = async () => {
+    if (!cardRef.current) return;
+
+    const tweetText = isWin
+      ? `🏆 Hey, I just won ${amount} on @RaflaXYZ! Chance made social. Try your luck 👇`
+      : `😤 I lost ${amount} on @RaflaXYZ today... but I'm not done! Chance made social 👇`;
+
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`;
+
+    // Generate and upload image, then open Twitter
+    // For now opens tweet with text — to attach image you'd need an upload endpoint
+    window.open(twitterUrl, "_blank", "noopener,noreferrer");
+  };
+
   return (
-    <div className="relative flex flex-col w-[714px] bg-[#0A0A0A] rounded-2xl overflow-hidden">
-      {/* Background texture — absolute, fills entire card */}
-      <PnlGroup className="absolute inset-0 w-full h-full" />
+    <div className="flex flex-col w-[714px] rounded-2xl overflow-hidden shadow-2xl">
+      {/* ── Capturable card area ── */}
+      <div
+        ref={cardRef}
+        className="relative flex flex-col w-full bg-[#0A0A0A] overflow-hidden"
+      >
+        {/* Background texture */}
+        <PnlGroup className="absolute inset-0 w-full h-full" />
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col flex-1 px-14 pt-16 pb-8 gap-8 ml-auto mr-auto">
-        {/* Win/Loss text + amount */}
-        <div className="flex flex-col gap-1">
-          <p className="text-[24px] text-[#737373]">
-            You {isWin ? "won" : "lost"}
-          </p>
-          <p
-            className="text-[64px] font-bold leading-none"
-            style={{ color: isWin ? "#229EFF" : "#DF1C41" }}
-          >
-            {isWin ? "+" : "-"}
-            {amount}
-          </p>
-        </div>
-
-        {/* Tagline */}
-        <div className="flex flex-col gap-0.5">
-          <p className="text-[14px] text-[#636363]">Chance made social</p>
-          <p className="text-[14px] font-semibold text-[#636363]">RAFLA.XYZ</p>
-        </div>
-
-        {/* Bottom row: QR left, Logo right */}
-        <div className="flex items-end justify-between mt-4">
-          <div className="rounded-lg overflow-hidden border border-[#2a2a2a]">
-            <DummyQR />
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <Image src={Logo} height={43.88} width={96} alt="logo" />
-            <p className="text-white text-[16px] font-semibold tracking-wide">
-              Draw
+        {/* Main content */}
+        <div className="relative z-10 flex flex-col px-14 pt-16 pb-10 gap-8">
+          {/* Win/Loss text + amount */}
+          <div className="flex flex-col gap-1">
+            <p className="text-[24px] text-[#737373]">
+              You {isWin ? "won" : "lost"}
             </p>
+            <p
+              className="text-[64px] font-bold leading-none"
+              style={{ color: isWin ? "#229EFF" : "#DF1C41" }}
+            >
+              {isWin ? "+" : "-"}
+              {amount}
+            </p>
+          </div>
+
+          {/* Tagline */}
+          <div className="flex flex-col gap-0.5">
+            <p className="text-[14px] text-[#636363]">Chance made social</p>
+            <p className="text-[14px] font-semibold text-[#636363]">
+              RAFLA.XYZ
+            </p>
+          </div>
+
+          {/* Bottom row: QR left, Logo right */}
+          <div className="flex items-end justify-between mt-4">
+            {/* ✅ Real QR code */}
+            <div className="rounded-lg overflow-hidden border border-[#2a2a2a] bg-white p-2">
+              <QRCodeSVG
+                value={shareUrl}
+                size={88}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                level="M"
+              />
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <Image src={Logo} height={43.88} width={96} alt="logo" />
+              <p className="text-white text-[16px] font-semibold tracking-wide">
+                Draw
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Download button strip */}
-      <div className="relative z-10 w-full bg-[#0f0f0f] border-t border-[#1f1f1f] px-8 py-3">
+      {/* ── Action buttons strip (outside capturable area) ── */}
+      <div className="w-full bg-[#0f0f0f] border-t border-[#1f1f1f] px-6 py-3 flex items-center gap-3">
+        {/* Download button */}
         <button
-          onClick={handleClick}
-          className="w-full h-12 flex items-center justify-center gap-2 text-white text-[15px] font-medium rounded-xl hover:bg-white/5 transition-colors"
+          onClick={handleDownload}
+          className="flex-1 h-12 flex items-center justify-center gap-2 text-white text-[14px] font-medium rounded-xl hover:bg-white/5 transition-colors border border-[#282828]"
         >
           Download PnL Card
           <svg
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -149,6 +155,47 @@ const PnLCard = ({
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
         </button>
+
+        {/* Twitter / X share button */}
+        <button
+          onClick={handleTwitterShare}
+          className="h-12 w-12 flex items-center justify-center rounded-xl bg-black border border-[#282828] hover:bg-[#1a1a1a] transition-colors flex-shrink-0"
+          title="Share on X (Twitter)"
+        >
+          {/* X logo */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="white"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+          </svg>
+        </button>
+
+        {/* Close / done button */}
+        {handleClick && (
+          <button
+            onClick={handleClick}
+            className="h-12 w-12 flex items-center justify-center rounded-xl border border-[#282828] hover:bg-white/5 transition-colors flex-shrink-0"
+            title="Close"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#737373"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

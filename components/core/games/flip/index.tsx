@@ -35,6 +35,10 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     amount: string;
   } | null>(null);
 
+  const [pnlData, setPnlData] = useState<{
+    amount: string;
+    isWin: boolean;
+  } | null>(null);
   const handleFlip = (side: CoinSide, amount: string) => {
     setSelectedSide(side);
     setSelectedPrice(amount);
@@ -56,9 +60,10 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     setSelectedPrice(null);
   };
 
-  const handleShare = () => {
+  const handleShare = (amount: string, isWin: boolean) => {
     setViewState("select");
     setFlipResult(null);
+    setPnlData({ amount, isWin }); // ✅ store result data for PnL card
     setShowPnl(true);
   };
 
@@ -67,6 +72,8 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
       {isDisclaimer && <Disclaimer toggle={() => setIsDisclaimer(false)} />}
       {showPnl && (
         <PnL
+          amount={pnlData?.amount || "$0"}
+          isWin={pnlData?.isWin || false}
           handleClick={() => {
             setShowPnl(false);
             setShowCreateRoom(true);
