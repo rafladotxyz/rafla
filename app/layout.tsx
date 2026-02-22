@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import ContextProvider from "@/Providers/ReownProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastContainer } from "@/components/ui/ToastContainer";
+import { Suspense } from "react";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +35,9 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
       >
+        <Suspense fallback={null}>
+          <ProgressBar />
+        </Suspense>
         <Analytics />
         <ContextProvider cookies={cookies}>
           <ToastContainer />

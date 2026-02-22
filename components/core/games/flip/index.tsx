@@ -15,7 +15,6 @@ type CoinSide = "heads" | "tails";
 type FlipResult = "win" | "loss";
 type ViewState = "select" | "flipping" | "result";
 
-const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
 const FLIP_DURATION = 2500; // ms
 
 // ─── FlipView (parent) ───────────────────────────────────────────────────────
@@ -23,7 +22,7 @@ const FLIP_DURATION = 2500; // ms
 export const FlipView = ({ roomId }: { roomId?: string }) => {
   const [isDisclaimer, setIsDisclaimer] = useState(true);
   const [showPnl, setShowPnl] = useState(false);
-  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  //const [showCreateRoom, setShowCreateRoom] = useState(false);
 
   // Game state
   const [viewState, setViewState] = useState<ViewState>("select");
@@ -72,15 +71,14 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
       {isDisclaimer && <Disclaimer toggle={() => setIsDisclaimer(false)} />}
       {showPnl && (
         <PnL
-          amount={pnlData?.amount || "$0"}
+          amount={pnlData?.amount || selectedPrice || "$0"}
           isWin={pnlData?.isWin || false}
           handleClick={() => {
             setShowPnl(false);
           }}
         />
       )}
-      {showCreateRoom && <CreateRoom toggle={() => setShowCreateRoom(false)} />}
-
+      {/* {showCreateRoom && <CreateRoom toggle={() => setShowCreateRoom(false)} />} */}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader gameName="Rafla Flip" />
       </div>
