@@ -1,62 +1,100 @@
-import { DrawTimer } from "@/components/core/games/draw/DrawTimer";
+"use client";
+import { useState } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { GameTabs } from "@/components/core/games/GameTabs";
-import { PlayersCard } from "@/components/core/games/cards/PlayerCard";
-import { RightPanel } from "@/components/core/games/RightPanelCard";
-import { useGameState } from "@/hooks/useGameState";
-import { useState } from "react";
 import { Disclaimer } from "../cards/DisclaimerCard";
-import { WinOrLoss } from "../cards/WinOrLossCard";
 import { PnL } from "../cards/PnLCard";
 import { CreateRoom } from "../cards/CreateRoomCard";
 import { FlipCard } from "./FlipCard";
+import { FlippingScreen } from "./FlipScreen";
+import { FlipResultCard } from "./FlipResult";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type CoinSide = "heads" | "tails";
+type FlipResult = "win" | "loss";
+type ViewState = "select" | "flipping" | "result";
+
+const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
+const FLIP_DURATION = 2500; // ms
+
+// ─── FlipView (parent) ───────────────────────────────────────────────────────
 
 export const FlipView = ({ roomId }: { roomId?: string }) => {
-  const [isDisclaimer, setIsDisclaimer] = useState<boolean>(true);
-  const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
-  const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
-  const [showPnl, setShowPnl] = useState<boolean>(false);
-  const { gameState, players, loading, addEntry } = useGameState(
-    roomId || "3455654",
-  );
+  const [isDisclaimer, setIsDisclaimer] = useState(true);
+  const [showPnl, setShowPnl] = useState(false);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
 
-  const handleAddEntry = async () => {
-    await addEntry(5.0);
+  // Game state
+  const [viewState, setViewState] = useState<ViewState>("select");
+  const [selectedSide, setSelectedSide] = useState<CoinSide | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
+  const [flipResult, setFlipResult] = useState<{
+    result: FlipResult;
+    landedSide: CoinSide;
+    amount: string;
+  } | null>(null);
+
+  const handleFlip = (side: CoinSide, amount: string) => {
+    setSelectedSide(side);
+    setSelectedPrice(amount);
+    setViewState("flipping");
+
+    // Simulate flip — replace with real contract call
+    setTimeout(() => {
+      const landedSide: CoinSide = Math.random() > 0.5 ? "heads" : "tails";
+      const result: FlipResult = landedSide === side ? "win" : "loss";
+      setFlipResult({ result, landedSide, amount });
+      setViewState("result");
+    }, FLIP_DURATION);
   };
 
-  const toggleDisclaimer = () => {
-    setIsDisclaimer(false);
-    setShowWinLoss(true);
+  const handleFlipAgain = () => {
+    setViewState("select");
+    setFlipResult(null);
+    setSelectedSide(null);
+    setSelectedPrice(null);
   };
 
-  const toggleWinLoss = () => {
-    setShowWinLoss(false);
+  const handleShare = () => {
+    setViewState("select");
+    setFlipResult(null);
     setShowPnl(true);
-  };
-
-  const togglePnl = () => {
-    setShowPnl(false);
-    setShowCreateRoom(true);
-  };
-
-  const toggleCreateRoom = () => {
-    setShowCreateRoom(false);
   };
 
   return (
     <div className="px-4 py-0">
-      {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
-      {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
-      {showPnl && <PnL handleClick={togglePnl} />}
-      {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
+      {isDisclaimer && <Disclaimer toggle={() => setIsDisclaimer(false)} />}
+      {showPnl && (
+        <PnL
+          handleClick={() => {
+            setShowPnl(false);
+            setShowCreateRoom(true);
+          }}
+        />
+      )}
+      {showCreateRoom && <CreateRoom toggle={() => setShowCreateRoom(false)} />}
+
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader gameName="Rafla Flip" />
       </div>
 
-      {/* Tabs */}
       <GameTabs />
-      <div className="items-center justify-center flex w-312 gap-20 h-auto py-12  ml-auto mr-auto ">
-        <FlipCard />
+
+      <div className="flex items-center justify-center w-312 ml-auto mr-auto py-12">
+        {viewState === "select" && <FlipCard onFlip={handleFlip} />}
+        {viewState === "flipping" && selectedSide && (
+          <FlippingScreen side={selectedSide} />
+        )}
+        {viewState === "result" && flipResult && (
+          <FlipResultCard
+            result={flipResult.result}
+            landedSide={flipResult.landedSide}
+            amount={flipResult.amount}
+            onFlipAgain={handleFlipAgain}
+            onShare={handleShare}
+          />
+        )}
       </div>
     </div>
   );
