@@ -89,8 +89,6 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         <GameHeader gameName="Rafla Spin" />
       </div>
 
-      <GameTabs />
-
       <div className="items-center justify-center flex w-312 gap-20 h-auto py-12 ml-auto mr-auto">
         <SpinWheel onResult={handleSpinResult} />
       </div>

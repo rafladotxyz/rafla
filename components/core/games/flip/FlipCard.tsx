@@ -4,11 +4,8 @@ import head from "@/assets/head1.svg";
 import tail from "@/assets/tail.svg";
 
 type CoinSide = "heads" | "tails";
-type FlipResult = "win" | "loss";
-type ViewState = "select" | "flipping" | "result";
 
 const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
-const FLIP_DURATION = 2500; // ms
 
 export const FlipCard = ({
   onFlip,
@@ -24,7 +21,7 @@ export const FlipCard = ({
     : "$10";
 
   return (
-    <div className="flex flex-col gap-3 w-[405px]">
+    <div className="flex flex-col gap-3 w-101.25">
       <p className="text-[16px] font-semibold text-[#D9D9D9]">Make your Call</p>
 
       <div className="flex gap-2">
@@ -36,7 +33,7 @@ export const FlipCard = ({
               : "bg-[#0A0A0A] border-[#141414]"
           }`}
         >
-          <div className="h-[79px] flex items-center">
+          <div className="h-19.75 flex items-center">
             <Image src={head} height={79} width={64} alt="heads" />
           </div>
           <p className="text-[14px] text-[#CBCBCB]">HEADS</p>
@@ -50,7 +47,7 @@ export const FlipCard = ({
               : "bg-[#0A0A0A] border-[#141414]"
           }`}
         >
-          <div className="h-[79px] flex items-center">
+          <div className="h-19.75 flex items-center">
             <Image src={tail} height={79} width={64} alt="tails" />
           </div>
           <p className="text-[14px] text-[#CBCBCB]">TAILS</p>
