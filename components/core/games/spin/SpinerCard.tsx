@@ -21,14 +21,16 @@ const SEGMENTS: Segment[] = [
     strokeColor: "#2a2a2a",
   },
   {
-    label: "Yaay $2 won!",
+    label: "Yaay you won!",
     asset: Yay,
     color: "#121212",
     strokeColor: "#2a2a2a",
   },
 ];
 
-const SPIN_DURATION = 4000;
+const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
+
+const SPIN_DURATION = 8000;
 const MIN_SPINS = 5;
 
 const SIZE = 500;
@@ -38,7 +40,7 @@ const r = SIZE / 2 - 4;
 const IMG_SIZE = 64;
 
 export const SpinWheel = ({
-  betAmount = "$1",
+  //betAmount = "$1",
   onResult,
 }: {
   betAmount?: string;
@@ -47,6 +49,7 @@ export const SpinWheel = ({
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [landed, setLanded] = useState<Segment | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
   const currentRotation = useRef(0);
 
   const spin = () => {
@@ -223,6 +226,22 @@ export const SpinWheel = ({
           </svg>
         </div>
       </div>
+      {/** To do Price Selection Tab */}
+      <div className="flex gap-2">
+        {PRICE_OPTIONS.map((price) => (
+          <button
+            key={price}
+            onClick={() => setSelectedPrice(price)}
+            className={`flex-1 h-10 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+              selectedPrice === price
+                ? "border-[#CBCBCB] bg-[#1f1f1f]"
+                : "border-[#282828] bg-[#0A0A0A]"
+            }`}
+          >
+            {price}
+          </button>
+        ))}
+      </div>
 
       {/* Spin button */}
       <button
@@ -235,7 +254,9 @@ export const SpinWheel = ({
             : "bg-[#E8E8E8] text-[#0a0a0a] hover:bg-white cursor-pointer border-transparent"
         }`}
       >
-        {spinning ? "Spinning..." : `Spin with ${betAmount} to find out`}
+        {spinning
+          ? "Spinning..."
+          : `Spin with ${selectedPrice || "0"} to find out`}
       </button>
 
       {/* Result badge 

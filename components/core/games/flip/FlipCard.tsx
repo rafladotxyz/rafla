@@ -8,7 +8,7 @@ type FlipResult = "win" | "loss";
 type ViewState = "select" | "flipping" | "result";
 
 const PRICE_OPTIONS = ["$1", "$2", "$3", "$5"];
-const FLIP_DURATION = 2500; // ms
+const FLIP_DURATION = 5900; // ms
 
 export const FlipCard = ({
   onFlip,
