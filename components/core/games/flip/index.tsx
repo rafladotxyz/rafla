@@ -83,8 +83,6 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         <GameHeader gameName="Rafla Flip" />
       </div>
 
-      <GameTabs />
-
       <div className="flex items-center justify-center w-312 ml-auto mr-auto py-12">
         {viewState === "select" && <FlipCard onFlip={handleFlip} />}
         {viewState === "flipping" && selectedSide && (
