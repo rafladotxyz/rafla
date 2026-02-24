@@ -12,7 +12,7 @@ export const Disclaimer = ({ toggle }: { toggle?: () => void }) => {
 
 const DISCLAIMER_POINTS = [
   "This is a chance based game. You may lose your entry.",
-  "All outcomes are probably fair and random.",
+  "All outcomes are provably fair and random.",
   "Only play with funds you can afford to lose.",
   "Rafla is for entertainment. Play responsibly.",
 ];
@@ -21,7 +21,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
   const [checked, setChecked] = useState(false);
 
   return (
-    <div className="relative flex flex-col items-center w-[340px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 gap-6">
+    <div className="relative flex flex-col items-center w-85 rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] py-6 px-4 gap-6">
       {/* Alert Icon + Title */}
       <div className="flex flex-col items-center gap-3">
         <Image src={AlertIcon} height={48} width={48} alt="Alert icon" />
@@ -34,7 +34,7 @@ const DisclaimerCard = ({ toggle }: { toggle?: () => void }) => {
       <ul className="w-full flex flex-col gap-3 pl-1">
         {DISCLAIMER_POINTS.map((point, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="text-[#CBCBCB] text-[14px] leading-none mt-[3px]">
+            <span className="text-[#CBCBCB] text-[14px] leading-none mt-0.75">
               •
             </span>
             <p className="text-[14px] text-[#CBCBCB] leading-snug">{point}</p>
