@@ -227,7 +227,7 @@ export const SpinWheel = ({
         </div>
       </div>
       {/** To do Price Selection Tab */}
-      <div className="flex gap-2 w-101.25">
+      <div className="flex gap-2 w-full">
         {PRICE_OPTIONS.map((price) => (
           <button
             key={price}
