@@ -11,6 +11,7 @@ import { PUSHER_EVENTS } from "@/lib/pusher";
 export interface GameState {
   roomId: string;
   pricePool: number;
+  players: Player[];
   totalPlayers: number;
   minPlayers: number;
   yourEntry: number;
@@ -200,6 +201,7 @@ export function useGameState(roomId: string) {
 
   const gameState: GameState = {
     roomId,
+    players,
     pricePool: currentRound?.prizePool ?? 0,
     totalPlayers: currentRound?.playerCount ?? players.length,
     minPlayers: MIN_PLAYERS,

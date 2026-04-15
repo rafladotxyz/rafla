@@ -15,9 +15,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [showWinLoss, setShowWinLoss] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
-  const { gameState, players, loading, addEntry } = useGameState(
-    roomId || "3455654",
-  );
+  const { gameState, loading, addEntry } = useGameState(roomId || "3455654");
 
   const handleAddEntry = async () => {
     await addEntry(5.0);
@@ -56,7 +54,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
       <GameTabs />
       <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
         <PlayersCard
-          players={players}
+          players={gameState.players}
           totalPlayers={gameState.totalPlayers}
           minPlayers={gameState.minPlayers}
         />
