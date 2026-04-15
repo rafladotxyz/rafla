@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // uncomment next line if you use Prisma <5.10
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id           String            @id @default(cuid())
+  wallet       String            @unique
+  username     String?           @unique
+  avatar       String?
+  bio          String?
+  twitter      String?
+  telegram     String?
+  createdAt    DateTime          @default(now())
+  rooms        RoomParticipant[]
+  createdRooms GameRoom[]
+  results      GameResult[]
+  transactions Transaction[]
+}
+
+model GameRoom {
+  id            String            @id @default(cuid())
+  gameType      String // "spin" | "flip" | "draw"
+  stakeAmount   String // USDC amount as string (6 decimals)
+  contractRound BigInt // on-chain roundId
+  status        String            @default("waiting") // waiting | active | completed | cancelled
+  drawTime      DateTime?
+  creatorId     String
+  creator       User              @relation(fields: [creatorId], references: [id])
+  participants  RoomParticipant[]
+  result        GameResult?
+  createdAt     DateTime          @default(now())
+}
+
+model RoomParticipant {
+  id       String   @id @default(cuid())
+  roomId   String
+  userId   String
+  txHash   String?
+  joinedAt DateTime @default(now())
+  room     GameRoom @relation(fields: [roomId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
+}
+
+model GameResult {
+  id           String   @id @default(cuid())
+  roomId       String   @unique
+  winnerId     String
+  vrfRequestId String?
+  txHash       String?
+  prizeAmount  String
+  settledAt    DateTime @default(now())
+  room         GameRoom @relation(fields: [roomId], references: [id])
+  winner       User     @relation(fields: [winnerId], references: [id])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // "deposit" | "win" | "refund"
+  amount    String
+  txHash    String
+  chainId   Int      @default(84532)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Nonce {
+  id        String   @id @default(cuid())
+  nonce     String   @unique
+  wallet    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
