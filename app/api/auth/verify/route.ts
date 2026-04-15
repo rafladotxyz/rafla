@@ -84,6 +84,14 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
+    console.error(
+      "[verify] error:",
+      error instanceof Error ? error.message : error,
+    );
+    console.error(
+      "[verify] stack:",
+      error instanceof Error ? error.stack : "no stack",
+    );
     console.error("[verify] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

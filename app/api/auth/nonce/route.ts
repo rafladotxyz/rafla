@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Clean up old nonces for this wallet first
-    //await prisma.nonce.deleteMany({ where: { wallet: wallet.toLowerCase() } });
+    await prisma.nonce.deleteMany({ where: { wallet: wallet.toLowerCase() } });
 
     await prisma.nonce.create({
       data: {
