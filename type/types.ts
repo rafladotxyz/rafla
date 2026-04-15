@@ -19,6 +19,7 @@ export interface Player {
   isYou?: boolean;
   color: string;
 }
+
 export interface RoomInfo {
   roomLink: string;
   chain: string;
