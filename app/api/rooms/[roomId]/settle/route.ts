@@ -5,10 +5,11 @@ import { pusher, roomChannel, PUSHER_EVENTS } from "@/lib/pusher";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { roomId: string } },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
   // settle can be called by any authenticated participant (or a backend job)
   const auth = await requireAuth(req);
+  const { roomId } = await params;
   if (!auth) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -25,7 +26,7 @@ export async function POST(
     }
 
     const room = await prisma.gameRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: roomId },
     });
 
     if (!room) {
@@ -54,12 +55,12 @@ export async function POST(
     // Update room status + create result in a transaction
     const [updatedRoom, result] = await prisma.$transaction([
       prisma.gameRoom.update({
-        where: { id: params.roomId },
+        where: { id: roomId },
         data: { status: "completed" },
       }),
       prisma.gameResult.create({
         data: {
-          roomId: params.roomId,
+          roomId: roomId,
           winnerId: winner.id,
           vrfRequestId: vrfRequestId ? String(vrfRequestId) : null,
           txHash,
@@ -78,18 +79,14 @@ export async function POST(
     ]);
 
     // Broadcast result to room
-    await pusher.trigger(
-      roomChannel(params.roomId),
-      PUSHER_EVENTS.RESULT_REVEALED,
-      {
-        winnerId: winner.id,
-        winnerWallet: winner.wallet,
-        winnerUsername: winner.username,
-        prizeAmount,
-        txHash,
-        vrfRequestId,
-      },
-    );
+    await pusher.trigger(roomChannel(roomId), PUSHER_EVENTS.RESULT_REVEALED, {
+      winnerId: winner.id,
+      winnerWallet: winner.wallet,
+      winnerUsername: winner.username,
+      prizeAmount,
+      txHash,
+      vrfRequestId,
+    });
 
     return NextResponse.json({ ok: true, result, room: updatedRoom });
   } catch (error) {

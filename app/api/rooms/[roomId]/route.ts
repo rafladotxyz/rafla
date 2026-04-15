@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { roomId: string } },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
+  const { roomId } = await params;
   try {
     const room = await prisma.gameRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: roomId },
       include: {
         creator: {
           select: { id: true, wallet: true, username: true, avatar: true },

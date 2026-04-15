@@ -5,9 +5,10 @@ import { pusher, roomChannel, PUSHER_EVENTS } from "@/lib/pusher";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { roomId: string } },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
   const auth = await requireAuth(req);
+  const { roomId } = await params;
   if (!auth) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -17,7 +18,7 @@ export async function POST(
     const { txHash } = body;
 
     const room = await prisma.gameRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: roomId },
     });
 
     if (!room) {
@@ -34,11 +35,11 @@ export async function POST(
     // Upsert participant (idempotent — safe to call again if tx updates)
     const participant = await prisma.roomParticipant.upsert({
       where: {
-        roomId_userId: { roomId: params.roomId, userId: auth.userId },
+        roomId_userId: { roomId: roomId, userId: auth.userId },
       },
       update: { txHash: txHash ?? undefined },
       create: {
-        roomId: params.roomId,
+        roomId: roomId,
         userId: auth.userId,
         txHash: txHash ?? null,
       },
@@ -71,25 +72,21 @@ export async function POST(
 
     // Get updated participant count
     const participantCount = await prisma.roomParticipant.count({
-      where: { roomId: params.roomId },
+      where: { roomId: roomId },
     });
 
     // Broadcast to room channel
-    await pusher.trigger(
-      roomChannel(params.roomId),
-      PUSHER_EVENTS.PLAYER_JOINED,
-      {
-        participant: {
-          userId: participant.userId,
-          wallet: participant.user.wallet,
-          username: participant.user.username,
-          avatar: participant.user.avatar,
-          txHash: participant.txHash,
-          joinedAt: participant.joinedAt,
-        },
-        totalPlayers: participantCount,
+    await pusher.trigger(roomChannel(roomId), PUSHER_EVENTS.PLAYER_JOINED, {
+      participant: {
+        userId: participant.userId,
+        wallet: participant.user.wallet,
+        username: participant.user.username,
+        avatar: participant.user.avatar,
+        txHash: participant.txHash,
+        joinedAt: participant.joinedAt,
       },
-    );
+      totalPlayers: participantCount,
+    });
 
     return NextResponse.json({
       ok: true,
