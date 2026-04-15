@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { Suspense } from "react";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { AuthProvider } from "../context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,11 +41,13 @@ export default async function RootLayout({
         </Suspense>
         <Analytics />
         <ContextProvider cookies={cookies}>
-          <ToastContainer />
-          {/* Fixed starry background */}
-          <Constellation className="fixed inset-0 w-full h-full -z-10" />
+          <AuthProvider>
+            <ToastContainer />
+            {/* Fixed starry background */}
+            <Constellation className="fixed inset-0 w-full h-full -z-10" />
 
-          <main className="relative z-10 pt-0 ">{children}</main>
+            <main className="relative z-10 pt-0 ">{children}</main>
+          </AuthProvider>
         </ContextProvider>
       </body>
     </html>

@@ -7,6 +7,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/useToast";
+import { SignInButton } from "../connector/SigninButton";
 export const Navbar = () => {
   const { open } = useAppKit();
 
@@ -38,32 +39,8 @@ export const Navbar = () => {
       <div className="w-24 h-[43.88px] ">
         <Image height={43} width={96} src={Logo} alt="rafla logo" />
       </div>
-      {isConnected ? (
-        <div
-          onClick={() => handleConnect()}
-          className="w-auto h-11 py-3 px-4 rounded-xl flex items-center justify-between text-xs bg-[#0A0A0A] text-black border border-[#1A1A1A] drop-shadow-[#242628] cursor-pointer"
-        >
-          <div className="w-5 h-5 ml-2 mr-2">
-            <Image
-              height={20}
-              width={20}
-              src={getNetworkIcon(caipNetwork?.name || "Base")}
-              alt="Base logo"
-              className="rounded-full"
-            />
-          </div>
-          <p className="text-[#D9D9D9] w-auto text-[14px]">
-            {caipNetwork?.name}
-          </p>
-        </div>
-      ) : (
-        <button
-          onClick={() => handleConnect()}
-          className="h-11 py-3 px-6 rounded-xl text-[14px] font-medium bg-white text-black border border-[#1A1A1A] hover:bg-gray-100 transition-colors"
-        >
-          Connect wallet
-        </button>
-      )}
+
+      <SignInButton />
     </nav>
   );
 };
