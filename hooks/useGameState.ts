@@ -70,8 +70,11 @@ export function useGameState(roomId: string) {
         const res = await fetch(`/api/rooms/${roomId}`, {
           headers: authHeaders(),
         });
-        if (!res.ok) return;
-
+        if (!res.ok) {
+          setPlayers([]);
+          setRoomStatus("waiting");
+          return;
+        }
         const { room } = await res.json();
         setRoomStatus(room.status);
 

@@ -4,7 +4,7 @@ import { GameTabs } from "@/components/core/games/GameTabs";
 import { PlayersCard } from "@/components/core/games/cards/PlayerCard";
 import { RightPanel } from "@/components/core/games/RightPanelCard";
 import { useGameState } from "@/hooks/useGameState";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { WinOrLoss } from "../cards/WinOrLossCard";
 import { PnL } from "../cards/PnLCard";
@@ -16,6 +16,14 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showPnl, setShowPnl] = useState<boolean>(false);
   const { gameState, loading, addEntry } = useGameState(roomId || "3455654");
+
+  // 1. Keep a state for manual closing (if the user clicks "X")
+  const [userClosedCreate, setUserClosedCreate] = useState(false);
+
+  // 2. Derive the visibility logic
+  // Show it if: not loading, no players, and the user hasn't manually closed it
+  const shouldShowCreateRoom =
+    !loading && gameState.players.length === 0 && !userClosedCreate;
 
   const handleAddEntry = async () => {
     await addEntry(5.0);
@@ -36,20 +44,18 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
     setShowCreateRoom(true);
   };
 
-  const toggleCreateRoom = () => {
-    setShowCreateRoom(false);
-  };
-
   return (
     <div className="px-4 py-0">
       {isDisclaimer && <Disclaimer toggle={toggleDisclaimer} />}
       {showWinLoss && <WinOrLoss handleClick={toggleWinLoss} />}
       {showPnl && <PnL handleClick={togglePnl} />}
-      {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
+
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader gameName="Rafla Draw" />
       </div>
-
+      {shouldShowCreateRoom && (
+        <CreateRoom toggle={() => setUserClosedCreate(true)} gameType="draw" />
+      )}
       {/* Tabs */}
       <GameTabs />
       <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto ">
@@ -63,7 +69,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
           pricePool={gameState.pricePool}
           yourEntry={gameState.yourEntry}
           potentialWin={gameState.potentialWin}
-          roomLink={`https://rafla.xyz/draw/${roomId || "3455654"}`}
+          roomLink={`https://rafla.xyz/draw/${roomId}`}
           entryAmount={5.0}
           loading={loading}
           onAddEntry={handleAddEntry}

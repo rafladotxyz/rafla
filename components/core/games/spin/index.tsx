@@ -83,7 +83,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      {showCreateRoom && <CreateRoom toggle={toggleCreateRoom} />}
+      <CreateRoom toggle={toggleCreateRoom} gameType="spin" />
 
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader gameName="Rafla Spin" />
