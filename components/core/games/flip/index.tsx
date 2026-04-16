@@ -78,7 +78,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           }}
         />
       )}
-      {/* {showCreateRoom && <CreateRoom toggle={() => setShowCreateRoom(false)} />} */}
+      {/**  <CreateRoom toggle={toggleCreateRoom} gameType="flip" /> */}
       <div className="w-312 h-auto ml-auto py-4 mr-auto">
         <GameHeader gameName="Rafla Flip" />
       </div>
