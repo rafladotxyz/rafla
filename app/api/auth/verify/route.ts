@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signJWT } from "@/lib/jwt";
-import { createPublicClient, http, verifyMessage } from "viem";
+import { createPublicClient, http } from "viem";
 import { baseSepolia, base } from "viem/chains";
 
-// Public clients for on-chain ERC-6492 signature verification
 const publicClientSepolia = createPublicClient({
   chain: baseSepolia,
   transport: http("https://sepolia.base.org"),
@@ -27,9 +26,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse the SIWE message to extract fields
-    // We don't use siwe.verify() because it uses ethers.js which rejects
-    // ERC-6492 signatures from Coinbase Smart Wallet / Safe wallets
     const { SiweMessage } = await import("siwe");
     let siweMessage: InstanceType<typeof SiweMessage>;
 
@@ -47,18 +43,17 @@ export async function POST(req: NextRequest) {
     const nonce = siweMessage.nonce;
     const chainId = siweMessage.chainId;
 
-    // Use viem verifyMessage which fully supports ERC-6492
-    // (undeployed smart contract wallets like Coinbase Smart Wallet)
     const client = chainId === 8453 ? publicClientBase : publicClientSepolia;
 
     let isValid = false;
     try {
-      isValid = await verifyMessage({
+      // ✅ Use the PUBLIC CLIENT INSTANCE METHOD — handles ERC-6492
+      // smart wallet signatures (Coinbase Smart Wallet, Safe, etc.)
+      isValid = await client.verifyMessage({
         address,
         message,
         signature: signature as `0x${string}`,
-        publicClient: client,
-      } as Parameters<typeof verifyMessage>[0]);
+      });
     } catch (verifyErr) {
       console.error("[verify] viem verifyMessage error:", verifyErr);
       return NextResponse.json(
@@ -73,7 +68,6 @@ export async function POST(req: NextRequest) {
 
     const wallet = address.toLowerCase();
 
-    // Validate nonce
     const storedNonce = await prisma.nonce.findFirst({
       where: {
         wallet,
@@ -91,7 +85,6 @@ export async function POST(req: NextRequest) {
 
     await prisma.nonce.delete({ where: { id: storedNonce.id } });
 
-    // Upsert user
     const user = await prisma.user.upsert({
       where: { wallet },
       update: {},
