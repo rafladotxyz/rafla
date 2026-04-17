@@ -2,6 +2,8 @@
 
 import { useAuthContext } from "@/context/AuthContext";
 import { useAppKit } from "@reown/appkit/react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function SignInButton() {
   const {
@@ -14,7 +16,10 @@ export function SignInButton() {
     error,
   } = useAuthContext();
   const { open } = useAppKit();
-
+  const router = useRouter();
+  const navigateToProfile = () => {
+    router.push(`/profile`);
+  };
   // Not connected — show wallet connect
   if (!isConnected) {
     return (
@@ -50,9 +55,9 @@ export function SignInButton() {
   // Authenticated — show user info + sign out
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2">
+      <div onClick={navigateToProfile} className="flex items-center gap-2">
         {user?.avatar ? (
-          <img
+          <Image
             src={user.avatar}
             alt={user.username ?? "avatar"}
             className="w-7 h-7 rounded-full object-cover"
