@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SiweMessage } from "siwe";
 import { prisma } from "@/lib/prisma";
 import { signJWT } from "@/lib/jwt";
+import { createPublicClient, http, verifyMessage } from "viem";
+import { baseSepolia, base } from "viem/chains";
+
+// Public clients for on-chain ERC-6492 signature verification
+const publicClientSepolia = createPublicClient({
+  chain: baseSepolia,
+  transport: http("https://sepolia.base.org"),
+});
+
+const publicClientBase = createPublicClient({
+  chain: base,
+  transport: http("https://mainnet.base.org"),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,51 +27,79 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse and verify the SIWE message
-    const siweMessage = new SiweMessage(message);
-    const { data: fields, error } = await siweMessage.verify({ signature });
+    // Parse the SIWE message to extract fields
+    // We don't use siwe.verify() because it uses ethers.js which rejects
+    // ERC-6492 signatures from Coinbase Smart Wallet / Safe wallets
+    const { SiweMessage } = await import("siwe");
+    let siweMessage: InstanceType<typeof SiweMessage>;
 
-    if (error || !fields) {
+    try {
+      siweMessage = new SiweMessage(message);
+    } catch (parseErr) {
+      console.error("[verify] siwe parse error:", parseErr);
+      return NextResponse.json(
+        { error: "invalid SIWE message format" },
+        { status: 400 },
+      );
+    }
+
+    const address = siweMessage.address as `0x${string}`;
+    const nonce = siweMessage.nonce;
+    const chainId = siweMessage.chainId;
+
+    // Use viem verifyMessage which fully supports ERC-6492
+    // (undeployed smart contract wallets like Coinbase Smart Wallet)
+    const client = chainId === 8453 ? publicClientBase : publicClientSepolia;
+
+    let isValid = false;
+    try {
+      isValid = await verifyMessage({
+        address,
+        message,
+        signature: signature as `0x${string}`,
+        publicClient: client,
+      } as Parameters<typeof verifyMessage>[0]);
+    } catch (verifyErr) {
+      console.error("[verify] viem verifyMessage error:", verifyErr);
+      return NextResponse.json(
+        { error: "signature verification failed" },
+        { status: 401 },
+      );
+    }
+
+    if (!isValid) {
       return NextResponse.json({ error: "invalid signature" }, { status: 401 });
     }
 
-    const wallet = fields.address.toLowerCase();
+    const wallet = address.toLowerCase();
 
-    // Check nonce exists and hasn't expired
+    // Validate nonce
     const storedNonce = await prisma.nonce.findFirst({
       where: {
         wallet,
-        nonce: fields.nonce,
+        nonce,
         expiresAt: { gt: new Date() },
       },
     });
 
     if (!storedNonce) {
       return NextResponse.json(
-        { error: "invalid or expired nonce" },
+        { error: "invalid or expired nonce — please try signing in again" },
         { status: 401 },
       );
     }
 
-    // Delete used nonce
     await prisma.nonce.delete({ where: { id: storedNonce.id } });
 
-    // Upsert user — create on first login
+    // Upsert user
     const user = await prisma.user.upsert({
       where: { wallet },
-      update: {}, // don't overwrite anything on subsequent logins
-      create: {
-        wallet,
-        username: null,
-        avatar: null,
-      },
+      update: {},
+      create: { wallet, username: null, avatar: null },
     });
 
-    // Sign JWT
     const token = await signJWT({ wallet, userId: user.id });
 
-    // Build response with JWT in cookie AND body
-    // Cookie: for SSR/middleware · Body: for client-side storage
     const response = NextResponse.json({
       ok: true,
       token,
@@ -78,23 +118,18 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
     return response;
   } catch (error) {
-    console.error(
-      "[verify] error:",
-      error instanceof Error ? error.message : error,
-    );
-    console.error(
-      "[verify] stack:",
-      error instanceof Error ? error.stack : "no stack",
-    );
-    console.error("[verify] error:", error);
+    console.error("[verify] unhandled error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "internal server error",
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }
