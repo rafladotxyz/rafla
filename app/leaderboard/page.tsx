@@ -37,8 +37,6 @@ export default function LeaderboardPage() {
         <p className="text-[14px] text-[#737373]">Top Rafla players by wins</p>
       </div>
 
-      <GameTabs />
-
       <div className="w-312 ml-auto mr-auto mt-6 flex flex-col gap-3">
         {/* Top 3 podium */}
         {!loading && leaderboard.length >= 3 && (

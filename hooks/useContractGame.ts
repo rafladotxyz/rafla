@@ -19,6 +19,9 @@ import {
   RoundStatus,
 } from "@/lib/contract";
 
+// Re-export so views only need one import
+export { RoundStatus };
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface CurrentRound {
