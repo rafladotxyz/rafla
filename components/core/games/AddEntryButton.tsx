@@ -20,7 +20,7 @@ export function AddEntryButton({
       {loading ? (
         <span className="flex items-center justify-center gap-2">
           <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-          Processing...222
+          Processing...
         </span>
       ) : (
         `Add Entry ${amount} USDC`
