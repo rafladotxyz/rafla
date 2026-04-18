@@ -64,7 +64,7 @@ export function SignInButton() {
           />
         ) : (
           <div className="w-7 h-7 rounded-full bg-[#282828] flex items-center justify-center text-[11px] text-[#CBCBCB]">
-            {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
+            {(user?.username ?? user?.wallet ?? "?")[0,2].toUpperCase()}
           </div>
         )}
         <span className="text-[13px] text-[#CBCBCB]">

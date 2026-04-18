@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
-
 type TabType = "public" | "private";
 
-export function GameTabs() {
-  const [activeTab, setActiveTab] = useState<TabType>("public");
+interface GameTabsProps {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+}
 
+export function GameTabs({ activeTab, onTabChange }: GameTabsProps) {
   return (
     <div className="flex items-center justify-center gap-8 mb-8">
       <button
-        onClick={() => setActiveTab("public")}
+        onClick={() => onTabChange("public")}
         className={`relative pb-2 text-base font-medium transition-colors ${
           activeTab === "public"
             ? "text-[#E8E8E8]"
@@ -24,7 +25,7 @@ export function GameTabs() {
       </button>
 
       <button
-        onClick={() => setActiveTab("private")}
+        onClick={() => onTabChange("private")}
         className={`relative pb-2 text-base font-medium transition-colors ${
           activeTab === "private"
             ? "text-[#E8E8E8]"
