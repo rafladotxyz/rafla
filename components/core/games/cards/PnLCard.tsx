@@ -49,7 +49,7 @@ const PnLCard = ({
     const html2canvas = (await import("html2canvas")).default;
 
     const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: "#0A0A0A",
+      background: "#0A0A0A",
       useCORS: true,
       allowTaint: true,
     });
