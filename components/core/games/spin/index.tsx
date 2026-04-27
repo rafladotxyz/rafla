@@ -83,14 +83,6 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     <div className="px-4 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
 
-      {showJoinModal && (
-        <JoinRoomModal
-          gameType="spin"
-          roomId={roomId!}
-          onJoined={() => setHasJoined(true)}
-        />
-      )}
-
       {showWinLoss && (
         <SWinOrLoss
           segment={landedSegment}
@@ -113,27 +105,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         <GameHeader gameName="Rafla Spin" />
       </div>
 
-      <GameTabs activeTab={activeTab} onTabChange={handleTabChange} />
-
-      {/* Public tab */}
-      {activeTab === "public" &&
-        (isPublicGameOpen ? (
-          <SpinGame handleSpinResult={handleSpinResult} />
-        ) : (
-          <EmptyStateCard gameType="spin" isPublic />
-        ))}
-
-      {/* Private tab */}
-      {activeTab === "private" &&
-        (isEmptyState ? (
-          <EmptyStateCard gameType="spin" isPublic={false} />
-        ) : hasJoined ? (
-          <SpinGame handleSpinResult={handleSpinResult} />
-        ) : (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-6 h-6 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
-          </div>
-        ))}
+      <SpinGame handleSpinResult={handleSpinResult} />
     </div>
   );
 };
