@@ -19,7 +19,7 @@ export const GameUI = ({
   onAddEntry: () => Promise<void>;
   roomId?: string;
 }) => (
-  <div className="items-center justify-between flex w-312 gap-20 h-229.5 ml-auto mr-auto">
+  <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full max-w-6xl mx-auto gap-8 md:gap-12 py-6">
     <PlayersCard
       players={players}
       totalPlayers={gameState.totalPlayers}

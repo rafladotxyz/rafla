@@ -85,7 +85,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      <div className="w-312 h-auto ml-auto py-4 mr-auto">
+      <div className="w-full max-w-2xl mx-auto py-4">
         <GameHeader gameName="Rafla Flip" />
       </div>
 

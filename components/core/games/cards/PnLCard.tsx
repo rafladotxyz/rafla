@@ -76,7 +76,7 @@ const PnLCard = ({
   };
 
   return (
-    <div className="flex flex-col w-[714px] rounded-2xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col w-full max-w-[714px] rounded-2xl overflow-hidden shadow-2xl mx-4">
       {/* ── Capturable card area ── */}
       <div
         ref={cardRef}
@@ -86,7 +86,7 @@ const PnLCard = ({
         <PnlGroup className="absolute inset-0 w-full h-full" />
 
         {/* Main content */}
-        <div className="relative z-10 flex flex-col px-14 pt-16 pb-10 gap-8">
+        <div className="relative z-10 flex flex-col px-6 md:px-14 pt-16 pb-10 gap-8">
           {/* Win/Loss text + amount */}
           <div className="flex flex-col gap-1">
             <p className="text-[24px] text-[#737373]">

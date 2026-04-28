@@ -80,9 +80,9 @@ export const SpinWheel = ({
   const toRad = (deg: number) => (deg * Math.PI) / 180;
 
   return (
-    <div className="flex flex-col items-center gap-5 select-none">
+    <div className="flex flex-col items-center gap-8 select-none w-full max-w-[500px] mx-auto">
       {/* Wheel wrapper */}
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+      <div className="relative w-full aspect-square">
         {/* Pointer — fixed above wheel center */}
         <div
           className="absolute left-1/2 z-20"
@@ -91,16 +91,16 @@ export const SpinWheel = ({
             transform: "translateX(-50%)",
             width: 0,
             height: 0,
-            borderLeft: "14px solid transparent",
-            borderRight: "14px solid transparent",
-            borderTop: "24px solid #D9D9D9",
+            borderLeft: "clamp(10px, 3vw, 14px) solid transparent",
+            borderRight: "clamp(10px, 3vw, 14px) solid transparent",
+            borderTop: "clamp(18px, 5vw, 24px) solid #D9D9D9",
             filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.9))",
           }}
         />
 
         {/* Spinning container */}
         <div
-          className="w-full h-full rounded-full"
+          className="w-full h-full rounded-full shadow-[0_0_50px_rgba(0,0,0,0.5)]"
           style={{
             transform: `rotate(${rotation}deg)`,
             transition: spinning
@@ -110,8 +110,7 @@ export const SpinWheel = ({
         >
           <svg
             viewBox={`0 0 ${SIZE} ${SIZE}`}
-            width={SIZE}
-            height={SIZE}
+            className="w-full h-full"
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Outer ring */}
@@ -227,15 +226,15 @@ export const SpinWheel = ({
         </div>
       </div>
       {/** To do Price Selection Tab */}
-      <div className="flex gap-2 w-full">
+      <div className="flex gap-2 w-full px-2">
         {PRICE_OPTIONS.map((price) => (
           <button
             key={price}
             onClick={() => setSelectedPrice(price)}
-            className={`flex-1 h-10 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+            className={`flex-1 h-12 rounded-xl border text-[15px] font-medium transition-all ${
               selectedPrice === price
-                ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                : "border-[#282828] bg-[#0A0A0A]"
+                ? "border-indigo-500 bg-indigo-500/10 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                : "border-white/5 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
             }`}
           >
             {price}
@@ -244,28 +243,24 @@ export const SpinWheel = ({
       </div>
 
       {/* Spin button */}
-      <button
-        onClick={spin}
-        disabled={spinning}
-        style={{ width: SIZE }}
-        className={`h-12 rounded-2xl text-[15px] font-medium transition-all border ${
-          spinning
-            ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed border-[#282828]"
-            : "bg-[#E8E8E8] text-[#0a0a0a] hover:bg-white cursor-pointer border-transparent"
-        }`}
-      >
-        {spinning
-          ? "Spinning..."
-          : `Spin with ${selectedPrice || "0"} to find out`}
-      </button>
+      <div className="w-full px-2">
+        <button
+          onClick={spin}
+          disabled={spinning}
+          className={`w-full h-14 rounded-2xl text-[16px] font-bold transition-all border shadow-xl ${
+            spinning
+              ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed border-[#282828]"
+              : "bg-white text-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer border-transparent"
+          }`}
+        >
+          {spinning
+            ? "Spinning..."
+            : `Spin ${selectedPrice ? "with " + selectedPrice : ""} to find out`}
+        </button>
+      </div>
 
-      {/* Result badge 
-      {landed && !spinning && (
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1a1a1a] border border-[#282828] text-[14px] text-[#D9D9D9]">
-          <Image src={landed.asset} alt={landed.label} width={20} height={20} />
-          {landed.label}
-        </div>
-      )}*/}
+
+     
     </div>
   );
 };

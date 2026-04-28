@@ -32,12 +32,12 @@ export default function LeaderboardPage() {
   return (
     <div className="px-4 py-0 font-sans">
       {/* Header */}
-      <div className="w-312 h-auto ml-auto py-4 mr-auto">
+      <div className="w-full max-w-2xl mx-auto py-4">
         <p className="text-[20px] font-semibold text-[#D9D9D9]">Leaderboard</p>
         <p className="text-[14px] text-[#737373]">Top Rafla players by wins</p>
       </div>
 
-      <div className="w-312 ml-auto mr-auto mt-6 flex flex-col gap-3">
+      <div className="w-full max-w-2xl mx-auto mt-6 flex flex-col gap-3">
         {/* Top 3 podium */}
         {!loading && leaderboard.length >= 3 && (
           <div className="grid grid-cols-3 gap-3 mb-4">

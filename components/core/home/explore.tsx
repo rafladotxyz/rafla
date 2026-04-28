@@ -46,7 +46,8 @@ export const ExploreGames = () => {
   };
 
   return (
-    <div className="w-full max-w-244 mx-auto mt-20 flex flex-col px-4">
+
+    <div className="w-full max-w-6xl mx-auto mt-20 flex flex-col px-6 md:px-10">
       <div className="w-full mb-6">
         <h2 className="text-[18px] font-normal text-[#D9D9D9]">
           Explore Games

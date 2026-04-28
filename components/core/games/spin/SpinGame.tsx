@@ -10,7 +10,7 @@ export const SpinGame = ({
 }: {
   handleSpinResult: (segment: Segment) => void;
 }) => (
-  <div className="items-center justify-center flex w-312 gap-20 h-auto py-12 ml-auto mr-auto">
+  <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-12 px-4">
     <SpinWheel onResult={handleSpinResult} />
   </div>
 );

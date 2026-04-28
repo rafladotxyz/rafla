@@ -36,7 +36,7 @@ const WinOrLossCard = ({
   winnerAddress,
 }: WinOrLossProps) => {
   return (
-    <div className="relative w-103.5 bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
+    <div className="relative w-full max-w-[414px] mx-4 bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
       {/* Background texture — relative to card, not fixed */}
 
       {/* Texture sits on top of a dark bg in the top section only */}
