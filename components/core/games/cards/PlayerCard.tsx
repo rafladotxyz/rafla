@@ -55,7 +55,7 @@ export function PlayersCard({
   minPlayers,
 }: PlayersCardProps) {
   return (
-    <GlassCard className="bg-[#0A0A0A] py-6 px-4 w-74.25">
+    <GlassCard className="bg-[#0A0A0A] py-6 px-4 w-full max-w-[300px] mx-auto">
       {/* Header */}
       <div className="flex items-center w-66.25 h-7.25 justify-between mb-6">
         <div className="flex items-center gap-2 text-[#E8E8E8]">

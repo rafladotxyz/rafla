@@ -26,7 +26,7 @@ export const FlipGame = ({
   handleFlipAgain: () => void;
   handleShare: (amount: string, isWin: boolean) => void;
 }) => (
-  <div className="flex items-center justify-center w-312 ml-auto mr-auto py-12">
+  <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-12 px-4">
     {viewState === "select" && <FlipCard onFlip={handleFlip} />}
     {viewState === "flipping" && selectedSide && (
       <FlippingScreen side={selectedSide} />
