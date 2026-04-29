@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GameTabs } from "@/components/core/games/GameTabs";
+import { GameHeader } from "@/components/core/games/GameHeader";
 
 interface LeaderboardEntry {
   rank: number;
@@ -31,6 +32,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="px-4 py-0 font-sans">
+      <GameHeader gameName="Leaderboard" />
       {/* Header */}
       <div className="w-full max-w-2xl mx-auto py-4">
         <p className="text-[20px] font-semibold text-[#D9D9D9]">Leaderboard</p>
