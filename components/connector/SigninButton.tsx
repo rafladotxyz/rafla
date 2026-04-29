@@ -106,11 +106,11 @@ export function SignInButton() {
         className="h-8 px-0 py-0 rounded-full border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
       >
         <Image
-          height={20}
-          width={20}
+          height={14}
+          width={14}
           src={getNetworkIcon(caipNetwork?.name || "Base")}
           alt={caipNetwork?.name || "Base"}
-          className="rounded-full h-auto w-auto object-contain"
+          className="rounded-full h-full w-full object-contain"
         />
       </div>
     </div>
