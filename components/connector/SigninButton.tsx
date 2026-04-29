@@ -81,8 +81,8 @@ export function SignInButton() {
       >
         {user?.avatar ? (
           <Image
-            src={user.avatar}
-            alt={user.username ?? "avatar"}
+            src={user?.avatar}
+            alt={user?.username ?? "avatar"}
             className="w-7 h-7 rounded-full object-cover"
           />
         ) : (
@@ -97,20 +97,20 @@ export function SignInButton() {
       </div>
       <button
         onClick={signOut}
-        className="h-8 px-3 rounded-lg border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
+        className="h-8 px-3 rounded-lg border cursor-pointer border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
       >
         Sign out
       </button>
       <div
         onClick={() => open()}
-        className="h-8 px-0 rounded-full border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
+        className="h-8 px-0 rounded-full border border-[#282828] cursor-pointer text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
       >
         <Image
           height={20}
           width={20}
           src={getNetworkIcon(caipNetwork?.name || "Base")}
           alt={caipNetwork?.name || "Base"}
-          className="rounded-full h-[90%] w-auto object-contain"
+          className="rounded-full h-auto w-auto object-contain"
         />
       </div>
     </div>
