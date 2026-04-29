@@ -27,8 +27,15 @@ const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
   networks: [baseSepolia, base, monadTestnet, monad],
-  defaultNetwork: baseSepolia,
+  defaultNetwork: monadTestnet,
   metadata: metadata,
+  enableNetworkSwitch: true,
+  chainImages: {
+    "base-sepolia": "https://cryptologos.cc/logos/base-sepolia-logo.png?v=025",
+    base: "https://cryptologos.cc/logos/base-logo.png?v=025",
+    monad: "https://cryptologos.cc/logos/monad-logo.png?v=025",
+    "monad-testnet": "https://cryptologos.cc/logos/monad-logo.png?v=025",
+  },
   features: {
     analytics: true, // Optional - defaults to your Cloud configuration
   },
