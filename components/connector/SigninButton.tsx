@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthContext } from "@/context/AuthContext";
-import { useAppKit } from "@reown/appkit/react";
+import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +16,7 @@ export function SignInButton() {
     error,
   } = useAuthContext();
   const { open } = useAppKit();
+  const { caipNetwork } = useAppKitNetwork();
   const router = useRouter();
   const navigateToProfile = () => {
     router.push(`/profile`);
@@ -55,7 +56,10 @@ export function SignInButton() {
   // Authenticated — show user info + sign out
   return (
     <div className="flex items-center gap-3">
-      <div onClick={navigateToProfile} className="flex items-center gap-2">
+      <div
+        onClick={navigateToProfile}
+        className="flex items-center gap-2 cursor-pointer"
+      >
         {user?.avatar ? (
           <Image
             src={user.avatar}
@@ -78,6 +82,15 @@ export function SignInButton() {
       >
         Sign out
       </button>
+      <div>
+        <Image
+          height={20}
+          width={20}
+          src={caipNetwork?.assets?.imageUrl || ""}
+          alt="Base logo"
+          className="rounded-full"
+        />
+      </div>
     </div>
   );
 }

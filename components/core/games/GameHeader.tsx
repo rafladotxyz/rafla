@@ -40,7 +40,10 @@ export function GameHeader({ gameName }: { gameName?: string }) {
         <Image
           height={20}
           width={20}
-          src={getNetworkIcon(caipNetwork?.name || "Base")}
+          src={
+            caipNetwork?.assets?.imageUrl ||
+            getNetworkIcon(caipNetwork?.name || "Base")
+          }
           alt="Base logo"
           className="rounded-full"
         />
