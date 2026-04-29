@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useWatchContractEvent,
   useReadContract,
   useAccount,
+  usePublicClient,
 } from "wagmi";
-import { parseUnits } from "viem";
 import {
   RAFFLE_ADDRESS,
   USDC_ADDRESS,
@@ -28,14 +28,14 @@ export interface CurrentRound {
   id: bigint;
   startTime: bigint;
   endTime: bigint;
-  prizePool: number; // in USDC dollars
+  prizePool: number; // dollars
   playerCount: number;
   winner: string;
   status: RoundStatus;
   timeRemaining: number; // seconds
 }
 
-interface WinnerEvent {
+export interface WinnerEvent {
   roundId: bigint;
   winner: string;
   prizeAmount: number;
@@ -46,6 +46,7 @@ interface WinnerEvent {
 
 export function useContractGame() {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
 
   const [approveTxHash, setApproveTxHash] = useState<
     `0x${string}` | undefined
@@ -58,6 +59,9 @@ export function useContractGame() {
   >();
   const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDepositing, setIsDepositing] = useState(false);
+
+  const { writeContractAsync } = useWriteContract();
 
   // ── Read current round ────────────────────────────────────────────────────
 
@@ -86,44 +90,42 @@ export function useContractGame() {
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     functionName: "getPlayerDeposit",
-    args: currentRound && address ? [currentRound.id, address] : undefined,
-    query: { enabled: !!currentRound && !!address },
+    // Only run when both values are defined to avoid type errors
+    args:
+      currentRound?.id !== undefined && address
+        ? [currentRound.id, address]
+        : undefined,
+    query: { enabled: !!currentRound?.id && !!address },
   });
 
   const yourDeposit = playerDepositRaw ? fromUSDCUnits(playerDepositRaw) : 0;
 
-  // ── Write contracts ───────────────────────────────────────────────────────
+  // ── Wait for approve tx (used to gate deposit) ────────────────────────────
 
-  const { writeContractAsync } = useWriteContract();
-
-  // Wait for approve tx
   const { isLoading: isApproving } = useWaitForTransactionReceipt({
     hash: approveTxHash,
   });
 
-  // Wait for deposit tx
-  const { isLoading: isDepositing, isSuccess: depositSuccess } =
-    useWaitForTransactionReceipt({ hash: depositTxHash });
-
-  // Wait for endRound tx
   const { isLoading: isEndingRound, isSuccess: endRoundSuccess } =
     useWaitForTransactionReceipt({ hash: endRoundTxHash });
 
-  // ── depositUSDC (approve → deposit) ──────────────────────────────────────
+  // ── depositUSDC — approve then wait for receipt, then deposit ─────────────
+  // Fixes the flaky 2s setTimeout approach by using publicClient.waitForTransactionReceipt
 
   const depositUSDC = useCallback(
     async (dollarAmount: number): Promise<`0x${string}` | null> => {
-      if (!address) {
+      if (!address || !publicClient) {
         setError("wallet not connected");
         return null;
       }
 
       setError(null);
+      setIsDepositing(true);
 
       try {
         const rawAmount = toUSDCUnits(dollarAmount);
 
-        // Step 1: approve USDC spend
+        // Step 1: approve
         const approveTx = await writeContractAsync({
           address: USDC_ADDRESS,
           abi: ERC20_ABI,
@@ -132,10 +134,10 @@ export function useContractGame() {
         });
         setApproveTxHash(approveTx);
 
-        // Step 2: deposit USDC — wagmi waits for approval receipt automatically
-        // because the wallet queues these, but we add a small delay for safety
-        await new Promise((r) => setTimeout(r, 2000));
+        // Step 2: wait for approval to be mined on-chain before depositing
+        await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
+        // Step 3: deposit
         const depositTx = await writeContractAsync({
           address: RAFFLE_ADDRESS,
           abi: RAFFLE_ABI,
@@ -144,18 +146,24 @@ export function useContractGame() {
         });
         setDepositTxHash(depositTx);
 
+        // Step 4: wait for deposit confirmation
+        await publicClient.waitForTransactionReceipt({ hash: depositTx });
+
+        refetchRound();
         return depositTx;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "transaction failed";
         const isRejected = msg.includes("rejected") || msg.includes("denied");
         if (!isRejected) setError(msg);
         return null;
+      } finally {
+        setIsDepositing(false);
       }
     },
-    [address, writeContractAsync],
+    [address, publicClient, writeContractAsync, refetchRound],
   );
 
-  // ── endRound ─────────────────────────────────────────────────────────────
+  // ── endRound ──────────────────────────────────────────────────────────────
 
   const endRound = useCallback(async (): Promise<`0x${string}` | null> => {
     setError(null);
@@ -174,7 +182,30 @@ export function useContractGame() {
     }
   }, [writeContractAsync]);
 
-  // ── Watch WinnerSelected event ────────────────────────────────────────────
+  // ── selectWinnerManual (dev/testing only) ─────────────────────────────────
+
+  const selectWinnerManual = useCallback(
+    async (roundId: bigint): Promise<`0x${string}` | null> => {
+      setError(null);
+      try {
+        const tx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_ABI,
+          functionName: "selectWinnerManual",
+          args: [roundId],
+        });
+        return tx;
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "selectWinnerManual failed";
+        setError(msg);
+        return null;
+      }
+    },
+    [writeContractAsync],
+  );
+
+  // ── Watch WinnerSelected ──────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
@@ -183,27 +214,23 @@ export function useContractGame() {
     onLogs(logs) {
       const log = logs[0];
       if (!log?.args) return;
-
       const { roundId, winner, prizeAmount, fee } = log.args as {
         roundId: bigint;
         winner: string;
         prizeAmount: bigint;
         fee: bigint;
       };
-
       setLastWinner({
         roundId,
         winner,
         prizeAmount: fromUSDCUnits(prizeAmount),
         fee: fromUSDCUnits(fee),
       });
-
-      // Refresh round data after winner is selected
       refetchRound();
     },
   });
 
-  // ── Watch Deposited event — refetch round on new deposit ─────────────────
+  // ── Watch Deposited ───────────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
@@ -214,7 +241,7 @@ export function useContractGame() {
     },
   });
 
-  // ── Watch RoundStarted — refetch when a new round begins ─────────────────
+  // ── Watch RoundStarted ────────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
@@ -225,28 +252,34 @@ export function useContractGame() {
     },
   });
 
+  // ── Watch RoundCancelled ──────────────────────────────────────────────────
+
+  useWatchContractEvent({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_ABI,
+    eventName: "RoundCancelled",
+    onLogs() {
+      refetchRound();
+    },
+  });
+
   return {
-    // Round state
     currentRound,
     yourDeposit,
     refetchRound,
 
-    // Actions
     depositUSDC,
     endRound,
+    selectWinnerManual,
 
-    // TX state
     isApproving,
     isDepositing,
     isEndingRound,
+    approveTxHash,
     depositTxHash,
-    depositSuccess,
     endRoundSuccess,
 
-    // Events
     lastWinner,
-
-    // Error
     error,
   };
 }

@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuthContext } from "@/context/AuthContext";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { useRouter } from "next/navigation";
-import { 
-  User as UserIcon, 
-  Camera, 
-  Twitter, 
-  Send, 
-  Copy, 
-  Check, 
-  LogOut, 
-  Edit3, 
-  History, 
-  Trophy, 
-  Gamepad2, 
+import {
+  User as UserIcon,
+  Twitter,
+  Send,
+  Copy,
+  Check,
+  LogOut,
+  Edit3,
+  History,
+  Trophy,
+  Gamepad2,
   DollarSign,
-  Plus,
-  X
+  X,
+  Camera,
+  AlertCircle,
 } from "lucide-react";
 
 interface GameHistoryItem {
@@ -40,7 +41,6 @@ export default function ProfilePage() {
     signOut,
   } = useAuthContext();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,16 +49,26 @@ export default function ProfilePage() {
   const [history, setHistory] = useState<GameHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const [form, setForm] = useState({
     username: "",
     bio: "",
     twitter: "",
     telegram: "",
-    avatar: "",
   });
 
-  // Populate form when user loads
+  const {
+    inputRef,
+    preview: avatarPreview,
+    isUploading,
+    error: uploadError,
+    triggerPicker,
+    handleFileChange,
+    clearError,
+  } = useAvatarUpload(user?.avatar, () => {
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  });
+
   useEffect(() => {
     if (user) {
       setForm({
@@ -66,24 +76,20 @@ export default function ProfilePage() {
         bio: user.bio ?? "",
         twitter: user.twitter ?? "",
         telegram: user.telegram ?? "",
-        avatar: user.avatar ?? "",
       });
       fetchHistory();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const res = await fetch("/api/user/history", {
-        headers: authHeaders(),
-      });
+      const res = await fetch("/api/user/history", { headers: authHeaders() });
       if (res.ok) {
         const { history } = await res.json();
         setHistory(history);
       }
     } catch {
-      // silent
     } finally {
       setHistoryLoading(false);
     }
@@ -92,18 +98,13 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
-
     const result = await updateProfile({
       username: form.username || undefined,
       bio: form.bio || undefined,
       twitter: form.twitter || undefined,
       telegram: form.telegram || undefined,
-      avatar: form.avatar || undefined,
     });
-
     setSaving(false);
-
     if (result && "error" in result) {
       setSaveError(result.error as string);
     } else {
@@ -113,241 +114,352 @@ export default function ProfilePage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setSaveError("File size too large (max 2MB)");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        setForm((f) => ({ ...f, avatar: base64 }));
-        
-        // Auto-save avatar
-        setSaving(true);
-        const result = await updateProfile({ avatar: base64 });
-        setSaving(false);
-        if (result && "error" in result) {
-          setSaveError(result.error as string);
-        } else {
-          setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const copyWallet = () => {
-    if (user?.wallet) {
-      navigator.clipboard.writeText(user.wallet);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    if (!user?.wallet) return;
+    navigator.clipboard.writeText(user.wallet);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  const wins = history.filter((h) => h.isWin).length;
+  const totalWon = history
+    .filter((h) => h.isWin)
+    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1_000_000, 0);
+  const winRate =
+    history.length > 0 ? ((wins / history.length) * 100).toFixed(0) : "0";
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-          <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-        </div>
+        <div className="w-10 h-10 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
       </div>
     );
-  }
 
-  // ── Not signed in ────────────────────────────────────────────────────────
-
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !user)
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-2">
-          <UserIcon className="w-10 h-10 text-white/20" />
+        <div className="w-20 h-20 rounded-3xl bg-[#141414] border border-[#282828] flex items-center justify-center">
+          <UserIcon className="w-9 h-9 text-[#444]" />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-white">Your Profile</h1>
-          <p className="text-white/50 max-w-[300px]">
-            Sign in with your wallet to view your stats, history, and customize your profile.
+        <div className="flex flex-col gap-2">
+          <p className="text-[22px] font-semibold text-[#D9D9D9]">
+            Your Profile
+          </p>
+          <p className="text-[14px] text-[#737373] max-w-[260px]">
+            Sign in with your wallet to view your stats and game history.
           </p>
         </div>
         <button
           onClick={signIn}
-          className="h-12 px-8 rounded-2xl bg-white text-black font-semibold hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5"
+          className="h-12 px-8 rounded-2xl bg-white text-[#0A0A0A] text-[15px] font-semibold hover:bg-[#E8E8E8] transition-colors"
         >
           Connect Wallet
         </button>
       </div>
     );
-  }
 
   const shortWallet = `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`;
+  const displayName = user.username ?? "Anonymous";
 
   return (
-    <div className="w-full max-w-[800px] mx-auto px-4 py-12 flex flex-col gap-10">
-      
-      {/* ── Profile Header ─────────────────────────────────────────────── */}
-      <div className="relative group">
-        {/* Background Glow */}
-        <div className="absolute -inset-10 bg-indigo-500/10 blur-[100px] rounded-full opacity-50 pointer-events-none" />
-        
-        <div className="relative flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
-          {/* Avatar with Upload */}
-          <div className="relative">
-            <div className="w-32 h-32 rounded-[2.5rem] bg-zinc-900 border-2 border-white/10 overflow-hidden flex items-center justify-center group/avatar shadow-2xl">
-              {form.avatar || user.avatar ? (
-                <img
-                  src={form.avatar || (user.avatar as string)}
-                  alt="avatar"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                  <span className="text-4xl font-bold text-white/30">
-                    {(user.username ?? user.wallet)[0].toUpperCase()}
-                  </span>
-                </div>
-              )}
-              
-              {/* Plus Overlay */}
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={saving}
-                className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px] disabled:opacity-100"
-              >
-                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-lg transform scale-90 group-hover/avatar:scale-100 transition-transform">
-                  {saving ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                  ) : (
-                    <Plus className="w-6 h-6" />
-                  )}
-                </div>
-              </button>
-            </div>
-            
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-          </div>
+    <div className="w-full max-w-[760px] mx-auto px-4 py-10 flex flex-col gap-8">
+      {/* Hidden file input */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
-          <div className="flex-1 flex flex-col items-center md:items-start gap-3">
-            <div className="flex flex-col items-center md:items-start">
-              <h1 className="text-3xl font-bold text-white tracking-tight">
-                {user.username ?? "Anonymous Player"}
-              </h1>
-              <p className="text-white/50 text-[15px] max-w-[400px] text-center md:text-left mt-1">
-                {user.bio || "No bio yet. Add one to let others know who you are."}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 mt-2">
-              <button 
-                onClick={copyWallet}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[13px] text-white/70 hover:bg-white/10 transition-colors"
-              >
-                <code className="font-mono">{shortWallet}</code>
-                {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-              
-              <div className="flex gap-2">
-                {user.twitter && (
-                  <a href={`https://twitter.com/${user.twitter.replace("@", "")}`} target="_blank" className="p-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-indigo-500/20 transition-all">
-                    <Twitter className="w-4 h-4" />
-                  </a>
-                )}
-                {user.telegram && (
-                  <a href={`https://t.me/${user.telegram.replace("@", "")}`} target="_blank" className="p-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-indigo-500/20 transition-all">
-                    <Send className="w-4 h-4" />
-                  </a>
-                )}
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
+        {/* Avatar */}
+        <div className="relative shrink-0 group">
+          <div className="w-24 h-24 rounded-3xl bg-[#141414] border border-[#282828] overflow-hidden">
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-[32px] font-bold text-[#444]">
+                  {displayName[0].toUpperCase()}
+                </span>
               </div>
-            </div>
+            )}
           </div>
+          <button
+            onClick={triggerPicker}
+            disabled={isUploading}
+            className="absolute inset-0 rounded-3xl bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          >
+            {isUploading ? (
+              <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              <Camera className="w-5 h-5 text-white" />
+            )}
+          </button>
+        </div>
 
-          <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto">
+        {/* Info */}
+        <div className="flex-1 flex flex-col items-center sm:items-start gap-2">
+          <p className="text-[24px] font-bold text-[#D9D9D9]">{displayName}</p>
+          {user.bio && (
+            <p className="text-[13px] text-[#737373] max-w-sm">{user.bio}</p>
+          )}
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
             <button
-              onClick={() => setEditing((e) => !e)}
-              className="flex-1 md:w-40 h-11 rounded-2xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              onClick={copyWallet}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#141414] border border-[#282828] text-[12px] text-[#737373] hover:text-[#CBCBCB] hover:border-[#444] transition-colors font-mono"
             >
-              <Edit3 className="w-4 h-4" />
-              Edit Profile
+              {shortWallet}
+              {copied ? (
+                <Check className="w-3 h-3 text-green-400" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
             </button>
-            <button
-              onClick={signOut}
-              className="md:w-40 h-11 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 font-medium hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
+            {user.twitter && (
+              <a
+                href={`https://twitter.com/${user.twitter.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-full bg-[#141414] border border-[#282828] text-[#737373] hover:text-[#CBCBCB] transition-colors"
+              >
+                <Twitter className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {user.telegram && (
+              <a
+                href={`https://t.me/${user.telegram.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-full bg-[#141414] border border-[#282828] text-[#737373] hover:text-[#CBCBCB] transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => setEditing(true)}
+            className="h-10 px-4 rounded-xl border border-[#282828] text-[13px] text-[#CBCBCB] hover:border-[#444] transition-colors flex items-center gap-2"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            Edit
+          </button>
+          <button
+            onClick={signOut}
+            className="h-10 px-4 rounded-xl border border-red-900/40 text-[13px] text-red-500 hover:border-red-700/60 hover:bg-red-500/5 transition-colors flex items-center gap-2"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
+          </button>
         </div>
       </div>
 
-      {/* ── Edit Modal Overlay ─────────────────────────────────────────── */}
+      {/* Upload error */}
+      {uploadError && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] text-red-400">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {uploadError}
+          <button onClick={clearError} className="ml-auto">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Games", value: history.length, icon: Gamepad2 },
+          { label: "Wins", value: wins, icon: Trophy },
+          { label: "Win Rate", value: `${winRate}%`, icon: History },
+          {
+            label: "Total Won",
+            value: `$${totalWon.toFixed(2)}`,
+            icon: DollarSign,
+          },
+        ].map(({ label, value, icon: Icon }) => (
+          <div
+            key={label}
+            className="flex flex-col gap-3 p-4 rounded-2xl bg-[#0D0D0D] border border-[#1A1A1A] hover:border-[#282828] transition-colors"
+          >
+            <Icon className="w-4 h-4 text-[#444]" />
+            <div>
+              <p className="text-[22px] font-bold text-[#D9D9D9] leading-none">
+                {value}
+              </p>
+              <p className="text-[11px] text-[#737373] mt-1 uppercase tracking-wider">
+                {label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Game History ── */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[15px] font-semibold text-[#D9D9D9]">
+            Game History
+          </p>
+          {history.length > 0 && (
+            <p className="text-[12px] text-[#737373]">
+              Last {Math.min(history.length, 10)} games
+            </p>
+          )}
+        </div>
+
+        {historyLoading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-16 rounded-2xl bg-[#0D0D0D] border border-[#1A1A1A] animate-pulse"
+              />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16 rounded-2xl bg-[#0D0D0D] border border-[#1A1A1A]">
+            <Gamepad2 className="w-8 h-8 text-[#2A2A2A]" />
+            <div className="text-center">
+              <p className="text-[15px] font-medium text-[#D9D9D9]">
+                No games yet
+              </p>
+              <p className="text-[13px] text-[#737373] mt-1">
+                Join a room to start playing
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/")}
+              className="h-9 px-5 rounded-xl border border-[#282828] text-[13px] text-[#CBCBCB] hover:border-[#444] transition-colors"
+            >
+              Browse Games
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {history.slice(0, 10).map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-[#0D0D0D] border border-[#1A1A1A] hover:border-[#282828] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.isWin ? "bg-green-500/10 text-green-400" : "bg-[#141414] text-[#444]"}`}
+                  >
+                    {item.isWin ? (
+                      <Trophy className="w-4 h-4" />
+                    ) : (
+                      <Gamepad2 className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-medium text-[#D9D9D9] capitalize">
+                      Rafla {item.gameType}
+                    </p>
+                    <p className="text-[11px] text-[#737373] font-mono">
+                      {new Date(item.settledAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      · {item.roomId.slice(0, 8)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <p
+                    className={`text-[15px] font-bold ${item.isWin ? "text-green-400" : "text-[#444]"}`}
+                  >
+                    {item.isWin
+                      ? `+$${(Number(item.prizeAmount) / 1_000_000).toFixed(2)}`
+                      : "—"}
+                  </p>
+                  <span
+                    className={`text-[10px] uppercase tracking-widest font-bold ${item.isWin ? "text-green-500/60" : "text-[#3A3A3A]"}`}
+                  >
+                    {item.isWin ? "Won" : "Played"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Edit modal ── */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-[500px] bg-zinc-900 border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="px-8 py-6 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Edit Profile</h2>
-              <button onClick={() => setEditing(false)} className="p-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-[440px] bg-[#0D0D0D] border border-[#1E1E1E] rounded-3xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#1A1A1A]">
+              <p className="text-[16px] font-semibold text-[#D9D9D9]">
+                Edit Profile
+              </p>
+              <button
+                onClick={() => setEditing(false)}
+                className="w-8 h-8 rounded-xl bg-[#141414] border border-[#282828] flex items-center justify-center text-[#737373] hover:text-[#CBCBCB] transition-colors"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
-            
-            <div className="p-8 flex flex-col gap-5">
-              <div className="flex flex-col gap-4">
-                {[
-                  { key: "username", label: "Username", placeholder: "rafla_player", icon: UserIcon },
-                  { key: "bio", label: "Bio", placeholder: "Tell us about yourself", icon: Edit3 },
-                  { key: "twitter", label: "Twitter / X", placeholder: "@handle", icon: Twitter },
-                  { key: "telegram", label: "Telegram", placeholder: "@handle", icon: Send },
-                ].map(({ key, label, placeholder, icon: Icon }) => (
-                  <div key={key} className="flex flex-col gap-1.5">
-                    <label className="text-[13px] font-medium text-white/50 ml-1">
-                      {label}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <input
-                        value={form[key as keyof typeof form]}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, [key]: e.target.value }))
-                        }
-                        placeholder={placeholder}
-                        className="w-full h-12 pl-10 pr-4 rounded-xl bg-black border border-white/10 text-[14px] text-white placeholder-white/20 outline-none focus:border-indigo-500/50 transition-all"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
+            <div className="p-6 flex flex-col gap-4">
+              {[
+                {
+                  key: "username",
+                  label: "Username",
+                  placeholder: "rafla_player",
+                },
+                {
+                  key: "bio",
+                  label: "Bio",
+                  placeholder: "Tell us about yourself",
+                },
+                {
+                  key: "twitter",
+                  label: "Twitter / X",
+                  placeholder: "@handle",
+                },
+                { key: "telegram", label: "Telegram", placeholder: "@handle" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key} className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-[#737373] uppercase tracking-wider ml-1">
+                    {label}
+                  </label>
+                  <input
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, [key]: e.target.value }))
+                    }
+                    placeholder={placeholder}
+                    className="h-11 px-4 rounded-xl bg-[#0A0A0A] border border-[#282828] text-[14px] text-[#CBCBCB] placeholder-[#3A3A3A] outline-none focus:border-[#555] transition-colors"
+                  />
+                </div>
+              ))}
               {saveError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] text-red-400">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[12px] text-red-400">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   {saveError}
                 </div>
               )}
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setEditing(false)}
-                  className="flex-1 h-12 rounded-xl border border-white/10 text-white font-medium hover:bg-white/5 transition-colors"
+                  className="flex-1 h-11 rounded-xl border border-[#282828] text-[14px] text-[#737373] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-[2] h-12 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
+                  className={`flex-[2] h-11 rounded-xl text-[14px] font-semibold transition-colors ${saving ? "bg-[#1A1A1A] text-[#4A4A4A] cursor-not-allowed" : "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"}`}
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
@@ -357,145 +469,13 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── Stats Grid ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Games", value: history.length, icon: Gamepad2, color: "text-indigo-400" },
-          {
-            label: "Wins",
-            value: history.filter((h) => h.isWin).length,
-            icon: Trophy,
-            color: "text-yellow-400"
-          },
-          {
-            label: "Win Rate",
-            value: history.length > 0 ? `${((history.filter((h) => h.isWin).length / history.length) * 100).toFixed(0)}%` : "0%",
-            icon: History,
-            color: "text-emerald-400"
-          },
-          {
-            label: "Total Won",
-            value: `$${history
-              .filter((h) => h.isWin)
-              .reduce((acc, h) => acc + Number(h.prizeAmount) / 1_000_000, 0)
-              .toFixed(2)}`,
-            icon: DollarSign,
-            color: "text-white"
-          },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div
-            key={label}
-            className="group relative p-5 rounded-3xl bg-zinc-900 border border-white/10 hover:border-white/20 transition-all hover:translate-y-[-2px] overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Icon className={`w-12 h-12 ${color}`} />
-            </div>
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="text-[13px] text-white/50 font-medium mt-1 uppercase tracking-wider">{label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Game History Section ────────────────────────────────────────── */}
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <History className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-white">Recent Games</h2>
-          </div>
-          {history.length > 0 && (
-            <span className="text-[13px] text-white/30 font-mono">
-              Last {Math.min(history.length, 10)} games
-            </span>
-          )}
-        </div>
-
-        {historyLoading ? (
-          <div className="flex flex-col gap-3 animate-pulse">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-20 rounded-3xl bg-zinc-900/50 border border-white/5" />
-            ))}
-          </div>
-        ) : history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 rounded-[2.5rem] bg-zinc-900 border border-white/10 text-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/20">
-              <Gamepad2 className="w-8 h-8" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-white font-medium text-lg">No games played yet</p>
-              <p className="text-white/40 max-w-[240px]">Join a room to start your Rafla journey!</p>
-            </div>
-            <button 
-              onClick={() => router.push("/")}
-              className="mt-2 px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors"
-            >
-              Browse Games
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {history.slice(0, 10).map((item) => (
-              <div
-                key={item.id}
-                className="group flex items-center justify-between p-5 rounded-3xl bg-zinc-900 border border-white/10 hover:border-indigo-500/30 transition-all hover:bg-indigo-500/[0.02]"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                      item.isWin 
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                        : "bg-white/5 text-white/40 border border-white/10"
-                    }`}
-                  >
-                    {item.isWin ? <Trophy className="w-6 h-6" /> : <Gamepad2 className="w-6 h-6" />}
-                  </div>
-                  <div className="flex flex-col">
-                    <p className="text-[15px] font-bold text-white capitalize group-hover:text-indigo-100 transition-colors">
-                      Rafla {item.gameType}
-                    </p>
-                    <p className="text-[12px] text-white/40 flex items-center gap-2">
-                      {new Date(item.settledAt).toLocaleDateString(undefined, { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                      <span className="w-1 h-1 rounded-full bg-white/10" />
-                      ID: {item.roomId.slice(0, 8)}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end gap-1">
-                  <p
-                    className={`text-[17px] font-black ${
-                      item.isWin ? "text-emerald-400" : "text-white/20"
-                    }`}
-                  >
-                    {item.isWin
-                      ? `+$${(Number(item.prizeAmount) / 1_000_000).toFixed(2)}`
-                      : "—"}
-                  </p>
-                  <div className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
-                    item.isWin ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-white/30"
-                  }`}>
-                    {item.isWin ? "Winner" : "Played"}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+      {/* ── Toast ── */}
       {saveSuccess && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl bg-emerald-500 text-white font-bold shadow-2xl shadow-emerald-500/20 animate-in slide-in-from-bottom-10 duration-300 flex items-center gap-2">
-          <Check className="w-5 h-5" />
-          Profile updated successfully!
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#141414] border border-green-500/30 text-[14px] text-green-400 shadow-2xl">
+          <Check className="w-4 h-4" />
+          Profile updated
         </div>
       )}
     </div>
   );
 }
-
