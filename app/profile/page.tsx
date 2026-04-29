@@ -20,6 +20,7 @@ import {
   Camera,
   AlertCircle,
 } from "lucide-react";
+import { GameHeader } from "@/components/core/games/GameHeader";
 
 interface GameHistoryItem {
   id: string;
@@ -163,6 +164,7 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full max-w-[760px] mx-auto px-4 py-10 flex flex-col gap-8">
+      <GameHeader gameName={`${displayName}'s Profile`} />
       {/* Hidden file input */}
       <input
         ref={inputRef}
