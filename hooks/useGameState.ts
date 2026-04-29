@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import Pusher from "pusher-js";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
-import { PUSHER_EVENTS } from "@/lib/pusher";
+import { usePusherRoom } from "./usePusherRoom";
+import type { PlayerJoinedPayload, ResultRevealedPayload } from "@/lib/pusher";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface GameState {
   roomId: string;
   pricePool: number;
-  players: Player[];
   totalPlayers: number;
   minPlayers: number;
   yourEntry: number;
@@ -43,6 +42,7 @@ const PLAYER_COLORS = [
 
 const MIN_PLAYERS = 3;
 const FEE_PERCENT = 0.05;
+const EMPTY_ID = "3455654";
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
@@ -60,25 +60,24 @@ export function useGameState(roomId: string) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [roomStatus, setRoomStatus] = useState<GameState["status"]>("waiting");
-  const pusherRef = useRef<Pusher | null>(null);
 
-  // ── Fetch initial room state from API ─────────────────────────────────────
+  const isEmptyState = roomId === EMPTY_ID;
+
+  // ── Fetch initial room + participants from API ─────────────────────────────
 
   useEffect(() => {
+    if (isEmptyState) return;
+
     async function fetchRoom() {
       try {
         const res = await fetch(`/api/rooms/${roomId}`, {
           headers: authHeaders(),
         });
-        if (!res.ok) {
-          setPlayers([]);
-          setRoomStatus("waiting");
-          return;
-        }
+        if (!res.ok) return;
+
         const { room } = await res.json();
         setRoomStatus(room.status);
 
-        // Map DB participants to Player[]
         const mapped: Player[] = room.participants.map(
           (
             p: {
@@ -106,76 +105,48 @@ export function useGameState(roomId: string) {
     }
 
     fetchRoom();
-  }, [roomId]);
-
-  // ── Pusher real-time subscription ─────────────────────────────────────────
-
-  useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return;
-
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-    });
-
-    pusherRef.current = pusher;
-    const channel = pusher.subscribe(`room-${roomId}`);
-
-    // New player joined
-    channel.bind(
-      PUSHER_EVENTS.PLAYER_JOINED,
-      (data: {
-        participant: {
-          userId: string;
-          wallet: string;
-          username?: string;
-          avatar?: string;
-        };
-        totalPlayers: number;
-      }) => {
-        setPlayers((prev) => {
-          // Avoid duplicates
-          if (prev.find((p) => p.id === data.participant.userId)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.participant.userId,
-              address: data.participant.wallet,
-              username: data.participant.username,
-              avatar: data.participant.avatar,
-              isYou: data.participant.userId === user?.id,
-              color: PLAYER_COLORS[prev.length % PLAYER_COLORS.length],
-            },
-          ];
-        });
-      },
-    );
-
-    // Game started
-    channel.bind(PUSHER_EVENTS.GAME_STARTED, () => {
-      setRoomStatus("active");
-    });
-
-    // Result revealed
-    channel.bind(PUSHER_EVENTS.RESULT_REVEALED, () => {
-      setRoomStatus("completed");
-    });
-
-    // Round cancelled
-    channel.bind(PUSHER_EVENTS.ROUND_CANCELLED, () => {
-      setRoomStatus("cancelled");
-    });
-
-    return () => {
-      channel.unbind_all();
-      pusher.unsubscribe(`room-${roomId}`);
-      pusher.disconnect();
-    };
   }, [roomId, user?.id]);
 
-  // ── Handle WinnerSelected on-chain event → call /settle ──────────────────
+  // ── Pusher real-time ──────────────────────────────────────────────────────
+
+  usePusherRoom({
+    roomId,
+
+    onPlayerJoined(data: PlayerJoinedPayload) {
+      setPlayers((prev) => {
+        // Deduplicate
+        if (prev.find((p) => p.id === data.participant.userId)) return prev;
+        return [
+          ...prev,
+          {
+            id: data.participant.userId,
+            address: data.participant.wallet,
+            username: data.participant.username,
+            avatar: data.participant.avatar,
+            isYou: data.participant.userId === user?.id,
+            color: PLAYER_COLORS[prev.length % PLAYER_COLORS.length],
+          },
+        ];
+      });
+    },
+
+    onGameStarted() {
+      setRoomStatus("active");
+    },
+
+    onResultRevealed(data: ResultRevealedPayload) {
+      setRoomStatus("completed");
+    },
+
+    onRoundCancelled() {
+      setRoomStatus("cancelled");
+    },
+  });
+
+  // ── Settle on WinnerSelected contract event ───────────────────────────────
 
   useEffect(() => {
-    if (!lastWinner) return;
+    if (!lastWinner || isEmptyState) return;
 
     async function settle() {
       try {
@@ -200,11 +171,10 @@ export function useGameState(roomId: string) {
     settle();
   }, [lastWinner]);
 
-  // ── Derived game state from contract data ─────────────────────────────────
+  // ── Derived game state ────────────────────────────────────────────────────
 
   const gameState: GameState = {
     roomId,
-    players,
     pricePool: currentRound?.prizePool ?? 0,
     totalPlayers: currentRound?.playerCount ?? players.length,
     minPlayers: MIN_PLAYERS,
@@ -212,23 +182,22 @@ export function useGameState(roomId: string) {
     potentialWin: (currentRound?.prizePool ?? 0) * (1 - FEE_PERCENT),
     drawTime: currentRound
       ? Number(currentRound.endTime) * 1000
-      : Date.now() + 180000,
+      : Date.now() + 180_000,
     isLive: roomStatus === "active" || roomStatus === "waiting",
     status: roomStatus,
   };
 
-  // ── addEntry — approve USDC + deposit + record in API ────────────────────
+  // ── addEntry — approve + deposit on-chain + record in API ─────────────────
 
   const addEntry = useCallback(
     async (amount: number) => {
-      if (!user) return;
+      if (!user || isEmptyState) return;
       setLoading(true);
 
       try {
         const txHash = await depositUSDC(amount);
         if (!txHash) return;
 
-        // Record participant in DB
         await fetch(`/api/rooms/${roomId}/join`, {
           method: "POST",
           headers: {
@@ -243,7 +212,7 @@ export function useGameState(roomId: string) {
         setLoading(false);
       }
     },
-    [user, roomId, depositUSDC, authHeaders],
+    [user, roomId, depositUSDC, authHeaders, isEmptyState],
   );
 
   return {
