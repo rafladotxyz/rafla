@@ -16,7 +16,8 @@ export function SignInButton() {
     error,
   } = useAuthContext();
   const { open } = useAppKit();
-  const { caipNetwork } = useAppKitNetwork();
+
+  const { caipNetwork, chainId, switchNetwork } = useAppKitNetwork();
   const router = useRouter();
   const navigateToProfile = () => {
     router.push(`/profile`);
@@ -82,13 +83,16 @@ export function SignInButton() {
       >
         Sign out
       </button>
-      <div>
+      <div
+        onClick={() => open()}
+        className="h-8 px-3 rounded-full border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
+      >
         <Image
           height={20}
           width={20}
           src={caipNetwork?.assets?.imageUrl || ""}
           alt="Base logo"
-          className="rounded-full"
+          className="rounded-full h-[90%] w-auto object-contain"
         />
       </div>
     </div>
