@@ -4,6 +4,9 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Base from "@/assets/base.png";
+import BaseSepolia from "@/assets/baseSepolia.png";
+import Monad from "@/assets/monad.svg";
 
 export function SignInButton() {
   const {
@@ -17,8 +20,23 @@ export function SignInButton() {
   } = useAuthContext();
   const { open } = useAppKit();
 
-  const { caipNetwork, chainId, switchNetwork } = useAppKitNetwork();
+  const { caipNetwork } = useAppKitNetwork();
   const router = useRouter();
+
+  const getNetworkIcon = (name: string) => {
+    switch (name) {
+      case "Base Sepolia":
+        return BaseSepolia;
+      case "Base":
+        return Base;
+      case "Monad":
+        return Monad;
+      case "Monad Testnet":
+        return Monad;
+      default:
+        return Base; // Fallback icon
+    }
+  };
   const navigateToProfile = () => {
     router.push(`/profile`);
   };
@@ -90,8 +108,8 @@ export function SignInButton() {
         <Image
           height={20}
           width={20}
-          src={caipNetwork?.assets?.imageUrl || ""}
-          alt="Base logo"
+          src={getNetworkIcon(caipNetwork?.name || "Base")}
+          alt={caipNetwork?.name || "Base"}
           className="rounded-full h-[90%] w-auto object-contain"
         />
       </div>

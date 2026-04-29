@@ -31,7 +31,8 @@ const modal = createAppKit({
   metadata: metadata,
   enableNetworkSwitch: true,
   chainImages: {
-    "base-sepolia": "https://cryptologos.cc/logos/base-sepolia-logo.png?v=025",
+    "base-sepolia":
+      "https://coinfactory.app/_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fcoinfactory%2Fimage%2Fupload%2Fv1705486529%2Fadmin%2Flbff6rw3hdyf6xffy0fv.png&w=1920&q=75",
     base: "https://cryptologos.cc/logos/base-logo.png?v=025",
     monad: "https://cryptologos.cc/logos/monad-logo.png?v=025",
     "monad-testnet": "https://cryptologos.cc/logos/monad-logo.png?v=025",
