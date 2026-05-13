@@ -69,7 +69,7 @@ export default function LeaderboardPage() {
                       )}
                     </div>
                     <p className="text-[11px] text-[#CBCBCB] truncate w-full text-center">
-                      {entry.user.username ?? short}
+                      {entry.user.username ? `@${entry.user.username}` : short}
                     </p>
                     <p className="text-[11px] text-[#737373]">{entry.wins}W</p>
                   </div>
@@ -95,6 +95,7 @@ export default function LeaderboardPage() {
             {leaderboard.map((entry) => {
               const short = `${entry.user.wallet.slice(0, 6)}...${entry.user.wallet.slice(-4)}`;
               const prize = (Number(entry.totalPrize) / 1_000_000).toFixed(2);
+              const displayName = entry.user.username ? `@${entry.user.username}` : short;
 
               return (
                 <div
@@ -131,7 +132,7 @@ export default function LeaderboardPage() {
                   {/* Name + wallet */}
                   <div className="flex flex-col flex-1 min-w-0">
                     <p className="text-[14px] text-[#CBCBCB] truncate">
-                      {entry.user.username ?? short}
+                      {displayName}
                     </p>
                     {entry.user.username && (
                       <p className="text-[11px] text-[#737373] font-mono truncate">

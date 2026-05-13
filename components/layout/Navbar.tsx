@@ -37,12 +37,12 @@ export const Navbar = () => {
     open();
   };
   return (
-    <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1100px] h-16 border-[2px] rounded-2xl border-[#1A1A1A] flex justify-between items-center py-2 px-6 backdrop-blur-xl bg-black/20 shadow-2xl shadow-black/50">
-      <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push("/")}>
-        <Image height={32} width={70} src={Logo} alt="rafla logo" className="w-auto h-8 md:h-10" />
+    <nav className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1100px] h-14 md:h-16 border-[1.5px] md:border-[2px] rounded-2xl border-[#1A1A1A] flex justify-between items-center py-2 px-3 md:px-6 backdrop-blur-xl bg-black/40 shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95 shrink-0" onClick={() => router.push("/")}>
+        <Image height={32} width={70} src={Logo} alt="rafla logo" className="w-16 md:w-20 h-auto" />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
         <SignInButton />
       </div>
     </nav>

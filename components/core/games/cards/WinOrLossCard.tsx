@@ -8,14 +8,14 @@ interface WinOrLossProps {
   handleClick: () => void;
   isWin?: boolean;
   amount?: string;
-  winnerAddress?: string;
+  winnerName?: string;
 }
 
 export const WinOrLoss = ({
   handleClick,
   isWin = true,
   amount = "$109.25",
-  winnerAddress = "0x9i0j...1k21",
+  winnerName = "Anonymous",
 }: WinOrLossProps) => {
   return (
     <div className="fixed inset-0 z-999 backdrop-blur-sm flex items-center justify-center">
@@ -23,7 +23,7 @@ export const WinOrLoss = ({
         handleClick={handleClick}
         isWin={isWin}
         amount={amount}
-        winnerAddress={winnerAddress}
+        winnerName={winnerName}
       />
     </div>
   );
@@ -33,7 +33,7 @@ const WinOrLossCard = ({
   handleClick,
   isWin,
   amount,
-  winnerAddress,
+  winnerName,
 }: WinOrLossProps) => {
   return (
     <div className="relative w-full max-w-[414px] mx-4 bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
@@ -54,7 +54,7 @@ const WinOrLossCard = ({
       </div>
 
       {/* Text section */}
-      <div className="flex flex-col items-center gap-1 mb-8">
+      <div className="flex flex-col items-center gap-1 mb-8 text-center">
         <p className="text-[48px] font-semibold leading-tight text-[#737373]">
           {isWin ? "You won" : "You Lost"}
         </p>
@@ -65,8 +65,8 @@ const WinOrLossCard = ({
         >
           {isWin ? `+${amount}` : `-${amount}`}
         </p>
-        <p className="text-[13px] text-[#737373] mt-1">
-          Winner: {winnerAddress}
+        <p className="text-[13px] text-[#737373] mt-1 truncate max-w-full">
+          Winner: {winnerName}
         </p>
       </div>
 

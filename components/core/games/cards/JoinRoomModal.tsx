@@ -31,15 +31,37 @@ export function JoinRoomModal({
 
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [joined, setJoined] = useState(false);
+  const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [fetchingRoom, setFetchingRoom] = useState(true);
+
+  // Fetch room data on mount
+  useState(() => {
+    async function fetchRoom() {
+      try {
+        const res = await fetch(`/api/rooms/${roomId}`);
+        if (res.ok) {
+          const { room } = await res.json();
+          if (room && room.stakeAmount) {
+            setRoomStake(Number(room.stakeAmount) / 1_000_000);
+          }
+        }
+      } catch (err) {
+        console.error("JoinRoomModal fetch error:", err);
+      } finally {
+        setFetchingRoom(false);
+      }
+    }
+    fetchRoom();
+  });
 
   const handleJoin = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
-    if (!selectedPrice) return;
+    if (roomStake === null) return;
 
-    const ok = await joinRoom(roomId, selectedPrice);
+    const ok = await joinRoom(roomId, roomStake);
     if (ok) {
       setJoined(true);
       setTimeout(() => {
@@ -49,8 +71,8 @@ export function JoinRoomModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
-      <div className="flex flex-col w-[345px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] p-6 gap-5">
+    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="flex flex-col w-full max-w-[345px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] p-6 gap-5">
         {/* Header */}
         <div className="flex flex-col gap-1">
           <p className="text-[16px] font-semibold text-[#D9D9D9]">
@@ -69,23 +91,20 @@ export function JoinRoomModal({
           </p>
         </div>
 
-        {/* Stake selection */}
+        {/* Stake display (Fixed) */}
         <div className="flex flex-col gap-2">
-          <p className="text-[13px] text-[#CBCBCB]">Select your stake</p>
-          <div className="flex gap-2">
-            {PRICE_OPTIONS.map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => setSelectedPrice(opt.value)}
-                className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                  selectedPrice === opt.value
-                    ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                    : "border-[#282828] bg-[#0A0A0A]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <p className="text-[13px] text-[#CBCBCB]">Required Stake</p>
+          <div className="h-11 px-4 flex items-center justify-between rounded-xl bg-[#0A0A0A] border border-[#282828]">
+            {fetchingRoom ? (
+              <div className="w-4 h-4 border-2 border-[#CBCBCB] border-t-transparent rounded-full animate-spin" />
+            ) : roomStake !== null ? (
+              <>
+                <span className="text-[14px] text-[#CBCBCB] font-medium">${roomStake} USDC</span>
+                <span className="text-[11px] text-[#737373]">Fixed by creator</span>
+              </>
+            ) : (
+              <span className="text-[13px] text-[#EF4444]">Room not found</span>
+            )}
           </div>
           <p className="text-[11px] text-[#737373]">
             USDC will be approved and deposited on-chain
@@ -104,9 +123,9 @@ export function JoinRoomModal({
         <div className="flex flex-col gap-2">
           <button
             onClick={handleJoin}
-            disabled={!selectedPrice || isJoining || joined}
+            disabled={fetchingRoom || roomStake === null || isJoining || joined}
             className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-              selectedPrice && !isJoining && !joined
+              !fetchingRoom && roomStake !== null && !isJoining && !joined
                 ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
                 : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
             }`}

@@ -44,24 +44,33 @@ const CreateRoomCard = ({
     useRoom();
 
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [customPrice, setCustomPrice] = useState<string>("");
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
+  const [customPlayers, setCustomPlayers] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<"form" | "share">("form");
 
+  const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
+  const effectivePlayers = customPlayers ? Number(customPlayers) : selectedPlayers;
+
   const canCreate =
-    selectedPrice !== null && selectedPlayers !== null && !isCreating;
+    effectivePrice !== null && 
+    effectivePrice > 0 &&
+    effectivePlayers !== null && 
+    effectivePlayers >= 2 &&
+    !isCreating;
 
   const handleCreate = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
-    if (!selectedPrice || !selectedPlayers) return;
+    if (!effectivePrice || !effectivePlayers) return;
 
     const room = await createRoom({
       gameType,
-      stakeAmountDollars: selectedPrice,
-      minPlayers: selectedPlayers,
+      stakeAmountDollars: effectivePrice,
+      minPlayers: effectivePlayers,
     });
 
     if (room) setView("share");
@@ -153,7 +162,7 @@ const CreateRoomCard = ({
         {/* Stake info */}
         <div className="flex justify-between text-[12px] text-[#737373] border-t border-[#282828] pt-3">
           <span>Stake per player</span>
-          <span className="text-[#CBCBCB]">${selectedPrice} USDC</span>
+          <span className="text-[#CBCBCB]">${effectivePrice} USDC</span>
         </div>
       </div>
     );
@@ -183,12 +192,15 @@ const CreateRoomCard = ({
       {/* Price per ticket */}
       <div className="flex flex-col gap-2">
         <p className="text-[14px] text-[#CBCBCB]">Price per ticket</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PRICE_OPTIONS.map((opt) => (
             <button
               key={opt.label}
-              onClick={() => setSelectedPrice(opt.value)}
-              className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+              onClick={() => {
+                setSelectedPrice(opt.value);
+                setCustomPrice("");
+              }}
+              className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
                 selectedPrice === opt.value
                   ? "border-[#CBCBCB] bg-[#1f1f1f]"
                   : "border-[#282828] bg-[#0A0A0A]"
@@ -197,18 +209,38 @@ const CreateRoomCard = ({
               {opt.label}
             </button>
           ))}
+          <div className="flex-1 min-w-[100px] relative">
+            <input
+              type="number"
+              placeholder="Custom"
+              value={customPrice}
+              onChange={(e) => {
+                setCustomPrice(e.target.value);
+                setSelectedPrice(null);
+              }}
+              className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
+                customPrice ? "border-[#CBCBCB]" : "border-[#282828]"
+              }`}
+            />
+            {customPrice && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#737373]">USDC</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Minimum players */}
       <div className="flex flex-col gap-2">
         <p className="text-[14px] text-[#CBCBCB]">Minimum number of players</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PLAYER_OPTIONS.map((count) => (
             <button
               key={count}
-              onClick={() => setSelectedPlayers(count)}
-              className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+              onClick={() => {
+                setSelectedPlayers(count);
+                setCustomPlayers("");
+              }}
+              className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
                 selectedPlayers === count
                   ? "border-[#CBCBCB] bg-[#1f1f1f]"
                   : "border-[#282828] bg-[#0A0A0A]"
@@ -217,6 +249,20 @@ const CreateRoomCard = ({
               {count}
             </button>
           ))}
+          <div className="flex-1 min-w-[100px]">
+            <input
+              type="number"
+              placeholder="Custom"
+              value={customPlayers}
+              onChange={(e) => {
+                setCustomPlayers(e.target.value);
+                setSelectedPlayers(null);
+              }}
+              className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
+                customPlayers ? "border-[#CBCBCB]" : "border-[#282828]"
+              }`}
+            />
+          </div>
         </div>
       </div>
 

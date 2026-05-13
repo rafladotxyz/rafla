@@ -43,10 +43,16 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { username, avatar, bio, twitter, telegram } = body;
+  let { username, avatar, bio, twitter, telegram } = body;
 
-  // Check username uniqueness if being changed
+  // Normalize username: lowercase and remove leading @
   if (username) {
+    username = username.toLowerCase().trim();
+    if (username.startsWith("@")) {
+      username = username.slice(1);
+    }
+    
+    // Check uniqueness
     const existing = await prisma.user.findFirst({
       where: { username, NOT: { id: auth.userId } },
     });

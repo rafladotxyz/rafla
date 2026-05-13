@@ -160,7 +160,7 @@ export default function ProfilePage() {
     );
 
   const shortWallet = `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`;
-  const displayName = user.username ?? "Anonymous";
+  const displayName = user.username ? `@${user.username}` : "Anonymous";
 
   return (
     <div className="w-full max-w-[760px] mx-auto px-4 py-10 flex flex-col gap-8">
@@ -188,7 +188,7 @@ export default function ProfilePage() {
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <span className="text-[32px] font-bold text-[#444]">
-                  {displayName[0].toUpperCase()}
+                  {(user.username ?? "A")[0].toUpperCase()}
                 </span>
               </div>
             )}

@@ -31,36 +31,36 @@ export function GameHeader({ gameName }: { gameName?: string }) {
     }
   };
   return (
-    <div className="flex items-center mt-6 justify-between mb-6">
+    <div className="flex items-center mt-4 md:mt-6 justify-between mb-4 md:mb-6 px-2 md:px-0">
       {/* Go Back Button */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#141414] cursor-pointer backdrop-blur-sm hover:bg-[#252525] text-[#E8E8E8] text-sm"
+        className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl border border-[#141414] cursor-pointer backdrop-blur-sm hover:bg-[#252525] text-[#E8E8E8] text-sm"
       >
         <ArrowLeft color="#E8E8E8" className="w-4 h-4" />
-        <span className="text-[#E8E8E8]">Go Back</span>
+        <span className="text-[#E8E8E8] hidden sm:inline">Go Back</span>
       </button>
 
       {/* Title */}
-      <h1 className="text-xl font-semibold text-[#E8E8E8]">{gameName}</h1>
+      <h1 className="text-lg md:text-xl font-semibold text-[#E8E8E8] truncate max-w-[150px] sm:max-w-none">{gameName}</h1>
 
       {/* Chain Badge & Sound Toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
         <button
           onClick={toggleSound}
-          className="p-2.5 rounded-xl border border-[#141414] backdrop-blur-sm hover:bg-[#252525] text-[#E8E8E8] transition-colors"
+          className="p-2 md:p-2.5 rounded-xl border border-[#141414] backdrop-blur-sm hover:bg-[#252525] text-[#E8E8E8] transition-colors"
           title={isSoundEnabled ? "Disable Sound" : "Enable Sound"}
         >
           {isSoundEnabled ? (
-            <Volume2 className="w-5 h-5" />
+            <Volume2 className="w-4 h-4 md:w-5 md:h-5" />
           ) : (
-            <VolumeX className="w-5 h-5" />
+            <VolumeX className="w-4 h-4 md:w-5 md:h-5" />
           )}
         </button>
 
         <div
           onClick={() => open()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#141414] backdrop-blur-sm cursor-pointer"
+          className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-[#141414] backdrop-blur-sm cursor-pointer"
         >
           <Image
             height={20}
@@ -69,10 +69,10 @@ export function GameHeader({ gameName }: { gameName?: string }) {
               caipNetwork?.assets?.imageUrl ||
               getNetworkIcon(caipNetwork?.name || "Base")
             }
-            alt="Base logo"
-            className="rounded-full"
+            alt="Network logo"
+            className="rounded-full w-4 h-4 md:w-5 md:h-5"
           />
-          <span className="text-sm text-[#E8E8E8]">
+          <span className="text-xs md:text-sm text-[#E8E8E8] hidden xs:inline">
             {caipNetwork?.name || "Base"}
           </span>
         </div>

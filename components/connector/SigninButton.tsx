@@ -74,7 +74,7 @@ export function SignInButton() {
 
   // Authenticated — show user info + sign out
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 md:gap-3">
       <div
         onClick={navigateToProfile}
         className="flex items-center gap-2 cursor-pointer"
@@ -90,24 +90,25 @@ export function SignInButton() {
             {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
           </div>
         )}
-        <span className="text-[13px] text-[#CBCBCB]">
-          {user?.username ??
+        <span className="text-[13px] text-[#CBCBCB] hidden sm:inline">
+          {user?.username ? `@${user.username}` :
             `${user?.wallet.slice(0, 6)}...${user?.wallet.slice(-4)}`}
         </span>
       </div>
       <button
         onClick={signOut}
-        className="h-8 px-3 rounded-lg border cursor-pointer border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
+        className="h-8 px-2 sm:px-3 rounded-lg border cursor-pointer border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
       >
-        Sign out
+        <span className="hidden xs:inline">Sign out</span>
+        <span className="xs:hidden">Exit</span>
       </button>
       <div
         onClick={() => open()}
-        className="h-8 px-0 py-0 rounded-full border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors"
+        className="h-8 w-8 flex items-center justify-center rounded-full border border-[#282828] text-[12px] text-[#888] hover:text-[#CBCBCB] hover:border-[#444] transition-colors overflow-hidden p-1.5"
       >
         <Image
-          height={14}
-          width={14}
+          height={16}
+          width={16}
           src={getNetworkIcon(caipNetwork?.name || "Base")}
           alt={caipNetwork?.name || "Base"}
           className="rounded-full h-full w-full object-contain"
