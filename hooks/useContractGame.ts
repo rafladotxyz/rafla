@@ -52,6 +52,7 @@ export interface FlipResultEvent {
   choice: number;
   result: number;
   won: boolean;
+  transactionHash: string;
 }
 
 export interface SpinResultEvent {
@@ -60,6 +61,7 @@ export interface SpinResultEvent {
   roll: bigint;
   multiplier: bigint;
   payout: number;
+  transactionHash: string;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -359,6 +361,7 @@ export function useContractGame() {
         choice: Number(choice),
         result: Number(result),
         won: Boolean(won),
+        transactionHash: log.transactionHash,
       });
     },
   });
@@ -379,6 +382,7 @@ export function useContractGame() {
         roll: BigInt(roll),
         multiplier: BigInt(multiplier),
         payout: fromUSDCUnits(payout),
+        transactionHash: log.transactionHash,
       });
     },
   });

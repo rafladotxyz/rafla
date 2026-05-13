@@ -13,6 +13,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { SpinGame } from "./SpinGame";
+import { useSound } from "@/hooks/useSound";
 import { useEffect, useCallback } from "react";
 
 const EMPTY_ID = "3455654";
@@ -43,6 +44,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     effectiveRoomId,
     "spin",
   );
+  const { playSound, stopSound } = useSound();
 
   const [activeTab, setActiveTab] = useState<TabType>(
     isPrivateRoom ? "private" : "public",
@@ -77,6 +79,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedAmount(amount);
     setShowWinLoss(true);
     setExternalSpinTrigger(false);
+
+    // Play result sound
+    if (segment.label.toLowerCase().includes("win")) {
+      playSound("win");
+    } else if (segment.label.toLowerCase().includes("lose")) {
+      playSound("loss");
+    }
   };
 
   const handleSpinRequest = async (amount: number) => {
@@ -97,8 +106,9 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
       setTargetIndex(index);
       setExternalSpinTrigger(true);
+      playSound("spin");
     }
-  }, [lastSpinResult]);
+  }, [lastSpinResult, playSound]);
 
   const handleWinLossClose = () => {
     setShowWinLoss(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
 import { usePusherRoom } from "./usePusherRoom";
@@ -61,6 +61,8 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     lastFlipResult,
     lastSpinResult,
   } = useContractGame();
+
+  const recordedTxs = useRef<Set<string>>(new Set());
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
@@ -174,7 +176,47 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     }
 
     settle();
-  }, [lastWinner]);
+  }, [lastWinner, roomId]);
+
+  // ── Record Instant Games (Flip/Spin) ──────────────────────────────────────
+
+  useEffect(() => {
+    if (isEmptyState) {
+      if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
+        recordedTxs.current.add(lastFlipResult.transactionHash);
+        fetch("/api/games/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            gameType: "flip",
+            stakeAmount: lastFlipResult.amount,
+            txHash: lastFlipResult.transactionHash,
+            won: lastFlipResult.won,
+            prizeAmount: lastFlipResult.won ? lastFlipResult.amount * 2 : 0,
+          }),
+        });
+      } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
+        recordedTxs.current.add(lastSpinResult.transactionHash);
+        fetch("/api/games/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            gameType: "spin",
+            stakeAmount: lastSpinResult.amount,
+            txHash: lastSpinResult.transactionHash,
+            won: lastSpinResult.payout > 0,
+            prizeAmount: lastSpinResult.payout,
+          }),
+        });
+      }
+    }
+  }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
 
   // ── Derived game state ────────────────────────────────────────────────────
 

@@ -14,6 +14,7 @@ import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { FlipGame } from "./FlipGame";
 import { useGameState } from "@/hooks/useGameState";
+import { useSound } from "@/hooks/useSound";
 import { useEffect, useCallback } from "react";
 
 const EMPTY_ID = "3455654";
@@ -35,6 +36,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     effectiveRoomId,
     "flip",
   );
+  const { playSound } = useSound();
 
   const [activeTab, setActiveTab] = useState<TabType>(
     isPrivateRoom ? "private" : "public",
@@ -61,6 +63,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     const numAmount = Number(amount.replace("$", ""));
     await addEntry(numAmount, { choice: side });
     setViewState("flipping");
+    playSound("flip");
   };
 
   // Watch for contract result
@@ -76,10 +79,11 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           amount: `$${lastFlipResult.amount}`,
         });
         setViewState("result");
+        playSound(lastFlipResult.won ? "win" : "loss");
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [lastFlipResult, viewState]);
+  }, [lastFlipResult, viewState, playSound]);
 
   const handleFlipAgain = () => {
     setViewState("select");
