@@ -172,14 +172,9 @@ export function useContractGame() {
           return null;
         }
 
-        // Check round status
+        // Check round status — allow if Active, regardless of timer (let contract decide)
         if (!currentRound || currentRound.status !== RoundStatus.Active) {
-          setError("The raffle round is not active.");
-          return null;
-        }
-
-        if (currentRound.timeRemaining <= 0) {
-          setError("The raffle round has already ended.");
+          setError("The raffle round is not active or is being settled.");
           return null;
         }
 
@@ -189,19 +184,26 @@ export function useContractGame() {
           return null;
         }
 
-        // Step 1: approve
-        const approveTx = await writeContractAsync({
+        // Step 1: Check allowance
+        const allowance = await publicClient.readContract({
           address: USDC_ADDRESS,
           abi: ERC20_ABI,
-          functionName: "approve",
-          args: [RAFFLE_ADDRESS, rawAmount],
+          functionName: "allowance",
+          args: [address, RAFFLE_ADDRESS],
         });
-        setApproveTxHash(approveTx);
 
-        // Step 2: wait for approval to be mined on-chain before depositing
-        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        if (allowance < rawAmount) {
+          const approveTx = await writeContractAsync({
+            address: USDC_ADDRESS,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            args: [RAFFLE_ADDRESS, rawAmount * BigInt(100)], // Approve more to save txs
+          });
+          setApproveTxHash(approveTx);
+          await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        }
 
-        // Step 3: deposit
+        // Step 2: deposit
         const depositTx = await writeContractAsync({
           address: RAFFLE_ADDRESS,
           abi: RAFFLE_ABI,
@@ -209,22 +211,21 @@ export function useContractGame() {
           args: [rawAmount],
         });
         setDepositTxHash(depositTx);
-
-        // Step 4: wait for deposit confirmation
         await publicClient.waitForTransactionReceipt({ hash: depositTx });
 
         refetchRound();
         return depositTx;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "transaction failed";
-        const isRejected = msg.includes("rejected") || msg.includes("denied");
-        if (!isRejected) setError(msg);
+        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
+          setError(msg);
+        }
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, refetchRound],
+    [address, publicClient, writeContractAsync, refetchRound, currentRound, minDepositRaw],
   );
 
   // ── endRound ──────────────────────────────────────────────────────────────
@@ -284,15 +285,37 @@ export function useContractGame() {
       try {
         const rawAmount = toUSDCUnits(dollarAmount);
 
-        // Step 1: approve
-        const approveTx = await writeContractAsync({
+        // Check balance
+        const balance = await publicClient.readContract({
           address: USDC_ADDRESS,
           abi: ERC20_ABI,
-          functionName: "approve",
-          args: [FLIP_ADDRESS, rawAmount],
+          functionName: "balanceOf",
+          args: [address],
         });
-        setApproveTxHash(approveTx);
-        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
+        if (balance < rawAmount) {
+          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          return null;
+        }
+
+        // Check allowance
+        const allowance = await publicClient.readContract({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [address, FLIP_ADDRESS],
+        });
+
+        if (allowance < rawAmount) {
+          const approveTx = await writeContractAsync({
+            address: USDC_ADDRESS,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            args: [FLIP_ADDRESS, rawAmount * BigInt(100)],
+          });
+          setApproveTxHash(approveTx);
+          await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        }
 
         // Step 2: flip
         const flipTx = await writeContractAsync({
@@ -306,7 +329,9 @@ export function useContractGame() {
         return flipTx;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "flip failed";
-        setError(msg);
+        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
+          setError(msg);
+        }
         return null;
       } finally {
         setIsDepositing(false);
@@ -330,15 +355,37 @@ export function useContractGame() {
       try {
         const rawAmount = toUSDCUnits(dollarAmount);
 
-        // Step 1: approve
-        const approveTx = await writeContractAsync({
+        // Check balance
+        const balance = await publicClient.readContract({
           address: USDC_ADDRESS,
           abi: ERC20_ABI,
-          functionName: "approve",
-          args: [SPIN_ADDRESS, rawAmount],
+          functionName: "balanceOf",
+          args: [address],
         });
-        setApproveTxHash(approveTx);
-        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
+        if (balance < rawAmount) {
+          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          return null;
+        }
+
+        // Check allowance
+        const allowance = await publicClient.readContract({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [address, SPIN_ADDRESS],
+        });
+
+        if (allowance < rawAmount) {
+          const approveTx = await writeContractAsync({
+            address: USDC_ADDRESS,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            args: [SPIN_ADDRESS, rawAmount * BigInt(100)],
+          });
+          setApproveTxHash(approveTx);
+          await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        }
 
         // Step 2: spin
         const spinTx = await writeContractAsync({
@@ -352,7 +399,9 @@ export function useContractGame() {
         return spinTx;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "spin failed";
-        setError(msg);
+        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
+          setError(msg);
+        }
         return null;
       } finally {
         setIsDepositing(false);
