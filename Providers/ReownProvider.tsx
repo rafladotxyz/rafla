@@ -3,7 +3,7 @@
 import { wagmiAdapter, projectId } from "@/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createAppKit } from "@reown/appkit/react";
-import { base, baseSepolia, monad, monadTestnet } from "@reown/appkit/networks";
+import { base, baseSepolia } from "@reown/appkit/networks";
 import React, { type ReactNode } from "react";
 import { cookieToInitialState, WagmiProvider, type Config } from "wagmi";
 
@@ -26,16 +26,14 @@ const metadata = {
 const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [baseSepolia, base, monadTestnet, monad],
-  defaultNetwork: monadTestnet,
+  networks: [baseSepolia, base],
+  defaultNetwork: baseSepolia,
   metadata: metadata,
   enableNetworkSwitch: true,
   chainImages: {
     "base-sepolia":
       "https://coinfactory.app/_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fcoinfactory%2Fimage%2Fupload%2Fv1705486529%2Fadmin%2Flbff6rw3hdyf6xffy0fv.png&w=1920&q=75",
     base: "https://cryptologos.cc/logos/base-logo.png?v=025",
-    monad: "https://cryptologos.cc/logos/monad-logo.png?v=025",
-    "monad-testnet": "https://cryptologos.cc/logos/monad-logo.png?v=025",
   },
   features: {
     analytics: true, // Optional - defaults to your Cloud configuration
