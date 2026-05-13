@@ -197,7 +197,7 @@ export function useContractGame() {
             address: USDC_ADDRESS,
             abi: ERC20_ABI,
             functionName: "approve",
-            args: [RAFFLE_ADDRESS, rawAmount * 100n], // Approve more to save txs
+            args: [RAFFLE_ADDRESS, rawAmount * BigInt(100)], // Approve more to save txs
           });
           setApproveTxHash(approveTx);
           await publicClient.waitForTransactionReceipt({ hash: approveTx });
@@ -311,7 +311,7 @@ export function useContractGame() {
             address: USDC_ADDRESS,
             abi: ERC20_ABI,
             functionName: "approve",
-            args: [FLIP_ADDRESS, rawAmount * 100n],
+            args: [FLIP_ADDRESS, rawAmount * BigInt(100)],
           });
           setApproveTxHash(approveTx);
           await publicClient.waitForTransactionReceipt({ hash: approveTx });
@@ -381,7 +381,7 @@ export function useContractGame() {
             address: USDC_ADDRESS,
             abi: ERC20_ABI,
             functionName: "approve",
-            args: [SPIN_ADDRESS, rawAmount * 100n],
+            args: [SPIN_ADDRESS, rawAmount * BigInt(100)],
           });
           setApproveTxHash(approveTx);
           await publicClient.waitForTransactionReceipt({ hash: approveTx });
