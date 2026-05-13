@@ -43,9 +43,16 @@ export function PrivateRoomModal({
   const [mode, setMode] = useState<Mode>(urlRoomId ? "join" : "choose");
   const [joinRoomId, setJoinRoomId] = useState(urlRoomId ?? "");
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [customPrice, setCustomPrice] = useState<string>("");
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
+  const [customPlayers, setCustomPlayers] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [joinSuccess, setJoinSuccess] = useState(false);
+  const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [fetchingRoom, setFetchingRoom] = useState(false);
+
+  const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
+  const effectivePlayers = customPlayers ? Number(customPlayers) : selectedPlayers;
 
   // ── Create flow ───────────────────────────────────────────────────────────
 
@@ -54,12 +61,12 @@ export function PrivateRoomModal({
       await signIn();
       return;
     }
-    if (!selectedPrice || !selectedPlayers) return;
+    if (!effectivePrice || !effectivePlayers) return;
 
     const room = await createRoom({
       gameType,
-      stakeAmountDollars: selectedPrice,
-      minPlayers: selectedPlayers,
+      stakeAmountDollars: effectivePrice,
+      minPlayers: effectivePlayers,
     });
     if (room) setMode("created");
   };
@@ -77,18 +84,49 @@ export function PrivateRoomModal({
 
   // ── Join flow ─────────────────────────────────────────────────────────────
 
+  // Fetch room stake when joinRoomId changes
+  const fetchRoomData = async (id: string) => {
+    if (!id.trim()) return;
+    setFetchingRoom(true);
+    try {
+      const res = await fetch(`/api/rooms/${id}`);
+      if (res.ok) {
+        const { room } = await res.json();
+        if (room && room.stakeAmount) {
+          setRoomStake(Number(room.stakeAmount) / 1_000_000);
+        } else {
+          setRoomStake(null);
+        }
+      }
+    } catch (err) {
+      console.error("fetchRoomData error:", err);
+    } finally {
+      setFetchingRoom(false);
+    }
+  };
+
   const handleJoin = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
-    if (!joinRoomId.trim()) return;
+    const finalRoomId = joinRoomId.trim();
+    if (!finalRoomId) return;
 
-    const ok = await joinRoom(joinRoomId.trim(), selectedPrice ?? 1);
+    // We must have roomStake (fetched automatically)
+    if (roomStake === null) {
+      // Try one last fetch
+      await fetchRoomData(finalRoomId);
+    }
+
+    // Wait, if still null, we might need a fallback or show error
+    // But ideally it's already fetched.
+
+    const ok = await joinRoom(finalRoomId, roomStake ?? 1);
     if (ok) {
       setJoinSuccess(true);
       setTimeout(() => {
-        router.push(`/${gameType}/${joinRoomId.trim()}`);
+        router.push(`/${gameType}/${finalRoomId}`);
       }, 1000);
     }
   };
@@ -96,8 +134,8 @@ export function PrivateRoomModal({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
-      <div className="relative flex flex-col w-[345px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] p-5 gap-5">
+    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative flex flex-col w-full max-w-[345px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] p-5 gap-5">
         {/* Close */}
         <button
           onClick={onClose}
@@ -152,12 +190,15 @@ export function PrivateRoomModal({
 
             <div className="flex flex-col gap-2">
               <p className="text-[14px] text-[#CBCBCB]">Price per ticket</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {PRICE_OPTIONS.map((opt) => (
                   <button
                     key={opt.label}
-                    onClick={() => setSelectedPrice(opt.value)}
-                    className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+                    onClick={() => {
+                      setSelectedPrice(opt.value);
+                      setCustomPrice("");
+                    }}
+                    className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
                       selectedPrice === opt.value
                         ? "border-[#CBCBCB] bg-[#1f1f1f]"
                         : "border-[#282828] bg-[#0A0A0A]"
@@ -166,17 +207,37 @@ export function PrivateRoomModal({
                     {opt.label}
                   </button>
                 ))}
+                <div className="flex-1 min-w-[100px] relative">
+                  <input
+                    type="number"
+                    placeholder="Custom"
+                    value={customPrice}
+                    onChange={(e) => {
+                      setCustomPrice(e.target.value);
+                      setSelectedPrice(null);
+                    }}
+                    className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
+                      customPrice ? "border-[#CBCBCB]" : "border-[#282828]"
+                    }`}
+                  />
+                  {customPrice && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#737373]">USDC</span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <p className="text-[14px] text-[#CBCBCB]">Minimum players</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {PLAYER_OPTIONS.map((count) => (
                   <button
                     key={count}
-                    onClick={() => setSelectedPlayers(count)}
-                    className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
+                    onClick={() => {
+                      setSelectedPlayers(count);
+                      setCustomPlayers("");
+                    }}
+                    className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
                       selectedPlayers === count
                         ? "border-[#CBCBCB] bg-[#1f1f1f]"
                         : "border-[#282828] bg-[#0A0A0A]"
@@ -185,6 +246,20 @@ export function PrivateRoomModal({
                     {count}
                   </button>
                 ))}
+                <div className="flex-1 min-w-[100px]">
+                  <input
+                    type="number"
+                    placeholder="Custom"
+                    value={customPlayers}
+                    onChange={(e) => {
+                      setCustomPlayers(e.target.value);
+                      setSelectedPlayers(null);
+                    }}
+                    className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
+                      customPlayers ? "border-[#CBCBCB]" : "border-[#282828]"
+                    }`}
+                  />
+                </div>
               </div>
             </div>
 
@@ -192,9 +267,9 @@ export function PrivateRoomModal({
 
             <button
               onClick={handleCreate}
-              disabled={!selectedPrice || !selectedPlayers || isCreating}
+              disabled={!effectivePrice || !effectivePlayers || isCreating}
               className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-                selectedPrice && selectedPlayers && !isCreating
+                effectivePrice && effectivePlayers && !isCreating
                   ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
                   : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
               }`}
@@ -286,7 +361,7 @@ export function PrivateRoomModal({
               </p>
               <p className="text-[14px] text-[#737373]">
                 {urlRoomId
-                  ? "You've been invited. Select stake and join."
+                  ? "You've been invited. Deposit stake to join."
                   : "Enter a room ID to join your friend's game"}
               </p>
             </div>
@@ -297,7 +372,12 @@ export function PrivateRoomModal({
                 <p className="text-[14px] text-[#CBCBCB]">Room ID</p>
                 <input
                   value={joinRoomId}
-                  onChange={(e) => setJoinRoomId(e.target.value)}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setJoinRoomId(id);
+                    if (id.length >= 6) fetchRoomData(id);
+                  }}
+                  onBlur={() => fetchRoomData(joinRoomId)}
                   placeholder="Paste room ID here"
                   className="h-10 px-3 rounded-xl bg-[#0A0A0A] border border-[#282828] text-[14px] text-[#CBCBCB] placeholder-[#444] outline-none focus:border-[#555] transition-colors"
                 />
@@ -314,29 +394,26 @@ export function PrivateRoomModal({
               </div>
             )}
 
-            {/* Stake selection */}
+            {/* Stake display (Fixed) */}
             <div className="flex flex-col gap-2">
-              <p className="text-[14px] text-[#CBCBCB]">Your stake</p>
-              <div className="flex gap-2">
-                {PRICE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.label}
-                    onClick={() => setSelectedPrice(opt.value)}
-                    className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                      selectedPrice === opt.value
-                        ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                        : "border-[#282828] bg-[#0A0A0A]"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <p className="text-[14px] text-[#CBCBCB]">Required Stake</p>
+              <div className="h-11 px-4 flex items-center justify-between rounded-xl bg-[#0A0A0A] border border-[#282828]">
+                {fetchingRoom ? (
+                  <div className="w-4 h-4 border-2 border-[#CBCBCB] border-t-transparent rounded-full animate-spin" />
+                ) : roomStake !== null ? (
+                  <>
+                    <span className="text-[14px] text-[#CBCBCB] font-medium">${roomStake} USDC</span>
+                    <span className="text-[11px] text-[#737373]">Fixed by creator</span>
+                  </>
+                ) : (
+                  <span className="text-[13px] text-[#4a4a4a]">Enter valid Room ID</span>
+                )}
               </div>
             </div>
 
             {error && <p className="text-[12px] text-red-400">{error}</p>}
             {joinSuccess && (
-              <p className="text-[12px] text-green-400">
+              <p className="text-[12px] text-green-400 text-center">
                 Joined! Entering room...
               </p>
             )}
@@ -344,10 +421,10 @@ export function PrivateRoomModal({
             <button
               onClick={handleJoin}
               disabled={
-                (!joinRoomId.trim() && !urlRoomId) || isJoining || joinSuccess
+                (!joinRoomId.trim() && !urlRoomId) || isJoining || joinSuccess || roomStake === null
               }
               className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-                (joinRoomId.trim() || urlRoomId) && !isJoining && !joinSuccess
+                (joinRoomId.trim() || urlRoomId) && !isJoining && !joinSuccess && roomStake !== null
                   ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
                   : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
               }`}

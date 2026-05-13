@@ -21,7 +21,7 @@ export const FlipCard = ({
     : "$10";
 
   return (
-    <div className="flex flex-col gap-3 w-101.25">
+    <div className="flex flex-col gap-3 w-full max-w-[400px] mx-auto">
       <p className="text-[16px] font-semibold text-[#D9D9D9]">Make your Call</p>
 
       <div className="flex gap-2">
