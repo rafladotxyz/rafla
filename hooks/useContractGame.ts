@@ -105,6 +105,18 @@ export function useContractGame() {
     functionName: "MIN_DEPOSIT",
   });
 
+  const { data: minBetFlipRaw } = useReadContract({
+    address: FLIP_ADDRESS,
+    abi: FLIP_ABI,
+    functionName: "minBet",
+  });
+
+  const { data: minBetSpinRaw } = useReadContract({
+    address: SPIN_ADDRESS,
+    abi: SPIN_ABI,
+    functionName: "minBet",
+  });
+
   const currentRound: CurrentRound | null = roundData
     ? {
         id: roundData[0],
@@ -179,9 +191,12 @@ export function useContractGame() {
         }
 
         // Check MIN_DEPOSIT
-        if (minDepositRaw && rawAmount < minDepositRaw) {
-          setError(`Amount too small. Minimum deposit is ${fromUSDCUnits(minDepositRaw)} USDC.`);
-          return null;
+        if (minDepositRaw && BigInt(minDepositRaw as string) > 0n) {
+          const min = BigInt(minDepositRaw as string);
+          if (rawAmount < min) {
+            setError(`Amount too small. Minimum deposit is ${fromUSDCUnits(min)} USDC.`);
+            return null;
+          }
         }
 
         // Step 1: Check allowance
@@ -298,6 +313,12 @@ export function useContractGame() {
           return null;
         }
 
+        // Check minBet
+        if (minBetFlipRaw && rawAmount < BigInt(minBetFlipRaw as string)) {
+          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(BigInt(minBetFlipRaw as string))} USDC.`);
+          return null;
+        }
+
         // Check allowance
         const allowance = await publicClient.readContract({
           address: USDC_ADDRESS,
@@ -365,6 +386,12 @@ export function useContractGame() {
 
         if (balance < rawAmount) {
           setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          return null;
+        }
+
+        // Check minBet
+        if (minBetSpinRaw && rawAmount < BigInt(minBetSpinRaw as string)) {
+          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(BigInt(minBetSpinRaw as string))} USDC.`);
           return null;
         }
 
