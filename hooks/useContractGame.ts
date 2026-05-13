@@ -191,8 +191,8 @@ export function useContractGame() {
         }
 
         // Check MIN_DEPOSIT
-        if (minDepositRaw && BigInt(minDepositRaw as string) > 0n) {
-          const min = BigInt(minDepositRaw as string);
+        if (minDepositRaw && (minDepositRaw as bigint) > 0n) {
+          const min = minDepositRaw as bigint;
           if (rawAmount < min) {
             setError(`Amount too small. Minimum deposit is ${fromUSDCUnits(min)} USDC.`);
             return null;
@@ -314,8 +314,8 @@ export function useContractGame() {
         }
 
         // Check minBet
-        if (minBetFlipRaw && rawAmount < BigInt(minBetFlipRaw as string)) {
-          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(BigInt(minBetFlipRaw as string))} USDC.`);
+        if (minBetFlipRaw && rawAmount < (minBetFlipRaw as bigint)) {
+          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(minBetFlipRaw as bigint)} USDC.`);
           return null;
         }
 
@@ -390,8 +390,8 @@ export function useContractGame() {
         }
 
         // Check minBet
-        if (minBetSpinRaw && rawAmount < BigInt(minBetSpinRaw as string)) {
-          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(BigInt(minBetSpinRaw as string))} USDC.`);
+        if (minBetSpinRaw && rawAmount < (minBetSpinRaw as bigint)) {
+          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(minBetSpinRaw as bigint)} USDC.`);
           return null;
         }
 
