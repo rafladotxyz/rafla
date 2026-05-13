@@ -60,6 +60,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     lastWinner,
     lastFlipResult,
     lastSpinResult,
+    error: contractError,
   } = useContractGame();
 
   const recordedTxs = useRef<Set<string>>(new Set());
@@ -288,5 +289,6 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     lastWinner,
     lastFlipResult,
     lastSpinResult,
+    error: contractError,
   };
 }
