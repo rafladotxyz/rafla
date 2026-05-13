@@ -15,7 +15,7 @@ export interface CreatedRoom {
 
 export function useRoom() {
   const { authHeaders, isAuthenticated } = useAuthContext();
-  const { currentRound, depositUSDC, isDepositing, isApproving } =
+  const { currentRound, depositUSDC, isDepositing, isApproving, error: contractError } =
     useContractGame();
 
   const [createdRoom, setCreatedRoom] = useState<CreatedRoom | null>(null);
@@ -93,7 +93,7 @@ export function useRoom() {
         // 1. Approve + deposit USDC on-chain
         const txHash = await depositUSDC(stakeAmountDollars);
         if (!txHash) {
-          setError("transaction cancelled");
+          // Error is already set in useContractGame
           return false;
         }
 
@@ -148,6 +148,6 @@ export function useRoom() {
     createdRoom,
     isCreating,
     isJoining: isJoining || isDepositing || isApproving,
-    error,
+    error: error || contractError,
   };
 }
