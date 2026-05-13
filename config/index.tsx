@@ -1,11 +1,8 @@
-import { cookieStorage, createStorage, http } from "@wagmi/core";
+import { cookieStorage, createStorage } from "@wagmi/core";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import {
   base,
-  baseGoerli,
   baseSepolia,
-  monad,
-  monadTestnet,
 } from "@reown/appkit/networks";
 
 // Get projectId from https://dashboard.reown.com
@@ -15,7 +12,7 @@ if (!projectId) {
   throw new Error("Project ID is not defined");
 }
 
-export const networks = [baseSepolia, base, monad, monadTestnet];
+export const networks = [baseSepolia, base];
 
 //Set up the Wagmi Adapter (Config)
 export const wagmiAdapter = new WagmiAdapter({
