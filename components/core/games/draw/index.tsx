@@ -39,7 +39,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   } | null>(null);
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
-  const { gameState, players, loading, addEntry, lastWinner } =
+  const { gameState, players, loading, addEntry, lastWinner, error } =
     useGameState(effectiveRoomId, "draw");
 
   const isPublicGameOpen =
@@ -97,6 +97,8 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
             gameState={gameState}
             loading={loading}
             onAddEntry={handleAddEntry}
+            roomId={effectiveRoomId}
+            error={error}
           />
         ) : (
           <EmptyStateCard gameType="draw" isPublic />
@@ -113,6 +115,8 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
             gameState={gameState}
             loading={loading}
             onAddEntry={handleAddEntry}
+            roomId={roomId}
+            error={error}
           />
         ) : (
           <div className="flex items-center justify-center py-24">

@@ -99,6 +99,12 @@ export function useContractGame() {
     functionName: "getCurrentRound",
   });
 
+  const { data: minDepositRaw } = useReadContract({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_ABI,
+    functionName: "MIN_DEPOSIT",
+  });
+
   const currentRound: CurrentRound | null = roundData
     ? {
         id: roundData[0],
@@ -152,6 +158,36 @@ export function useContractGame() {
 
       try {
         const rawAmount = toUSDCUnits(dollarAmount);
+
+        // Check balance first
+        const balance = await publicClient.readContract({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [address],
+        });
+
+        if (balance < rawAmount) {
+          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          return null;
+        }
+
+        // Check round status
+        if (!currentRound || currentRound.status !== RoundStatus.Active) {
+          setError("The raffle round is not active.");
+          return null;
+        }
+
+        if (currentRound.timeRemaining <= 0) {
+          setError("The raffle round has already ended.");
+          return null;
+        }
+
+        // Check MIN_DEPOSIT
+        if (minDepositRaw && rawAmount < minDepositRaw) {
+          setError(`Amount too small. Minimum deposit is ${fromUSDCUnits(minDepositRaw)} USDC.`);
+          return null;
+        }
 
         // Step 1: approve
         const approveTx = await writeContractAsync({
