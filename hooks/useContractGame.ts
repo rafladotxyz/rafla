@@ -11,8 +11,12 @@ import {
 } from "wagmi";
 import {
   RAFFLE_ADDRESS,
+  FLIP_ADDRESS,
+  SPIN_ADDRESS,
   USDC_ADDRESS,
   RAFFLE_ABI,
+  FLIP_ABI,
+  SPIN_ABI,
   ERC20_ABI,
   toUSDCUnits,
   fromUSDCUnits,
@@ -42,6 +46,24 @@ export interface WinnerEvent {
   fee: number;
 }
 
+export interface FlipResultEvent {
+  player: string;
+  amount: number;
+  choice: number;
+  result: number;
+  won: boolean;
+  transactionHash: string;
+}
+
+export interface SpinResultEvent {
+  player: string;
+  amount: number;
+  roll: bigint;
+  multiplier: bigint;
+  payout: number;
+  transactionHash: string;
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useContractGame() {
@@ -57,9 +79,15 @@ export function useContractGame() {
   const [endRoundTxHash, setEndRoundTxHash] = useState<
     `0x${string}` | undefined
   >();
-  const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
+  const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
+  const [lastFlipResult, setLastFlipResult] = useState<FlipResultEvent | null>(
+    null,
+  );
+  const [lastSpinResult, setLastSpinResult] = useState<SpinResultEvent | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
 
@@ -205,6 +233,98 @@ export function useContractGame() {
     [writeContractAsync],
   );
 
+  // ── playFlip ─────────────────────────────────────────────────────────────
+
+  const playFlip = useCallback(
+    async (choice: number, dollarAmount: number): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) {
+        setError("wallet not connected");
+        return null;
+      }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawAmount = toUSDCUnits(dollarAmount);
+
+        // Step 1: approve
+        const approveTx = await writeContractAsync({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [FLIP_ADDRESS, rawAmount],
+        });
+        setApproveTxHash(approveTx);
+        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
+        // Step 2: flip
+        const flipTx = await writeContractAsync({
+          address: FLIP_ADDRESS,
+          abi: FLIP_ABI,
+          functionName: "flip",
+          args: [choice, rawAmount],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: flipTx });
+
+        return flipTx;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "flip failed";
+        setError(msg);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [address, publicClient, writeContractAsync],
+  );
+
+  // ── playSpin ─────────────────────────────────────────────────────────────
+
+  const playSpin = useCallback(
+    async (dollarAmount: number): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) {
+        setError("wallet not connected");
+        return null;
+      }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawAmount = toUSDCUnits(dollarAmount);
+
+        // Step 1: approve
+        const approveTx = await writeContractAsync({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [SPIN_ADDRESS, rawAmount],
+        });
+        setApproveTxHash(approveTx);
+        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
+        // Step 2: spin
+        const spinTx = await writeContractAsync({
+          address: SPIN_ADDRESS,
+          abi: SPIN_ABI,
+          functionName: "spin",
+          args: [rawAmount],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: spinTx });
+
+        return spinTx;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "spin failed";
+        setError(msg);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [address, publicClient, writeContractAsync],
+  );
+
   // ── Watch WinnerSelected ──────────────────────────────────────────────────
 
   useWatchContractEvent({
@@ -214,12 +334,7 @@ export function useContractGame() {
     onLogs(logs) {
       const log = logs[0];
       if (!log?.args) return;
-      const { roundId, winner, prizeAmount, fee } = log.args as {
-        roundId: bigint;
-        winner: string;
-        prizeAmount: bigint;
-        fee: bigint;
-      };
+      const { roundId, winner, prizeAmount, fee } = log.args as any;
       setLastWinner({
         roundId,
         winner,
@@ -227,6 +342,48 @@ export function useContractGame() {
         fee: fromUSDCUnits(fee),
       });
       refetchRound();
+    },
+  });
+
+  // ── Watch Flipped ─────────────────────────────────────────────────────────
+
+  useWatchContractEvent({
+    address: FLIP_ADDRESS,
+    abi: FLIP_ABI,
+    eventName: "Flipped",
+    onLogs(logs) {
+      const log = logs[0];
+      if (!log?.args) return;
+      const { player, amount, choice, result, won } = log.args as any;
+      setLastFlipResult({
+        player,
+        amount: fromUSDCUnits(amount),
+        choice: Number(choice),
+        result: Number(result),
+        won: Boolean(won),
+        transactionHash: log.transactionHash,
+      });
+    },
+  });
+
+  // ── Watch Spun ────────────────────────────────────────────────────────────
+
+  useWatchContractEvent({
+    address: SPIN_ADDRESS,
+    abi: SPIN_ABI,
+    eventName: "Spun",
+    onLogs(logs) {
+      const log = logs[0];
+      if (!log?.args) return;
+      const { player, amount, roll, multiplier, payout } = log.args as any;
+      setLastSpinResult({
+        player,
+        amount: fromUSDCUnits(amount),
+        roll: BigInt(roll),
+        multiplier: BigInt(multiplier),
+        payout: fromUSDCUnits(payout),
+        transactionHash: log.transactionHash,
+      });
     },
   });
 
@@ -269,6 +426,8 @@ export function useContractGame() {
     refetchRound,
 
     depositUSDC,
+    playFlip,
+    playSpin,
     endRound,
     selectWinnerManual,
 
@@ -280,6 +439,8 @@ export function useContractGame() {
     endRoundSuccess,
 
     lastWinner,
+    lastFlipResult,
+    lastSpinResult,
     error,
   };
 }

@@ -13,6 +13,9 @@ import { FlipResultCard } from "./FlipResult";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { FlipGame } from "./FlipGame";
+import { useGameState } from "@/hooks/useGameState";
+import { useSound } from "@/hooks/useSound";
+import { useEffect, useCallback } from "react";
 
 const EMPTY_ID = "3455654";
 type TabType = "public" | "private";
@@ -27,6 +30,13 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
   const isPrivateRoom = !isEmptyState;
 
   const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
+
+  const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
+  const { addEntry, loading, lastFlipResult } = useGameState(
+    effectiveRoomId,
+    "flip",
+  );
+  const { playSound } = useSound();
 
   const [activeTab, setActiveTab] = useState<TabType>(
     isPrivateRoom ? "private" : "public",
@@ -48,16 +58,32 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
 
   const handleTabChange = (tab: TabType) => setActiveTab(tab);
 
-  const handleFlip = (side: CoinSide, amount: string) => {
+  const handleFlip = async (side: CoinSide, amount: string) => {
     setSelectedSide(side);
+    const numAmount = Number(amount.replace("$", ""));
+    await addEntry(numAmount, { choice: side });
     setViewState("flipping");
-    setTimeout(() => {
-      const landedSide: CoinSide = Math.random() > 0.5 ? "heads" : "tails";
-      const result: FlipResult = landedSide === side ? "win" : "loss";
-      setFlipResult({ result, landedSide, amount });
-      setViewState("result");
-    }, FLIP_DURATION);
+    playSound("flip");
   };
+
+  // Watch for contract result
+  useEffect(() => {
+    if (lastFlipResult && viewState === "flipping") {
+      // Small delay to ensure some flipping animation is seen
+      const timer = setTimeout(() => {
+        const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
+        const result: FlipResult = lastFlipResult.won ? "win" : "loss";
+        setFlipResult({
+          result,
+          landedSide,
+          amount: `$${lastFlipResult.amount}`,
+        });
+        setViewState("result");
+        playSound(lastFlipResult.won ? "win" : "loss");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [lastFlipResult, viewState, playSound]);
 
   const handleFlipAgain = () => {
     setViewState("select");

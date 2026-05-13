@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
 import { usePusherRoom } from "./usePusherRoom";
@@ -45,17 +45,24 @@ const FEE_PERCENT = 0.05;
 const EMPTY_ID = "3455654";
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
+export type GameType = "draw" | "flip" | "spin";
 
-export function useGameState(roomId: string) {
+export function useGameState(roomId: string, gameType: GameType = "draw") {
   const { user, authHeaders } = useAuthContext();
   const {
     currentRound,
     yourDeposit,
     depositUSDC,
+    playFlip,
+    playSpin,
     isApproving,
     isDepositing,
     lastWinner,
+    lastFlipResult,
+    lastSpinResult,
   } = useContractGame();
+
+  const recordedTxs = useRef<Set<string>>(new Set());
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
@@ -169,7 +176,47 @@ export function useGameState(roomId: string) {
     }
 
     settle();
-  }, [lastWinner]);
+  }, [lastWinner, roomId]);
+
+  // ── Record Instant Games (Flip/Spin) ──────────────────────────────────────
+
+  useEffect(() => {
+    if (isEmptyState) {
+      if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
+        recordedTxs.current.add(lastFlipResult.transactionHash);
+        fetch("/api/games/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            gameType: "flip",
+            stakeAmount: lastFlipResult.amount,
+            txHash: lastFlipResult.transactionHash,
+            won: lastFlipResult.won,
+            prizeAmount: lastFlipResult.won ? lastFlipResult.amount * 2 : 0,
+          }),
+        });
+      } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
+        recordedTxs.current.add(lastSpinResult.transactionHash);
+        fetch("/api/games/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            gameType: "spin",
+            stakeAmount: lastSpinResult.amount,
+            txHash: lastSpinResult.transactionHash,
+            won: lastSpinResult.payout > 0,
+            prizeAmount: lastSpinResult.payout,
+          }),
+        });
+      }
+    }
+  }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
 
   // ── Derived game state ────────────────────────────────────────────────────
 
@@ -190,29 +237,43 @@ export function useGameState(roomId: string) {
   // ── addEntry — approve + deposit on-chain + record in API ─────────────────
 
   const addEntry = useCallback(
-    async (amount: number) => {
+    async (amount: number, extra?: any) => {
       if (!user || isEmptyState) return;
       setLoading(true);
 
       try {
-        const txHash = await depositUSDC(amount);
+        let txHash: `0x${string}` | null = null;
+
+        if (gameType === "draw") {
+          txHash = await depositUSDC(amount);
+        } else if (gameType === "flip") {
+          // choice: 0 for heads, 1 for tails
+          const choice = extra?.choice === "tails" ? 1 : 0;
+          txHash = await playFlip(choice, amount);
+        } else if (gameType === "spin") {
+          txHash = await playSpin(amount);
+        }
+
         if (!txHash) return;
 
-        await fetch(`/api/rooms/${roomId}/join`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders(),
-          },
-          body: JSON.stringify({ txHash }),
-        });
+        // Record in API (if room exists)
+        if (!isEmptyState) {
+          await fetch(`/api/rooms/${roomId}/join`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...authHeaders(),
+            },
+            body: JSON.stringify({ txHash, gameType }),
+          });
+        }
       } catch (err) {
         console.error("[useGameState] addEntry error:", err);
       } finally {
         setLoading(false);
       }
     },
-    [user, roomId, depositUSDC, authHeaders, isEmptyState],
+    [user, roomId, gameType, depositUSDC, playFlip, playSpin, authHeaders, isEmptyState],
   );
 
   return {
@@ -221,5 +282,7 @@ export function useGameState(roomId: string) {
     loading: loading || isApproving || isDepositing,
     addEntry,
     lastWinner,
+    lastFlipResult,
+    lastSpinResult,
   };
 }

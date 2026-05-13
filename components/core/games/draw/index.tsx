@@ -40,7 +40,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
   const { gameState, players, loading, addEntry, lastWinner } =
-    useGameState(effectiveRoomId);
+    useGameState(effectiveRoomId, "draw");
 
   const isPublicGameOpen =
     currentRound !== null &&
