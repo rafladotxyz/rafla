@@ -238,7 +238,11 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
   const addEntry = useCallback(
     async (amount: number, extra?: any) => {
-      if (!user || isEmptyState) return;
+      if (!user) return;
+
+      // For 'draw' (Raffle), we need a roomId
+      if (gameType === "draw" && isEmptyState) return;
+
       setLoading(true);
 
       try {
