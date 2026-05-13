@@ -9,9 +9,11 @@ import { EmptyStateCard } from "../cards/EmptyStateCard";
 import { JoinRoomModal } from "../cards/JoinRoomModal";
 import { SpinWheel } from "./SpinerCard";
 import SWinOrLoss from "./card/SpinWinOrLoss";
+import { useGameState } from "@/hooks/useGameState";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { SpinGame } from "./SpinGame";
+import { useEffect, useCallback } from "react";
 
 const EMPTY_ID = "3455654";
 type TabType = "public" | "private";
@@ -36,6 +38,12 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
   const { currentRound } = useContractGame();
 
+  const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
+  const { addEntry, loading, lastSpinResult } = useGameState(
+    effectiveRoomId,
+    "spin",
+  );
+
   const [activeTab, setActiveTab] = useState<TabType>(
     isPrivateRoom ? "private" : "public",
   );
@@ -51,6 +59,9 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     isWin: boolean;
   } | null>(null);
 
+  const [externalSpinTrigger, setExternalSpinTrigger] = useState(false);
+  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+
   const isPublicGameOpen =
     currentRound !== null &&
     currentRound.status === RoundStatus.Active &&
@@ -65,12 +76,35 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedSegment(segment);
     setLandedAmount(amount);
     setShowWinLoss(true);
+    setExternalSpinTrigger(false);
   };
+
+  const handleSpinRequest = async (amount: number) => {
+    await addEntry(amount);
+  };
+
+  // Watch for contract result
+  useEffect(() => {
+    if (lastSpinResult) {
+      let index = 0; // default lose
+      if (lastSpinResult.payout > lastSpinResult.amount) {
+        index = 2; // win
+      } else if (lastSpinResult.payout === lastSpinResult.amount) {
+        index = 1; // breakeven
+      } else {
+        index = 0; // lose
+      }
+
+      setTargetIndex(index);
+      setExternalSpinTrigger(true);
+    }
+  }, [lastSpinResult]);
 
   const handleWinLossClose = () => {
     setShowWinLoss(false);
     setLandedSegment(undefined);
     setLandedAmount("$0");
+    setTargetIndex(null);
   };
 
   const handleShare = (amount: string, isWin: boolean) => {
@@ -105,7 +139,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         <GameHeader gameName="Rafla Spin" />
       </div>
 
-      <SpinGame handleSpinResult={handleSpinResult} />
+      <SpinGame
+        handleSpinResult={handleSpinResult}
+        externalSpinTrigger={externalSpinTrigger}
+        targetIndex={targetIndex}
+        onSpinRequest={handleSpinRequest}
+        isLoading={loading}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Yay from "@/assets/yay.svg";
 import Breakeven from "@/assets/eq.svg";
 import Nay from "@/assets/nay.svg";
@@ -42,9 +42,17 @@ const IMG_SIZE = 64;
 export const SpinWheel = ({
   //betAmount = "$1",
   onResult,
+  externalSpinTrigger,
+  targetIndex,
+  onSpinRequest,
+  isLoading,
 }: {
   betAmount?: string;
   onResult?: (segment: Segment) => void;
+  externalSpinTrigger?: boolean;
+  targetIndex?: number | null;
+  onSpinRequest?: (amount: number) => void;
+  isLoading?: boolean;
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -52,12 +60,15 @@ export const SpinWheel = ({
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
   const currentRotation = useRef(0);
 
-  const spin = () => {
+  const spin = (forcedIndex?: number) => {
     if (spinning) return;
     setSpinning(true);
     setLanded(null);
 
-    const segmentIndex = Math.floor(Math.random() * SEGMENTS.length);
+    const segmentIndex =
+      forcedIndex !== undefined
+        ? forcedIndex
+        : Math.floor(Math.random() * SEGMENTS.length);
     const segmentAngle = 360 / SEGMENTS.length;
     const targetOffset = segmentIndex * segmentAngle + segmentAngle / 2;
     const extraSpins = MIN_SPINS * 360;
@@ -76,6 +87,13 @@ export const SpinWheel = ({
       onResult?.(SEGMENTS[segmentIndex]);
     }, SPIN_DURATION);
   };
+
+  // Sync with external trigger
+  useEffect(() => {
+    if (externalSpinTrigger && targetIndex !== undefined && targetIndex !== null) {
+      spin(targetIndex);
+    }
+  }, [externalSpinTrigger, targetIndex]);
 
   const toRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -245,17 +263,26 @@ export const SpinWheel = ({
       {/* Spin button */}
       <div className="w-full px-2">
         <button
-          onClick={spin}
-          disabled={spinning}
+          onClick={() => {
+            if (onSpinRequest) {
+              const amount = selectedPrice ? Number(selectedPrice.replace("$", "")) : 1;
+              onSpinRequest(amount);
+            } else {
+              spin();
+            }
+          }}
+          disabled={spinning || isLoading}
           className={`w-full h-14 rounded-2xl text-[16px] font-bold transition-all border shadow-xl ${
-            spinning
+            spinning || isLoading
               ? "bg-[#1a1a1a] text-[#4a4a4a] cursor-not-allowed border-[#282828]"
               : "bg-white text-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer border-transparent"
           }`}
         >
           {spinning
             ? "Spinning..."
-            : `Spin ${selectedPrice ? "with " + selectedPrice : ""} to find out`}
+            : isLoading
+              ? "Waiting for Tx..."
+              : `Spin ${selectedPrice ? "with " + selectedPrice : ""} to find out`}
         </button>
       </div>
 
