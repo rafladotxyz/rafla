@@ -168,13 +168,21 @@ export function useAuth() {
       if (!state.token) return { error: "not authenticated" };
 
       try {
+        const payload = { ...data };
+        if (payload.username) {
+          payload.username = payload.username.trim().toLowerCase();
+          if (payload.username.startsWith("@")) {
+            payload.username = payload.username.slice(1);
+          }
+        }
+
         const res = await fetch("/api/user/profile", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${state.token}`,
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
         });
 
         const json = await res.json();

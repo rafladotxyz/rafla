@@ -38,7 +38,7 @@ function PlayerAvatar({ player }: { player: Player }) {
       <div className="flex flex-col min-w-0">
         <span className="text-[13px] text-[#E8E8E8] truncate font-mono">
           {player.username
-            ? player.username
+            ? `@${player.username}`
             : `${player.address.slice(0, 6)}...${player.address.slice(-4)}`}
         </span>
         {player.isYou && (

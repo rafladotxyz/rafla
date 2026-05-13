@@ -91,7 +91,7 @@ export function SignInButton() {
           </div>
         )}
         <span className="text-[13px] text-[#CBCBCB] hidden sm:inline">
-          {user?.username ??
+          {user?.username ? `@${user.username}` :
             `${user?.wallet.slice(0, 6)}...${user?.wallet.slice(-4)}`}
         </span>
       </div>

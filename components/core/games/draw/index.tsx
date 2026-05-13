@@ -69,7 +69,20 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
           handleClick={() => setShowWinLoss(false)}
           isWin={resultData.isWin}
           amount={resultData.amount}
-          winnerAddress={resultData.winnerAddress}
+          winnerName={
+            players.find(
+              (p) =>
+                p.address.toLowerCase() === resultData.winnerAddress.toLowerCase(),
+            )?.username
+              ? `@${
+                  players.find(
+                    (p) =>
+                      p.address.toLowerCase() ===
+                      resultData.winnerAddress.toLowerCase(),
+                  )?.username
+                }`
+              : resultData.winnerAddress
+          }
         />
       )}
 
