@@ -54,6 +54,7 @@ export function useRoom() {
           body: JSON.stringify({
             gameType: params.gameType,
             stakeAmount: String(params.stakeAmountDollars * 1_000_000), // USDC 6 decimals
+            minPlayers: params.minPlayers,
             drawTime,
             contractRound: currentRound?.id?.toString() ?? null,
           }),
@@ -67,7 +68,7 @@ export function useRoom() {
 
         setCreatedRoom(json.room);
         return json.room;
-      } catch (err) {
+      } catch {
         setError("network error");
         return null;
       } finally {
@@ -114,7 +115,7 @@ export function useRoom() {
         }
 
         return true;
-      } catch (err) {
+      } catch {
         setError("failed to join room");
         return false;
       } finally {

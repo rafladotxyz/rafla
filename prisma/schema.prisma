@@ -29,6 +29,7 @@ model GameRoom {
   id            String            @id @default(cuid())
   gameType      String // "spin" | "flip" | "draw"
   stakeAmount   String // USDC amount as string (6 decimals)
+  minPlayers    Int               @default(3)
   contractRound BigInt // on-chain roundId
   status        String            @default("waiting") // waiting | active | completed | cancelled
   drawTime      DateTime?

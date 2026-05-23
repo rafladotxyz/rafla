@@ -32,15 +32,7 @@ export async function GET(
     });
 
     if (!room) {
-      // Return a 200 OK but with a 'status: "new"' or null participants
-      return NextResponse.json({
-        room: {
-          id: roomId,
-          status: "waiting",
-          participants: [], // This tells the hook there are no players yet
-          isNew: true,
-        },
-      });
+      return NextResponse.json({ error: "room not found" }, { status: 404 });
     }
 
     return NextResponse.json({

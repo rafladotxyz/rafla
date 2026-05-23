@@ -18,12 +18,24 @@ export async function GET() {
     });
 
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+    const prizeRows = await prisma.gameResult.findMany({
+      where: { winnerId: { in: winnerIds } },
+      select: { winnerId: true, prizeAmount: true },
+    });
+
+    const totalPrizeByWinner = prizeRows.reduce<Record<string, number>>(
+      (acc, row) => {
+        acc[row.winnerId] = (acc[row.winnerId] ?? 0) + Number(row.prizeAmount);
+        return acc;
+      },
+      {},
+    );
 
     const leaderboard = results.map((r, i) => ({
       rank: i + 1,
       user: userMap[r.winnerId],
       wins: r._count.winnerId,
-      totalPrize: "0",
+      totalPrize: String(totalPrizeByWinner[r.winnerId] ?? 0),
     }));
 
     return NextResponse.json({ leaderboard });
