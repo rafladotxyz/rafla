@@ -11,10 +11,13 @@
 - [x] Add app-wide motion primitives and responsive home/dashboard polish - completed 2026-05-23
 - [x] Clean unfinished draw page warnings and remove dead state - completed 2026-05-23
 
-## Partial / Still Polishing
+- [x] Harden contract reads against wrong-network balanceOf errors and use deployed token addresses - completed 2026-05-23
+- [x] Add dashboard user details and remove dashboard link from navbar - completed 2026-05-23
+- [x] Refresh room create/join cards with custom amount/player controls and cleaner visuals - completed 2026-05-23
 
-- [ ] Profile page still needs the same motion polish and a shared layout nav entry on direct visits.
-- [ ] Leaderboard page still needs the same motion polish and a shared layout nav entry on direct visits.
+- [x] Add shared navbar + responsive shell to profile and leaderboard pages - completed 2026-05-23
+
+- [x] Make minimum deposit errors explain misconfigured on-chain values clearly - completed 2026-05-23
 
 ## Verified
 

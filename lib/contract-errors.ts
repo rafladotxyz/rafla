@@ -31,6 +31,9 @@ const LOW_LEVEL_PATTERNS: Array<[RegExp, string]> = [
   [/allowance/i, "USDC approval is missing or too small."],
   [/exceeds balance/i, "Your wallet balance is too low."],
   [/execution reverted/i, "The transaction was reverted by the contract."],
+  [/returned no data/i, "The token contract could not be read on the current network. Switch to Base Sepolia and try again."],
+  [/cannot decode zero data/i, "The token contract could not be read on the current network. Switch to Base Sepolia and try again."],
+  [/address is not a contract/i, "The token contract address is invalid on the current network."],
 ];
 
 function collectMessage(error: unknown): string {
@@ -39,7 +42,6 @@ function collectMessage(error: unknown): string {
   if (error instanceof Error) {
     const parts = [
       error.message,
-      // viem and wallet libs often attach extra detail fields
       (error as { shortMessage?: string }).shortMessage,
       (error as { details?: string }).details,
       collectMessage((error as { cause?: unknown }).cause),
