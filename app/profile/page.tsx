@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { GameHeader } from "@/components/core/games/GameHeader";
+import { Navbar } from "@/components/layout/Navbar";
+import Image from "next/image";
 
 interface GameHistoryItem {
   id: string;
@@ -70,19 +72,7 @@ export default function ProfilePage() {
     setTimeout(() => setSaveSuccess(false), 3000);
   });
 
-  useEffect(() => {
-    if (user) {
-      setForm({
-        username: user.username ?? "",
-        bio: user.bio ?? "",
-        twitter: user.twitter ?? "",
-        telegram: user.telegram ?? "",
-      });
-      fetchHistory();
-    }
-  }, [user?.id]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
       const res = await fetch("/api/user/history", { headers: authHeaders() });
@@ -94,7 +84,19 @@ export default function ProfilePage() {
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [authHeaders]);
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        username: user.username ?? "",
+        bio: user.bio ?? "",
+        twitter: user.twitter ?? "",
+        telegram: user.telegram ?? "",
+      });
+      fetchHistory();
+    }
+  }, [user, fetchHistory]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -163,8 +165,16 @@ export default function ProfilePage() {
   const displayName = user.username ? `@${user.username}` : "Anonymous";
 
   return (
-    <div className="w-full max-w-[760px] mx-auto px-4 py-10 flex flex-col gap-8">
-      <GameHeader gameName={`${displayName}'s Profile`} />
+    <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
+      <header className="fixed top-4 md:top-6 left-0 right-0 z-50 flex justify-center pt-6">
+        <Navbar />
+      </header>
+
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
+      <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:p-8 shadow-2xl shadow-black/30 backdrop-blur-xl">
+        <GameHeader gameName={`${displayName}'s Profile`} />
+      </section>
+
       {/* Hidden file input */}
       <input
         ref={inputRef}
@@ -180,9 +190,11 @@ export default function ProfilePage() {
         <div className="relative shrink-0 group">
           <div className="w-24 h-24 rounded-3xl bg-[#141414] border border-[#282828] overflow-hidden">
             {avatarPreview ? (
-              <img
+              <Image
                 src={avatarPreview}
                 alt="avatar"
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -478,6 +490,7 @@ export default function ProfilePage() {
           Profile updated
         </div>
       )}
+      </main>
     </div>
   );
 }

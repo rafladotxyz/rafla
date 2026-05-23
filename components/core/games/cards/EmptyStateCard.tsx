@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRoom } from "@/hooks/useRoom";
@@ -18,63 +18,84 @@ type Mode = "idle" | "create" | "created" | "join";
 
 interface EmptyStateCardProps {
   gameType: GameType;
-  isPublic?: boolean; // true = public tab, false = private tab
+  isPublic?: boolean;
 }
 
 export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
   const router = useRouter();
   const { isAuthenticated, signIn } = useAuthContext();
-  const {
-    createRoom,
-    joinRoom,
-    copyRoomLink,
-    createdRoom,
-    isCreating,
-    isJoining,
-    error,
-  } = useRoom();
+  const { createRoom, joinRoom, createdRoom, isCreating, isJoining, error } = useRoom();
 
   const [mode, setMode] = useState<Mode>("idle");
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [customPrice, setCustomPrice] = useState<string>("");
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
+  const [customPlayers, setCustomPlayers] = useState<string>("");
   const [joinRoomId, setJoinRoomId] = useState("");
-  const [joinPrice, setJoinPrice] = useState<number | null>(null);
+  const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [fetchingRoom, setFetchingRoom] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
+  const effectivePlayers = customPlayers ? Number(customPlayers) : selectedPlayers;
 
   const roomLink = createdRoom
     ? `${typeof window !== "undefined" ? window.location.origin : "https://rafla.xyz"}/${gameType}/${createdRoom.id}`
     : "";
 
-  // ── Create ────────────────────────────────────────────────────────────────
+  const fetchRoomData = async (id: string): Promise<number | null> => {
+    const trimmed = id.trim();
+    if (!trimmed) return null;
+    setFetchingRoom(true);
+    try {
+      const res = await fetch(`/api/rooms/${trimmed}`);
+      if (!res.ok) {
+        setRoomStake(null);
+        return null;
+      }
+      const { room } = await res.json();
+      const stake = room?.stakeAmount ? Number(room.stakeAmount) / 1_000_000 : null;
+      setRoomStake(stake);
+      return stake;
+    } catch {
+      setRoomStake(null);
+      return null;
+    } finally {
+      setFetchingRoom(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
-    if (!selectedPrice || !selectedPlayers) return;
+    if (!effectivePrice || !effectivePlayers) return;
 
     const room = await createRoom({
       gameType,
-      stakeAmountDollars: selectedPrice,
-      minPlayers: selectedPlayers,
+      stakeAmountDollars: effectivePrice,
+      minPlayers: effectivePlayers,
     });
 
     if (room) setMode("created");
   };
-
-  // ── Join ──────────────────────────────────────────────────────────────────
 
   const handleJoin = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
-    if (!joinRoomId.trim()) return;
 
-    const ok = await joinRoom(joinRoomId.trim(), joinPrice ?? 1);
+    const trimmed = joinRoomId.trim();
+    if (!trimmed) return;
+
+    const stake = roomStake ?? (await fetchRoomData(trimmed));
+    if (stake === null) return;
+
+    const ok = await joinRoom(trimmed, stake);
     if (ok) {
-      router.push(`/${gameType}/${joinRoomId.trim()}`);
+      router.push(`/${gameType}/${trimmed}`);
     }
   };
 
@@ -84,35 +105,39 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // ── Idle screen ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (mode === "join" && joinRoomId.trim().length >= 6) {
+      void fetchRoomData(joinRoomId);
+    }
+  }, [joinRoomId, mode]);
 
   if (mode === "idle") {
     return (
-      <div className="flex flex-col items-center justify-center gap-6 py-20 w-full">
-        <div className="flex flex-col items-center gap-3 max-w-xs text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#141414] border border-[#282828] flex items-center justify-center text-3xl">
+      <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:py-20">
+        <div className="max-w-md rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-xl shadow-2xl shadow-black/20">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl">
             {isPublic ? "🕐" : "🔒"}
           </div>
-          <p className="text-[20px] font-semibold text-[#D9D9D9]">
+          <p className="text-xl font-medium text-[#F3F3F3]">
             {isPublic ? "No open game right now" : "No active room"}
           </p>
-          <p className="text-[14px] text-[#737373] leading-relaxed">
+          <p className="mt-3 text-sm leading-relaxed text-[#9A9A9A]">
             {isPublic
-              ? "The Rafla team hasn't opened a public game yet. Create a private room to play with friends while you wait."
-              : "Create a private room and invite friends, or join an existing room with a room ID."}
+              ? "The public room is not live yet. Create a private room or join one by ID while you wait."
+              : "Create a private room, set the stake and minimum players, then share the invite link."}
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex w-full max-w-md flex-col gap-3 sm:flex-row">
           <button
             onClick={() => setMode("create")}
-            className="h-11 px-6 rounded-xl bg-white text-[#0A0A0A] text-[14px] font-medium hover:bg-[#E8E8E8] transition-colors"
+            className="h-12 flex-1 rounded-full bg-white text-black text-sm font-medium transition-transform hover:-translate-y-0.5"
           >
             Create Room
           </button>
           <button
             onClick={() => setMode("join")}
-            className="h-11 px-6 rounded-xl border border-[#282828] text-[#CBCBCB] text-[14px] font-medium hover:border-[#444] transition-colors"
+            className="h-12 flex-1 rounded-full border border-white/10 bg-white/5 text-sm font-medium text-[#E8E8E8] transition-colors hover:bg-white/10 hover:text-white"
           >
             Join Room
           </button>
@@ -121,238 +146,188 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
     );
   }
 
-  // ── Create screen ─────────────────────────────────────────────────────────
-
   if (mode === "create") {
     return (
-      <div className="flex items-center justify-center py-16 w-full">
-        <div className="flex flex-col w-[360px] rounded-3xl bg-[#141414] border border-[#282828] p-6 gap-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMode("idle")}
-              className="text-[#737373] hover:text-[#CBCBCB] transition-colors text-sm"
-            >
-              ← Back
-            </button>
-            <div className="flex flex-col">
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                Create Private Room
-              </p>
-              <p className="text-[13px] text-[#737373]">
-                Set your stake and player count
-              </p>
-            </div>
-          </div>
-
-          {/* Price per ticket */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-[#CBCBCB]">Price per ticket</p>
-            <div className="flex gap-2">
-              {PRICE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.label}
-                  onClick={() => setSelectedPrice(opt.value)}
-                  className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                    selectedPrice === opt.value
-                      ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                      : "border-[#282828] bg-[#0A0A0A]"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Min players */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-[#CBCBCB]">Minimum players</p>
-            <div className="flex gap-2">
-              {PLAYER_OPTIONS.map((count) => (
-                <button
-                  key={count}
-                  onClick={() => setSelectedPlayers(count)}
-                  className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                    selectedPlayers === count
-                      ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                      : "border-[#282828] bg-[#0A0A0A]"
-                  }`}
-                >
-                  {count}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && <p className="text-[12px] text-red-400">{error}</p>}
-
-          <button
-            onClick={handleCreate}
-            disabled={!selectedPrice || !selectedPlayers || isCreating}
-            className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-              selectedPrice && selectedPlayers && !isCreating
-                ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
-                : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
-            }`}
-          >
-            {!isAuthenticated
-              ? "Sign in to Create"
-              : isCreating
-                ? "Creating..."
-                : "Create Room"}
+      <div className="mx-auto flex w-full max-w-[420px] flex-col gap-5 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-1">
+          <button onClick={() => setMode("idle")} className="text-left text-xs text-[#8A8A8A] hover:text-[#E8E8E8]">
+            ← Back
           </button>
+          <p className="text-lg font-medium text-[#F3F3F3]">Create Private Room</p>
+          <p className="text-sm text-[#A3A3A3]">Choose a stake and the minimum players required to unlock the room.</p>
         </div>
+
+        <div className="grid gap-2">
+          <p className="text-sm text-[#CBCBCB]">Price per ticket</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {PRICE_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() => {
+                  setSelectedPrice(opt.value);
+                  setCustomPrice("");
+                }}
+                className={`h-11 rounded-2xl border text-sm transition-colors ${
+                  selectedPrice === opt.value
+                    ? "border-white bg-white text-black"
+                    : "border-white/10 bg-black/20 text-[#CBCBCB] hover:bg-white/5"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <input
+              type="number"
+              placeholder="Custom"
+              value={customPrice}
+              onChange={(e) => {
+                setCustomPrice(e.target.value);
+                setSelectedPrice(null);
+              }}
+              className={`h-11 rounded-2xl border bg-black/20 px-3 text-sm text-[#CBCBCB] outline-none placeholder:text-[#444] ${
+                customPrice ? "border-white" : "border-white/10"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <p className="text-sm text-[#CBCBCB]">Minimum players</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {PLAYER_OPTIONS.map((count) => (
+              <button
+                key={count}
+                onClick={() => {
+                  setSelectedPlayers(count);
+                  setCustomPlayers("");
+                }}
+                className={`h-11 rounded-2xl border text-sm transition-colors ${
+                  selectedPlayers === count
+                    ? "border-white bg-white text-black"
+                    : "border-white/10 bg-black/20 text-[#CBCBCB] hover:bg-white/5"
+                }`}
+              >
+                {count}
+              </button>
+            ))}
+            <input
+              type="number"
+              placeholder="Custom"
+              value={customPlayers}
+              onChange={(e) => {
+                setCustomPlayers(e.target.value);
+                setSelectedPlayers(null);
+              }}
+              className={`h-11 rounded-2xl border bg-black/20 px-3 text-sm text-[#CBCBCB] outline-none placeholder:text-[#444] ${
+                customPlayers ? "border-white" : "border-white/10"
+              }`}
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-400">{error}</p>}
+
+        <button
+          onClick={handleCreate}
+          disabled={!effectivePrice || !effectivePlayers || isCreating}
+          className={`h-12 rounded-full text-sm font-medium transition-colors ${
+            effectivePrice && effectivePlayers && !isCreating
+              ? "bg-white text-black hover:bg-[#F5F5F5]"
+              : "cursor-not-allowed bg-white/5 text-[#4a4a4a]"
+          }`}
+        >
+          {!isAuthenticated ? "Sign in to Create" : isCreating ? "Creating..." : "Create Room"}
+        </button>
       </div>
     );
   }
-
-  // ── Created — share screen ────────────────────────────────────────────────
-
-  if (mode === "created" && createdRoom) {
-    return (
-      <div className="flex items-center justify-center py-16 w-full">
-        <div className="flex flex-col w-[360px] rounded-3xl bg-[#141414] border border-[#282828] p-6 gap-5">
-          <div className="flex flex-col gap-1">
-            <p className="text-[16px] font-semibold text-[#D9D9D9]">
-              Room Created! 🎉
-            </p>
-            <p className="text-[13px] text-[#737373]">
-              Share the link or ID with friends to invite them
-            </p>
-          </div>
-
-          {/* Room ID */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] text-[#737373] uppercase tracking-wider">
-              Room ID
-            </p>
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#282828]">
-              <span className="flex-1 text-[13px] text-[#CBCBCB] font-mono truncate">
-                {createdRoom.id}
-              </span>
-              <button
-                onClick={() => handleCopy(createdRoom.id)}
-                className="text-[11px] text-[#737373] hover:text-[#CBCBCB] transition-colors shrink-0"
-              >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          {/* Room Link */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] text-[#737373] uppercase tracking-wider">
-              Invite Link
-            </p>
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#282828]">
-              <span className="flex-1 text-[12px] text-[#CBCBCB] truncate">
-                {roomLink}
-              </span>
-              <button
-                onClick={() => handleCopy(roomLink)}
-                className="text-[11px] text-[#737373] hover:text-[#CBCBCB] transition-colors shrink-0"
-              >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          {/* Stake summary */}
-          <div className="flex justify-between text-[12px] text-[#737373] border-t border-[#282828] pt-3">
-            <span>Stake per player</span>
-            <span className="text-[#CBCBCB]">${selectedPrice} USDC</span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push(`/${gameType}/${createdRoom.id}`)}
-              className="flex-1 h-11 rounded-xl bg-white text-[#0A0A0A] text-[14px] font-medium hover:bg-[#E8E8E8] transition-colors"
-            >
-              Enter Room
-            </button>
-            <button
-              onClick={() => handleCopy(roomLink)}
-              className="flex-1 h-11 rounded-xl border border-[#282828] text-[#CBCBCB] text-[14px] font-medium hover:border-[#444] transition-colors"
-            >
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Join screen ───────────────────────────────────────────────────────────
 
   if (mode === "join") {
     return (
-      <div className="flex items-center justify-center py-16 w-full">
-        <div className="flex flex-col w-[360px] rounded-3xl bg-[#141414] border border-[#282828] p-6 gap-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMode("idle")}
-              className="text-[#737373] hover:text-[#CBCBCB] transition-colors text-sm"
-            >
-              ← Back
+      <div className="mx-auto flex w-full max-w-[420px] flex-col gap-5 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-1">
+          <button onClick={() => setMode("idle")} className="text-left text-xs text-[#8A8A8A] hover:text-[#E8E8E8]">
+            ← Back
+          </button>
+          <p className="text-lg font-medium text-[#F3F3F3]">Join Room</p>
+          <p className="text-sm text-[#A3A3A3]">Paste a room ID and we’ll fetch the stake before you join.</p>
+        </div>
+
+        <div className="grid gap-2">
+          <p className="text-sm text-[#CBCBCB]">Room ID</p>
+          <input
+            value={joinRoomId}
+            onChange={(e) => setJoinRoomId(e.target.value)}
+            onBlur={() => void fetchRoomData(joinRoomId)}
+            placeholder="Paste room ID here"
+            className="h-12 rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-[#CBCBCB] outline-none placeholder:text-[#444]"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <p className="text-sm text-[#CBCBCB]">Required Stake</p>
+          <div className="flex h-12 items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4">
+            {fetchingRoom ? (
+              <div className="h-4 w-4 rounded-full border-2 border-white/60 border-t-transparent animate-spin" />
+            ) : roomStake !== null ? (
+              <>
+                <span className="text-sm text-[#E8E8E8]">${roomStake} USDC</span>
+                <span className="text-xs text-[#8A8A8A]">Fixed by creator</span>
+              </>
+            ) : (
+              <span className="text-sm text-[#737373]">Enter a valid room ID</span>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-400">{error}</p>}
+
+        <button
+          onClick={handleJoin}
+          disabled={!joinRoomId.trim() || isJoining || roomStake === null}
+          className={`h-12 rounded-full text-sm font-medium transition-colors ${
+            joinRoomId.trim() && !isJoining && roomStake !== null
+              ? "bg-white text-black hover:bg-[#F5F5F5]"
+              : "cursor-not-allowed bg-white/5 text-[#4a4a4a]"
+          }`}
+        >
+          {!isAuthenticated ? "Sign in to Join" : isJoining ? "Joining..." : "Join Room"}
+        </button>
+      </div>
+    );
+  }
+
+  if (mode === "created" && createdRoom) {
+    return (
+      <div className="mx-auto flex w-full max-w-[420px] flex-col gap-5 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-1">
+          <p className="text-lg font-medium text-[#F3F3F3]">Room created! 🎉</p>
+          <p className="text-sm text-[#A3A3A3]">Share the room ID or link with friends.</p>
+        </div>
+
+        <div className="grid gap-2">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Room ID</p>
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <span className="min-w-0 flex-1 truncate font-mono text-sm text-[#E8E8E8]">{createdRoom.id}</span>
+            <button onClick={() => handleCopy(createdRoom.id)} className="text-xs text-[#9A9A9A] hover:text-white transition-colors">
+              {copied ? "Copied!" : "Copy"}
             </button>
-            <div className="flex flex-col">
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                Join Private Room
-              </p>
-              <p className="text-[13px] text-[#737373]">
-                Enter the room ID from your friend
-              </p>
-            </div>
           </div>
+        </div>
 
-          {/* Room ID input */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-[#CBCBCB]">Room ID</p>
-            <input
-              value={joinRoomId}
-              onChange={(e) => setJoinRoomId(e.target.value)}
-              placeholder="Paste room ID here..."
-              className="h-11 px-4 rounded-xl bg-[#0A0A0A] border border-[#282828] text-[14px] text-[#CBCBCB] placeholder-[#444] outline-none focus:border-[#555] transition-colors"
-            />
+        <div className="grid gap-2">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Room Link</p>
+          <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <span className="block truncate text-sm text-[#CBCBCB]">{roomLink}</span>
           </div>
+        </div>
 
-          {/* Stake amount */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-[#CBCBCB]">Your stake</p>
-            <div className="flex gap-2">
-              {PRICE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.label}
-                  onClick={() => setJoinPrice(opt.value)}
-                  className={`flex-1 h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                    joinPrice === opt.value
-                      ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                      : "border-[#282828] bg-[#0A0A0A]"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && <p className="text-[12px] text-red-400">{error}</p>}
-
-          <button
-            onClick={handleJoin}
-            disabled={!joinRoomId.trim() || isJoining}
-            className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-              joinRoomId.trim() && !isJoining
-                ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
-                : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
-            }`}
-          >
-            {!isAuthenticated
-              ? "Sign in to Join"
-              : isJoining
-                ? "Joining..."
-                : "Join Room"}
+        <div className="flex gap-2">
+          <button onClick={() => handleCopy(roomLink)} className="flex-1 h-12 rounded-full bg-white text-black text-sm font-medium hover:bg-[#F5F5F5] transition-colors">
+            Copy Link
+          </button>
+          <button onClick={() => router.push(`/${gameType}/${createdRoom.id}`)} className="flex-1 h-12 rounded-full border border-white/10 bg-white/5 text-sm font-medium text-[#E8E8E8] hover:bg-white/10 hover:text-white transition-colors">
+            Enter Room
           </button>
         </div>
       </div>

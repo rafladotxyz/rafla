@@ -9,33 +9,27 @@ interface GameTabsProps {
 
 export function GameTabs({ activeTab, onTabChange }: GameTabsProps) {
   return (
-    <div className="flex items-center justify-center gap-8 mb-8">
+    <div className="mx-auto mb-8 flex w-full max-w-[420px] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] p-1.5 shadow-lg shadow-black/20 backdrop-blur-xl">
       <button
         onClick={() => onTabChange("public")}
-        className={`relative pb-2 text-base font-medium transition-colors ${
+        className={`relative flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
           activeTab === "public"
-            ? "text-[#E8E8E8]"
-            : "text-[#6B6B6B] hover:text-[#A3A3A3]"
+            ? "bg-white text-black shadow-sm"
+            : "text-[#9A9A9A] hover:text-white"
         }`}
       >
         Public
-        {activeTab === "public" && (
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8E8E8] rounded-full" />
-        )}
       </button>
 
       <button
         onClick={() => onTabChange("private")}
-        className={`relative pb-2 text-base font-medium transition-colors ${
+        className={`relative flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
           activeTab === "private"
-            ? "text-[#E8E8E8]"
-            : "text-[#6B6B6B] hover:text-[#A3A3A3]"
+            ? "bg-white text-black shadow-sm"
+            : "text-[#9A9A9A] hover:text-white"
         }`}
       >
         Private
-        {activeTab === "private" && (
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8E8E8] rounded-full" />
-        )}
       </button>
     </div>
   );

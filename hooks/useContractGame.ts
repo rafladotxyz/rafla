@@ -7,6 +7,7 @@ import {
   useWatchContractEvent,
   useReadContract,
   useAccount,
+  useChainId,
   usePublicClient,
 } from "wagmi";
 import {
@@ -23,6 +24,12 @@ import {
   RoundStatus,
 } from "@/lib/contract";
 import { normalizeContractError } from "@/lib/contract-errors";
+
+function formatUsdValue(value: bigint): string {
+  return Number(value).toLocaleString(undefined, {
+    maximumFractionDigits: 6,
+  });
+}
 
 // Re-export so views only need one import
 export { RoundStatus };
@@ -69,7 +76,11 @@ export interface SpinResultEvent {
 
 export function useContractGame() {
   const { address } = useAccount();
+  const chainId = useChainId();
   const publicClient = usePublicClient();
+  const isSupportedChain = chainId === 84532;
+  const unsupportedChainMessage =
+    "Please switch to Base Sepolia before joining or paying.";
 
   const [approveTxHash, setApproveTxHash] = useState<
     `0x${string}` | undefined
@@ -98,24 +109,49 @@ export function useContractGame() {
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     functionName: "getCurrentRound",
+    query: { enabled: isSupportedChain },
   });
 
   const { data: minDepositRaw } = useReadContract({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     functionName: "MIN_DEPOSIT",
+    query: { enabled: isSupportedChain },
   });
 
   const { data: minBetFlipRaw } = useReadContract({
     address: FLIP_ADDRESS,
     abi: FLIP_ABI,
     functionName: "minBet",
+    query: { enabled: isSupportedChain },
   });
 
   const { data: minBetSpinRaw } = useReadContract({
     address: SPIN_ADDRESS,
     abi: SPIN_ABI,
     functionName: "minBet",
+    query: { enabled: isSupportedChain },
+  });
+
+  const { data: raffleTokenAddress } = useReadContract({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_ABI,
+    functionName: "usdc",
+    query: { enabled: isSupportedChain },
+  });
+
+  const { data: flipTokenAddress } = useReadContract({
+    address: FLIP_ADDRESS,
+    abi: FLIP_ABI,
+    functionName: "oarCoin",
+    query: { enabled: isSupportedChain },
+  });
+
+  const { data: spinTokenAddress } = useReadContract({
+    address: SPIN_ADDRESS,
+    abi: SPIN_ABI,
+    functionName: "oarCoin",
+    query: { enabled: isSupportedChain },
   });
 
   const currentRound: CurrentRound | null = roundData
@@ -144,8 +180,12 @@ export function useContractGame() {
       currentRound?.id !== undefined && address
         ? [currentRound.id, address]
         : undefined,
-    query: { enabled: !!currentRound?.id && !!address },
+    query: { enabled: isSupportedChain && !!currentRound?.id && !!address },
   });
+
+  const raffleToken = ((raffleTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
+  const flipToken = ((flipTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
+  const spinToken = ((spinTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
 
   const yourDeposit = playerDepositRaw ? fromUSDCUnits(playerDepositRaw) : 0;
 
@@ -168,6 +208,11 @@ export function useContractGame() {
         return null;
       }
 
+      if (!isSupportedChain) {
+        setError(unsupportedChainMessage);
+        return null;
+      }
+
       setError(null);
       setIsDepositing(true);
 
@@ -176,7 +221,7 @@ export function useContractGame() {
 
         // Check balance first
         const balance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: raffleToken,
           abi: ERC20_ABI,
           functionName: "balanceOf",
           args: [address],
@@ -197,14 +242,19 @@ export function useContractGame() {
         if (minDepositRaw && (minDepositRaw as bigint) > 0n) {
           const min = minDepositRaw as bigint;
           if (rawAmount < min) {
-            setError(`Amount too small. Minimum deposit is ${fromUSDCUnits(min)} USDC.`);
+            const minUsdc = fromUSDCUnits(min);
+            setError(
+              minUsdc >= 1_000_000
+                ? `The contract minimum deposit is ${formatUsdValue(min)} USDC. That looks misconfigured on-chain, so check the deployed contract settings.`
+                : `Amount too small. Minimum deposit is ${formatUsdValue(BigInt(Math.round(minUsdc)))} USDC.`,
+            );
             return null;
           }
         }
 
         // Step 1: Check allowance
         const allowance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: raffleToken,
           abi: ERC20_ABI,
           functionName: "allowance",
           args: [address, RAFFLE_ADDRESS],
@@ -212,7 +262,7 @@ export function useContractGame() {
 
         if (allowance < rawAmount) {
           const approveTx = await writeContractAsync({
-            address: USDC_ADDRESS,
+            address: raffleToken,
             abi: ERC20_ABI,
             functionName: "approve",
             args: [RAFFLE_ADDRESS, rawAmount * BigInt(100)], // Approve more to save txs
@@ -243,7 +293,7 @@ export function useContractGame() {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, refetchRound, currentRoundId, currentRoundStatus, minDepositRaw],
+    [address, publicClient, writeContractAsync, refetchRound, currentRoundId, currentRoundStatus, minDepositRaw, raffleToken, isSupportedChain, unsupportedChainMessage],
   );
 
   // ── endRound ──────────────────────────────────────────────────────────────
@@ -297,6 +347,11 @@ export function useContractGame() {
         return null;
       }
 
+      if (!isSupportedChain) {
+        setError(unsupportedChainMessage);
+        return null;
+      }
+
       setError(null);
       setIsDepositing(true);
 
@@ -305,7 +360,7 @@ export function useContractGame() {
 
         // Check balance
         const balance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: flipToken,
           abi: ERC20_ABI,
           functionName: "balanceOf",
           args: [address],
@@ -318,13 +373,13 @@ export function useContractGame() {
 
         // Check minBet
         if (minBetFlipRaw && rawAmount < (minBetFlipRaw as bigint)) {
-          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(minBetFlipRaw as bigint)} USDC.`);
+          setError(`Bet too small. Minimum bet is ${formatUsdValue(minBetFlipRaw as bigint)} USDC.`);
           return null;
         }
 
         // Check allowance
         const allowance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: flipToken,
           abi: ERC20_ABI,
           functionName: "allowance",
           args: [address, FLIP_ADDRESS],
@@ -332,7 +387,7 @@ export function useContractGame() {
 
         if (allowance < rawAmount) {
           const approveTx = await writeContractAsync({
-            address: USDC_ADDRESS,
+            address: flipToken,
             abi: ERC20_ABI,
             functionName: "approve",
             args: [FLIP_ADDRESS, rawAmount * BigInt(100)],
@@ -361,7 +416,7 @@ export function useContractGame() {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, minBetFlipRaw],
+    [address, publicClient, writeContractAsync, minBetFlipRaw, flipToken, isSupportedChain, unsupportedChainMessage],
   );
 
   // ── playSpin ─────────────────────────────────────────────────────────────
@@ -373,6 +428,11 @@ export function useContractGame() {
         return null;
       }
 
+      if (!isSupportedChain) {
+        setError(unsupportedChainMessage);
+        return null;
+      }
+
       setError(null);
       setIsDepositing(true);
 
@@ -381,7 +441,7 @@ export function useContractGame() {
 
         // Check balance
         const balance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: spinToken,
           abi: ERC20_ABI,
           functionName: "balanceOf",
           args: [address],
@@ -394,13 +454,13 @@ export function useContractGame() {
 
         // Check minBet
         if (minBetSpinRaw && rawAmount < (minBetSpinRaw as bigint)) {
-          setError(`Bet too small. Minimum bet is ${fromUSDCUnits(minBetSpinRaw as bigint)} USDC.`);
+          setError(`Bet too small. Minimum bet is ${formatUsdValue(minBetSpinRaw as bigint)} USDC.`);
           return null;
         }
 
         // Check allowance
         const allowance = await publicClient.readContract({
-          address: USDC_ADDRESS,
+          address: spinToken,
           abi: ERC20_ABI,
           functionName: "allowance",
           args: [address, SPIN_ADDRESS],
@@ -408,7 +468,7 @@ export function useContractGame() {
 
         if (allowance < rawAmount) {
           const approveTx = await writeContractAsync({
-            address: USDC_ADDRESS,
+            address: spinToken,
             abi: ERC20_ABI,
             functionName: "approve",
             args: [SPIN_ADDRESS, rawAmount * BigInt(100)],
@@ -437,7 +497,7 @@ export function useContractGame() {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, minBetSpinRaw],
+    [address, publicClient, writeContractAsync, minBetSpinRaw, spinToken, isSupportedChain, unsupportedChainMessage],
   );
 
   // ── Watch WinnerSelected ──────────────────────────────────────────────────
