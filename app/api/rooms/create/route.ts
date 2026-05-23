@@ -10,7 +10,24 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { gameType, stakeAmount, drawTime, contractRound } = body;
+    const { gameType, stakeAmount, drawTime, contractRound, minPlayers } = body;
+
+    const parsedStake = Number(stakeAmount);
+    const parsedMinPlayers = Number(minPlayers ?? 3);
+
+    if (!Number.isFinite(parsedStake) || parsedStake <= 0) {
+      return NextResponse.json(
+        { error: "stakeAmount must be a positive number" },
+        { status: 400 },
+      );
+    }
+
+    if (!Number.isInteger(parsedMinPlayers) || parsedMinPlayers < 2) {
+      return NextResponse.json(
+        { error: "minPlayers must be an integer of at least 2" },
+        { status: 400 },
+      );
+    }
 
     if (!gameType || !stakeAmount) {
       return NextResponse.json(
@@ -26,7 +43,8 @@ export async function POST(req: NextRequest) {
     const room = await prisma.gameRoom.create({
       data: {
         gameType,
-        stakeAmount: String(stakeAmount),
+        stakeAmount: String(parsedStake),
+        minPlayers: parsedMinPlayers,
         contractRound: contractRound ? BigInt(contractRound) : 0,
         drawTime: drawTime ? new Date(drawTime) : null,
         status: "waiting",

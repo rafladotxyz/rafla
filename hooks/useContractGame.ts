@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -22,6 +22,7 @@ import {
   fromUSDCUnits,
   RoundStatus,
 } from "@/lib/contract";
+import { normalizeContractError } from "@/lib/contract-errors";
 
 // Re-export so views only need one import
 export { RoundStatus };
@@ -129,6 +130,8 @@ export function useContractGame() {
         timeRemaining: Number(roundData[7]),
       }
     : null;
+  const currentRoundId = currentRound?.id;
+  const currentRoundStatus = currentRound?.status;
 
   // ── Read player deposit for current round ─────────────────────────────────
 
@@ -185,7 +188,7 @@ export function useContractGame() {
         }
 
         // Check round status — allow if Active, regardless of timer (let contract decide)
-        if (!currentRound || currentRound.status !== RoundStatus.Active) {
+        if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
           setError("The raffle round is not active or is being settled.");
           return null;
         }
@@ -231,16 +234,16 @@ export function useContractGame() {
         refetchRound();
         return depositTx;
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "transaction failed";
-        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
-          setError(msg);
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) {
+          setError(normalized.message);
         }
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, refetchRound, currentRound, minDepositRaw],
+    [address, publicClient, writeContractAsync, refetchRound, currentRoundId, currentRoundStatus, minDepositRaw],
   );
 
   // ── endRound ──────────────────────────────────────────────────────────────
@@ -256,8 +259,8 @@ export function useContractGame() {
       setEndRoundTxHash(tx);
       return tx;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "endRound failed";
-      setError(msg);
+      const normalized = normalizeContractError(err, "Could not end round.");
+      if (!normalized.isUserRejected) setError(normalized.message);
       return null;
     }
   }, [writeContractAsync]);
@@ -349,16 +352,16 @@ export function useContractGame() {
 
         return flipTx;
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "flip failed";
-        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
-          setError(msg);
+        const normalized = normalizeContractError(err, "Flip transaction failed.");
+        if (!normalized.isUserRejected) {
+          setError(normalized.message);
         }
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync],
+    [address, publicClient, writeContractAsync, minBetFlipRaw],
   );
 
   // ── playSpin ─────────────────────────────────────────────────────────────
@@ -425,16 +428,16 @@ export function useContractGame() {
 
         return spinTx;
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "spin failed";
-        if (!msg.toLowerCase().includes("user rejected") && !msg.toLowerCase().includes("denied")) {
-          setError(msg);
+        const normalized = normalizeContractError(err, "Spin transaction failed.");
+        if (!normalized.isUserRejected) {
+          setError(normalized.message);
         }
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync],
+    [address, publicClient, writeContractAsync, minBetSpinRaw],
   );
 
   // ── Watch WinnerSelected ──────────────────────────────────────────────────
@@ -443,10 +446,15 @@ export function useContractGame() {
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     eventName: "WinnerSelected",
-    onLogs(logs) {
+    onLogs(logs: Array<{ args?: unknown; transactionHash: `0x${string}` }>) {
       const log = logs[0];
       if (!log?.args) return;
-      const { roundId, winner, prizeAmount, fee } = log.args as any;
+      const { roundId, winner, prizeAmount, fee } = log.args as {
+        roundId: bigint;
+        winner: `0x${string}`;
+        prizeAmount: bigint;
+        fee: bigint;
+      };
       setLastWinner({
         roundId,
         winner,
@@ -463,10 +471,16 @@ export function useContractGame() {
     address: FLIP_ADDRESS,
     abi: FLIP_ABI,
     eventName: "Flipped",
-    onLogs(logs) {
+    onLogs(logs: Array<{ args?: unknown; transactionHash: `0x${string}` }>) {
       const log = logs[0];
       if (!log?.args) return;
-      const { player, amount, choice, result, won } = log.args as any;
+      const { player, amount, choice, result, won } = log.args as {
+        player: `0x${string}`;
+        amount: bigint;
+        choice: bigint;
+        result: bigint;
+        won: boolean;
+      };
       setLastFlipResult({
         player,
         amount: fromUSDCUnits(amount),
@@ -484,10 +498,16 @@ export function useContractGame() {
     address: SPIN_ADDRESS,
     abi: SPIN_ABI,
     eventName: "Spun",
-    onLogs(logs) {
+    onLogs(logs: Array<{ args?: unknown; transactionHash: `0x${string}` }>) {
       const log = logs[0];
       if (!log?.args) return;
-      const { player, amount, roll, multiplier, payout } = log.args as any;
+      const { player, amount, roll, multiplier, payout } = log.args as {
+        player: `0x${string}`;
+        amount: bigint;
+        roll: bigint;
+        multiplier: bigint;
+        payout: bigint;
+      };
       setLastSpinResult({
         player,
         amount: fromUSDCUnits(amount),

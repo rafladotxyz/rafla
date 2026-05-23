@@ -1,3 +1,4 @@
+
 "use client";
 
 import Logo from "@/assets/Logo.svg";
@@ -10,31 +11,29 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-    }, 2000); // Adjust timing as needed
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div
-      className={`
-        'fixed inset-0 z-999 flex items-center justify-center bg-background transition-opacity duration-500 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        } pointer-events-none
-        `}
+      className={`fixed inset-0 z-[999] flex items-center justify-center bg-background transition-opacity duration-500 ${
+        isVisible ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
     >
-      <div className="relative">
+      <div className="relative animate-fade-up">
         <Image
           src={Logo}
-          alt="InFuse Logo"
+          alt="Rafla logo"
           width={180}
           height={180}
-          className="animate-pulse"
+          className="animate-float"
           priority
         />
-        <div className="absolute bottom-[-40px] left-1/2 transform -translate-x-1/2">
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-gray-800">
-            <div className="h-full w-full bg-primary animate-progress origin-left" />
+        <div className="absolute bottom-[-40px] left-1/2 -translate-x-1/2">
+          <div className="h-1 w-24 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full w-full origin-left bg-white animate-progress" />
           </div>
         </div>
       </div>

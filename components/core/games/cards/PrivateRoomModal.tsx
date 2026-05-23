@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRoom } from "@/hooks/useRoom";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -85,25 +85,35 @@ export function PrivateRoomModal({
   // ── Join flow ─────────────────────────────────────────────────────────────
 
   // Fetch room stake when joinRoomId changes
-  const fetchRoomData = async (id: string) => {
-    if (!id.trim()) return;
+  const fetchRoomData = async (id: string): Promise<number | null> => {
+    if (!id.trim()) return null;
     setFetchingRoom(true);
     try {
       const res = await fetch(`/api/rooms/${id}`);
       if (res.ok) {
         const { room } = await res.json();
         if (room && room.stakeAmount) {
-          setRoomStake(Number(room.stakeAmount) / 1_000_000);
-        } else {
-          setRoomStake(null);
+          const stake = Number(room.stakeAmount) / 1_000_000;
+          setRoomStake(stake);
+          return stake;
         }
       }
+      setRoomStake(null);
+      return null;
     } catch (err) {
       console.error("fetchRoomData error:", err);
+      setRoomStake(null);
+      return null;
     } finally {
       setFetchingRoom(false);
     }
   };
+
+  useEffect(() => {
+    if (urlRoomId) {
+      void fetchRoomData(urlRoomId);
+    }
+  }, [urlRoomId]);
 
   const handleJoin = async () => {
     if (!isAuthenticated) {
@@ -113,16 +123,10 @@ export function PrivateRoomModal({
     const finalRoomId = joinRoomId.trim();
     if (!finalRoomId) return;
 
-    // We must have roomStake (fetched automatically)
-    if (roomStake === null) {
-      // Try one last fetch
-      await fetchRoomData(finalRoomId);
-    }
+    const stake = roomStake ?? (await fetchRoomData(finalRoomId));
+    if (stake === null) return;
 
-    // Wait, if still null, we might need a fallback or show error
-    // But ideally it's already fetched.
-
-    const ok = await joinRoom(finalRoomId, roomStake ?? 1);
+    const ok = await joinRoom(finalRoomId, stake);
     if (ok) {
       setJoinSuccess(true);
       setTimeout(() => {

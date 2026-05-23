@@ -1,16 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRoom } from "@/hooks/useRoom";
-
-const PRICE_OPTIONS = [
-  { label: "$1", value: 1 },
-  { label: "$2", value: 2 },
-  { label: "$3", value: 3 },
-  { label: "$5", value: 5 },
-];
 
 type GameType = "spin" | "flip" | "draw";
 
@@ -29,30 +22,43 @@ export function JoinRoomModal({
   const { isAuthenticated, signIn } = useAuthContext();
   const { joinRoom, isJoining, error } = useRoom();
 
-  const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [joined, setJoined] = useState(false);
   const [roomStake, setRoomStake] = useState<number | null>(null);
   const [fetchingRoom, setFetchingRoom] = useState(true);
 
-  // Fetch room data on mount
-  useState(() => {
+  useEffect(() => {
+    let cancelled = false;
+
     async function fetchRoom() {
+      setFetchingRoom(true);
       try {
         const res = await fetch(`/api/rooms/${roomId}`);
-        if (res.ok) {
-          const { room } = await res.json();
-          if (room && room.stakeAmount) {
-            setRoomStake(Number(room.stakeAmount) / 1_000_000);
+        if (!cancelled) {
+          if (res.ok) {
+            const { room } = await res.json();
+            setRoomStake(
+              room && room.stakeAmount ? Number(room.stakeAmount) / 1_000_000 : null,
+            );
+          } else {
+            setRoomStake(null);
           }
         }
       } catch (err) {
-        console.error("JoinRoomModal fetch error:", err);
+        if (!cancelled) {
+          console.error("JoinRoomModal fetch error:", err);
+          setRoomStake(null);
+        }
       } finally {
-        setFetchingRoom(false);
+        if (!cancelled) setFetchingRoom(false);
       }
     }
+
     fetchRoom();
-  });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId]);
 
   const handleJoin = async () => {
     if (!isAuthenticated) {

@@ -1,23 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
-import { GameTabs } from "@/components/core/games/GameTabs";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { PnL } from "../cards/PnLCard";
-import { EmptyStateCard } from "../cards/EmptyStateCard";
-import { JoinRoomModal } from "../cards/JoinRoomModal";
-import { SpinWheel } from "./SpinerCard";
 import SWinOrLoss from "./card/SpinWinOrLoss";
 import { useGameState } from "@/hooks/useGameState";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
-import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { SpinGame } from "./SpinGame";
 import { useSound } from "@/hooks/useSound";
-import { useEffect, useCallback } from "react";
 
 const EMPTY_ID = "3455654";
-type TabType = "public" | "private";
 
 type Segment = {
   label: string;
@@ -34,24 +27,16 @@ const getAmountFromSegment = (segment: Segment): string => {
 
 export const SpinView = ({ roomId }: { roomId?: string }) => {
   const isEmptyState = !roomId || roomId === EMPTY_ID;
-  const isPrivateRoom = !isEmptyState;
 
   const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
-  const { currentRound } = useContractGame();
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
-  const { addEntry, loading, lastSpinResult } = useGameState(
+  const { addEntry, loading, lastSpinResult, error } = useGameState(
     effectiveRoomId,
     "spin",
   );
-  const { playSound, stopSound } = useSound();
+  const { playSound } = useSound();
 
-  const [activeTab, setActiveTab] = useState<TabType>(
-    isPrivateRoom ? "private" : "public",
-  );
-  const [hasJoined, setHasJoined] = useState(false);
-
-  // Spin result flow
   const [showWinLoss, setShowWinLoss] = useState(false);
   const [showPnl, setShowPnl] = useState(false);
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>();
@@ -62,16 +47,6 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   } | null>(null);
 
   const [externalSpinTrigger, setExternalSpinTrigger] = useState(false);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
-
-  const isPublicGameOpen =
-    currentRound !== null &&
-    currentRound.status === RoundStatus.Active &&
-    currentRound.playerCount > 0;
-
-  const showJoinModal = isPrivateRoom && !hasJoined;
-
-  const handleTabChange = (tab: TabType) => setActiveTab(tab);
 
   const handleSpinResult = (segment: Segment) => {
     const amount = getAmountFromSegment(segment);
@@ -80,7 +55,6 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setShowWinLoss(true);
     setExternalSpinTrigger(false);
 
-    // Play result sound
     if (segment.label.toLowerCase().includes("win")) {
       playSound("win");
     } else if (segment.label.toLowerCase().includes("lose")) {
@@ -89,32 +63,33 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   };
 
   const handleSpinRequest = async (amount: number) => {
-    await addEntry(amount);
+    const ok = await addEntry(amount);
+    if (!ok) return;
   };
 
-  // Watch for contract result
-  useEffect(() => {
-    if (lastSpinResult) {
-      let index = 0; // default lose
-      if (lastSpinResult.payout > lastSpinResult.amount) {
-        index = 2; // win
-      } else if (lastSpinResult.payout === lastSpinResult.amount) {
-        index = 1; // breakeven
-      } else {
-        index = 0; // lose
-      }
+  const targetIndex = lastSpinResult
+    ? lastSpinResult.payout > lastSpinResult.amount
+      ? 2
+      : lastSpinResult.payout === lastSpinResult.amount
+        ? 1
+        : 0
+    : null;
 
-      setTargetIndex(index);
+  useEffect(() => {
+    if (!lastSpinResult) return;
+
+    const timer = window.setTimeout(() => {
       setExternalSpinTrigger(true);
-      playSound("spin");
-    }
+    }, 0);
+    playSound("spin");
+
+    return () => window.clearTimeout(timer);
   }, [lastSpinResult, playSound]);
 
   const handleWinLossClose = () => {
     setShowWinLoss(false);
     setLandedSegment(undefined);
     setLandedAmount("$0");
-    setTargetIndex(null);
   };
 
   const handleShare = (amount: string, isWin: boolean) => {
@@ -126,6 +101,12 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   return (
     <div className="px-4 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
+
+      {error && (
+        <div className="mx-auto mb-4 w-full max-w-2xl rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       {showWinLoss && (
         <SWinOrLoss
@@ -141,7 +122,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           handleClick={() => setShowPnl(false)}
           amount={pnlData.amount}
           isWin={pnlData.isWin}
-          shareUrl={`https://rafla.xyz/spin/${isPrivateRoom ? roomId : ""}`}
+          shareUrl={`https://rafla.xyz/spin/${isEmptyState ? "" : roomId}`}
         />
       )}
 

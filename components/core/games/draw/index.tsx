@@ -1,17 +1,13 @@
+
 "use client";
 
 import { useState } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { GameTabs } from "@/components/core/games/GameTabs";
-import { PlayersCard } from "@/components/core/games/cards/PlayerCard";
-import { RightPanel } from "@/components/core/games/RightPanelCard";
-import { DrawTimer } from "@/components/core/games/draw/DrawTimer";
 import { Disclaimer } from "../cards/DisclaimerCard";
-import { WinOrLoss } from "../cards/WinOrLossCard";
-import { PnL } from "../cards/PnLCard";
 import { EmptyStateCard } from "../cards/EmptyStateCard";
 import { JoinRoomModal } from "../cards/JoinRoomModal";
-import { GameState, Player, useGameState } from "@/hooks/useGameState";
+import { useGameState } from "@/hooks/useGameState";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { GameUI } from "./GameUi";
@@ -30,17 +26,12 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
     isPrivateRoom ? "private" : "public",
   );
   const [hasJoined, setHasJoined] = useState(false);
-  const [showWinLoss, setShowWinLoss] = useState(false);
-  const [showPnl, setShowPnl] = useState(false);
-  const [resultData, setResultData] = useState<{
-    isWin: boolean;
-    amount: string;
-    winnerAddress: string;
-  } | null>(null);
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
-  const { gameState, players, loading, addEntry, lastWinner, error } =
-    useGameState(effectiveRoomId, "draw");
+  const { gameState, players, loading, addEntry, error } = useGameState(
+    effectiveRoomId,
+    "draw",
+  );
 
   const isPublicGameOpen =
     currentRound !== null &&
@@ -61,37 +52,6 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
           gameType="draw"
           roomId={roomId!}
           onJoined={() => setHasJoined(true)}
-        />
-      )}
-
-      {showWinLoss && resultData && (
-        <WinOrLoss
-          handleClick={() => setShowWinLoss(false)}
-          isWin={resultData.isWin}
-          amount={resultData.amount}
-          winnerName={
-            players.find(
-              (p) =>
-                p.address.toLowerCase() === resultData.winnerAddress.toLowerCase(),
-            )?.username
-              ? `@${
-                  players.find(
-                    (p) =>
-                      p.address.toLowerCase() ===
-                      resultData.winnerAddress.toLowerCase(),
-                  )?.username
-                }`
-              : resultData.winnerAddress
-          }
-        />
-      )}
-
-      {showPnl && resultData && (
-        <PnL
-          isWin={resultData.isWin}
-          amount={resultData.amount}
-          handleClick={() => setShowPnl(false)}
-          shareUrl={`https://rafla.xyz/draw/${isPrivateRoom ? roomId : ""}`}
         />
       )}
 
@@ -133,7 +93,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
           />
         ) : (
           <div className="flex items-center justify-center py-24">
-            <div className="w-6 h-6 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
+            <div className="h-6 w-6 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
           </div>
         ))}
     </div>

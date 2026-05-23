@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
 import { usePusherRoom } from "./usePusherRoom";
-import type { PlayerJoinedPayload, ResultRevealedPayload } from "@/lib/pusher";
+import type { PlayerJoinedPayload } from "@/lib/pusher";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ const PLAYER_COLORS = [
   "#14B8A6",
 ];
 
-const MIN_PLAYERS = 3;
+const DEFAULT_MIN_PLAYERS = 3;
 const FEE_PERCENT = 0.05;
 const EMPTY_ID = "3455654";
 
@@ -68,6 +68,8 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [roomStatus, setRoomStatus] = useState<GameState["status"]>("waiting");
+  const [roomMinPlayers, setRoomMinPlayers] = useState(DEFAULT_MIN_PLAYERS);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   const isEmptyState = roomId === EMPTY_ID;
 
@@ -85,6 +87,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
         const { room } = await res.json();
         setRoomStatus(room.status);
+        setRoomMinPlayers(room.minPlayers ?? DEFAULT_MIN_PLAYERS);
 
         const mapped: Player[] = room.participants.map(
           (
@@ -113,7 +116,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     }
 
     fetchRoom();
-  }, [roomId, user?.id]);
+  }, [roomId, user?.id, authHeaders, isEmptyState]);
 
   // ── Pusher real-time ──────────────────────────────────────────────────────
 
@@ -142,7 +145,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
       setRoomStatus("active");
     },
 
-    onResultRevealed(data: ResultRevealedPayload) {
+    onResultRevealed() {
       setRoomStatus("completed");
     },
 
@@ -158,7 +161,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
     async function settle() {
       try {
-        await fetch(`/api/rooms/${roomId}/settle`, {
+        const res = await fetch(`/api/rooms/${roomId}/settle`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -171,51 +174,72 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
             txHash: `vrf-${lastWinner!.roundId}`,
           }),
         });
+
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(
+            json?.error || "Failed to save the settled round in the database",
+          );
+        }
       } catch (err) {
         console.error("[useGameState] settle error:", err);
+        setPersistenceError("Settlement synced on-chain, but saving it to the app failed.");
       }
     }
 
     settle();
-  }, [lastWinner, roomId]);
+  }, [lastWinner, roomId, authHeaders, isEmptyState]);
 
   // ── Record Instant Games (Flip/Spin) ──────────────────────────────────────
 
   useEffect(() => {
-    if (isEmptyState) {
-      if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
-        recordedTxs.current.add(lastFlipResult.transactionHash);
-        fetch("/api/games/record", {
+    if (!isEmptyState) return;
+
+    const recordGame = async (payload: {
+      gameType: "flip" | "spin";
+      stakeAmount: number;
+      txHash: string;
+      won: boolean;
+      prizeAmount: number;
+    }) => {
+      try {
+        const res = await fetch("/api/games/record", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...authHeaders(),
           },
-          body: JSON.stringify({
-            gameType: "flip",
-            stakeAmount: lastFlipResult.amount,
-            txHash: lastFlipResult.transactionHash,
-            won: lastFlipResult.won,
-            prizeAmount: lastFlipResult.won ? lastFlipResult.amount * 2 : 0,
-          }),
+          body: JSON.stringify(payload),
         });
-      } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
-        recordedTxs.current.add(lastSpinResult.transactionHash);
-        fetch("/api/games/record", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders(),
-          },
-          body: JSON.stringify({
-            gameType: "spin",
-            stakeAmount: lastSpinResult.amount,
-            txHash: lastSpinResult.transactionHash,
-            won: lastSpinResult.payout > 0,
-            prizeAmount: lastSpinResult.payout,
-          }),
-        });
+
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json?.error || "Failed to save the game result");
+        }
+      } catch (err) {
+        console.error("[useGameState] record error:", err);
+        setPersistenceError("The on-chain game finished, but saving the result failed.");
       }
+    };
+
+    if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
+      recordedTxs.current.add(lastFlipResult.transactionHash);
+      void recordGame({
+        gameType: "flip",
+        stakeAmount: lastFlipResult.amount,
+        txHash: lastFlipResult.transactionHash,
+        won: lastFlipResult.won,
+        prizeAmount: lastFlipResult.won ? lastFlipResult.amount * 2 : 0,
+      });
+    } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
+      recordedTxs.current.add(lastSpinResult.transactionHash);
+      void recordGame({
+        gameType: "spin",
+        stakeAmount: lastSpinResult.amount,
+        txHash: lastSpinResult.transactionHash,
+        won: lastSpinResult.payout > 0,
+        prizeAmount: lastSpinResult.payout,
+      });
     }
   }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
 
@@ -225,7 +249,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     roomId,
     pricePool: currentRound?.prizePool ?? 0,
     totalPlayers: currentRound?.playerCount ?? players.length,
-    minPlayers: MIN_PLAYERS,
+    minPlayers: roomMinPlayers,
     yourEntry: yourDeposit,
     potentialWin: (currentRound?.prizePool ?? 0) * (1 - FEE_PERCENT),
     drawTime: currentRound
@@ -238,13 +262,17 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   // ── addEntry — approve + deposit on-chain + record in API ─────────────────
 
   const addEntry = useCallback(
-    async (amount: number, extra?: any) => {
-      if (!user) return;
+    async (amount: number, extra?: { choice?: "heads" | "tails" }): Promise<boolean> => {
+      if (!user) return false;
+
+      setPersistenceError(null);
 
       // For 'draw' (Raffle), we need a roomId
-      if (gameType === "draw" && isEmptyState) return;
+      if (gameType === "draw" && isEmptyState) return false;
 
       setLoading(true);
+
+      let txSucceeded = false;
 
       try {
         let txHash: `0x${string}` | null = null;
@@ -259,21 +287,34 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
           txHash = await playSpin(amount);
         }
 
-        if (!txHash) return;
+        if (!txHash) return false;
+
+        txSucceeded = true;
 
         // Record in API (if room exists)
         if (!isEmptyState) {
-          await fetch(`/api/rooms/${roomId}/join`, {
+          const res = await fetch(`/api/rooms/${roomId}/join`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...authHeaders(),
             },
-            body: JSON.stringify({ txHash, gameType }),
+            body: JSON.stringify({ txHash }),
           });
+
+          if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            throw new Error(json?.error || "Failed to save the room join");
+          }
         }
+
+        return true;
       } catch (err) {
         console.error("[useGameState] addEntry error:", err);
+        setPersistenceError(
+          "The on-chain transaction succeeded, but saving it in the app failed.",
+        );
+        return txSucceeded;
       } finally {
         setLoading(false);
       }
@@ -289,6 +330,6 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     lastWinner,
     lastFlipResult,
     lastSpinResult,
-    error: contractError,
+    error: contractError || persistenceError,
   };
 }

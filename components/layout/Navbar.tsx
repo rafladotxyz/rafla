@@ -1,49 +1,38 @@
 "use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { LayoutDashboard } from "lucide-react";
 import Logo from "@/assets/Logo.svg";
-import Base from "@/assets/base.png";
-import BaseSepolia from "@/assets/baseSepolia.png";
-import { useAppKit } from "@reown/appkit/react";
-import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
-import { useEffect } from "react";
-import { useToast } from "@/hooks/useToast";
 import { SignInButton } from "../connector/SigninButton";
 import { useRouter } from "next/navigation";
+
 export const Navbar = () => {
-  const { open } = useAppKit();
   const router = useRouter();
 
-  const { showToast } = useToast();
-  const { isConnected, status } = useAppKitAccount();
-  const { caipNetwork } = useAppKitNetwork();
-  const getNetworkIcon = (name: string) => {
-    switch (name) {
-      case "Base Sepolia":
-        return BaseSepolia;
-      case "Base":
-        return Base;
-      default:
-        return Base; // Fallback icon
-    }
-  };
-
-  useEffect(() => {
-    if (status === "connected") {
-      showToast("Wallet connected successfully!", "success");
-    }
-  }, [status, showToast]);
-
-  const handleConnect = () => {
-    open();
-  };
   return (
-    <nav className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1100px] h-14 md:h-16 border-[1.5px] md:border-[2px] rounded-2xl border-[#1A1A1A] flex justify-between items-center py-2 px-3 md:px-6 backdrop-blur-xl bg-black/40 shadow-2xl shadow-black/50">
-      <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95 shrink-0" onClick={() => router.push("/")}>
-        <Image height={32} width={70} src={Logo} alt="rafla logo" className="w-16 md:w-20 h-auto" />
-      </div>
+    <nav className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1100px] h-14 md:h-16 border border-white/10 rounded-2xl bg-black/45 backdrop-blur-2xl shadow-2xl shadow-black/40 px-3 md:px-5">
+      <div className="flex h-full items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="flex shrink-0 items-center transition-transform hover:scale-105 active:scale-95"
+          aria-label="Go to home"
+        >
+          <Image height={32} width={70} src={Logo} alt="Rafla logo" className="h-auto w-16 md:w-20" />
+        </button>
 
-      <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
-        <SignInButton />
+        <div className="flex items-center gap-2 md:gap-3">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[12px] font-medium text-[#E8E8E8] transition-colors hover:bg-white/10 hover:text-white md:px-4 md:text-sm"
+            aria-label="Open dashboard"
+          >
+            <LayoutDashboard size={16} className="md:hidden" />
+            <span className="hidden md:inline">Dashboard</span>
+          </Link>
+          <SignInButton />
+        </div>
       </div>
     </nav>
   );
