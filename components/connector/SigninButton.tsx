@@ -75,7 +75,7 @@ export function SignInButton() {
     <div className="flex items-center gap-2 md:gap-3">
       <button
         onClick={navigateToProfile}
-        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 transition-colors hover:bg-white/10"
+        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-1 transition-colors hover:bg-white/10"
       >
         {user?.avatar ? (
           <Image
@@ -99,7 +99,7 @@ export function SignInButton() {
 
       <button
         onClick={signOut}
-        className="h-10 px-4 rounded-full border border-white/10 bg-white/5 text-[13px] text-[#E8E8E8] hover:bg-white/10 hover:text-white transition-colors"
+        className="h-9 px-3 rounded-full border border-white/10 bg-white/5 text-[13px] text-[#E8E8E8] hover:bg-white/10 hover:text-white transition-colors"
       >
         <span className="hidden xs:inline">Exit</span>
         <span className="xs:hidden">Out</span>
