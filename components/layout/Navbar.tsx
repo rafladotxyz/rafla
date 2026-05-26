@@ -9,17 +9,17 @@ export const Navbar = () => {
   const router = useRouter();
 
   return (
-    <nav className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1100px] h-14 md:h-16 border border-white/10 rounded-2xl bg-black/45 backdrop-blur-2xl shadow-2xl shadow-black/40 px-3 md:px-5">
-      <div className="flex h-full items-center justify-between gap-3">
+    <nav className="fixed top-4 left-1/2 z-50 w-[calc(100%-1rem)] max-w-[1120px] -translate-x-1/2 rounded-[22px] border border-white/10 bg-black/55 px-3 py-2.5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl md:top-6 md:w-[95%] md:px-4 md:py-3">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => router.push("/")}
-          className="flex shrink-0 items-center transition-transform hover:scale-105 active:scale-95"
+          className="flex shrink-0 items-center transition-transform hover:scale-[1.02] active:scale-95"
           aria-label="Go to home"
         >
           <Image
             height={32}
-            width={70}
+            width={80}
             src={Logo}
             alt="Rafla logo"
             className="h-auto w-16 md:w-20"

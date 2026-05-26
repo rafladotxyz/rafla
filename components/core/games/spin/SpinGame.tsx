@@ -1,29 +1,31 @@
 import { SpinWheel } from "./SpinerCard";
+
 type Segment = {
   label: string;
   asset: string;
   color: string;
   strokeColor: string;
 };
+
 export const SpinGame = ({
   handleSpinResult,
   externalSpinTrigger,
   targetIndex,
-  onSpinRequest,
+  onPlay,
   isLoading,
 }: {
   handleSpinResult: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
   targetIndex?: number | null;
-  onSpinRequest?: (amount: number) => void;
+  onPlay: () => void;
   isLoading?: boolean;
 }) => (
-  <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-12 px-4">
+  <div className="w-full px-4 py-8 sm:py-12">
     <SpinWheel
       onResult={handleSpinResult}
       externalSpinTrigger={externalSpinTrigger}
       targetIndex={targetIndex}
-      onSpinRequest={onSpinRequest}
+      onPlay={onPlay}
       isLoading={isLoading}
     />
   </div>

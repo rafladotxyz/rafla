@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { PnL } from "../cards/PnLCard";
@@ -8,6 +8,7 @@ import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { FlipGame } from "./FlipGame";
 import { useGameState } from "@/hooks/useGameState";
 import { useSound } from "@/hooks/useSound";
+import { GameStakeModal } from "../GameStakeModal";
 
 const EMPTY_ID = "3455654";
 type CoinSide = "heads" | "tails";
@@ -23,7 +24,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     effectiveRoomId,
     "flip",
   );
-  const { playSound } = useSound();
+  const { playSound, playMusic, stopMusic, unlockAudio } = useSound();
 
   const [viewState, setViewState] = useState<ViewState>("select");
   const [selectedSide, setSelectedSide] = useState<CoinSide | null>(null);
@@ -37,19 +38,24 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     amount: string;
     isWin: boolean;
   } | null>(null);
+  const [showStakeModal, setShowStakeModal] = useState(false);
 
-  const handleFlip = async (side: CoinSide, amount: string) => {
+  const handleFlip = async (side: CoinSide, amount: number) => {
     setSelectedSide(side);
-    const numAmount = Number(amount.replace("$", ""));
-    const ok = await addEntry(numAmount, { choice: side });
-    if (!ok) return;
+    setShowStakeModal(false);
+    const ok = await addEntry(amount, { choice: side });
+    if (!ok) {
+      setSelectedSide(null);
+      stopMusic();
+      return;
+    }
     setViewState("flipping");
     playSound("flip");
   };
 
   useEffect(() => {
     if (lastFlipResult && viewState === "flipping") {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
         const result: FlipResult = lastFlipResult.won ? "win" : "loss";
         setFlipResult({
@@ -58,19 +64,22 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           amount: `$${lastFlipResult.amount}`,
         });
         setViewState("result");
+        stopMusic();
         playSound(lastFlipResult.won ? "win" : "loss");
       }, 1500);
-      return () => clearTimeout(timer);
+      return () => window.clearTimeout(timer);
     }
-  }, [lastFlipResult, viewState, playSound]);
+  }, [lastFlipResult, viewState, playSound, stopMusic]);
 
   const handleFlipAgain = () => {
+    stopMusic();
     setViewState("select");
     setFlipResult(null);
     setSelectedSide(null);
   };
 
   const handleShare = (amount: string, isWin: boolean) => {
+    stopMusic();
     setViewState("select");
     setFlipResult(null);
     setPnlData({ amount, isWin });
@@ -96,17 +105,36 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      <div className="w-full max-w-2xl mx-auto py-4">
+      <div className="mx-auto w-full max-w-2xl py-4">
         <GameHeader gameName="Rafla Flip" />
       </div>
 
       <FlipGame
         viewState={viewState}
         selectedSide={selectedSide}
-        handleFlip={handleFlip}
         handleFlipAgain={handleFlipAgain}
         handleShare={handleShare}
         flipResult={flipResult}
+        onPlay={() => {
+          unlockAudio();
+          void playMusic("flip");
+          setShowStakeModal(true);
+        }}
+      />
+
+      <GameStakeModal key={showStakeModal ? "flip-stake-open" : "flip-stake-closed"}
+        open={showStakeModal}
+        gameName="Flip stake"
+        actionLabel="Flip now"
+        description="Pick the side you want to call, choose a stake, and confirm to start the flip."
+        showSideSelector
+        onClose={() => setShowStakeModal(false)}
+        onConfirm={(amount, side) => {
+          if (!side) return;
+          playSound("click");
+          void handleFlip(side, amount);
+        }}
+        isSubmitting={viewState === "flipping"}
       />
     </div>
   );
