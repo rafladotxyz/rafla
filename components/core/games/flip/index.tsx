@@ -24,7 +24,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     effectiveRoomId,
     "flip",
   );
-  const { playSound, unlockAudio } = useSound();
+  const { playSound, playMusic, stopMusic, unlockAudio } = useSound();
 
   const [viewState, setViewState] = useState<ViewState>("select");
   const [selectedSide, setSelectedSide] = useState<CoinSide | null>(null);
@@ -46,6 +46,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     const ok = await addEntry(amount, { choice: side });
     if (!ok) {
       setSelectedSide(null);
+      stopMusic();
       return;
     }
     setViewState("flipping");
@@ -54,7 +55,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
 
   useEffect(() => {
     if (lastFlipResult && viewState === "flipping") {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
         const result: FlipResult = lastFlipResult.won ? "win" : "loss";
         setFlipResult({
@@ -63,19 +64,22 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           amount: `$${lastFlipResult.amount}`,
         });
         setViewState("result");
+        stopMusic();
         playSound(lastFlipResult.won ? "win" : "loss");
       }, 1500);
-      return () => clearTimeout(timer);
+      return () => window.clearTimeout(timer);
     }
-  }, [lastFlipResult, viewState, playSound]);
+  }, [lastFlipResult, viewState, playSound, stopMusic]);
 
   const handleFlipAgain = () => {
+    stopMusic();
     setViewState("select");
     setFlipResult(null);
     setSelectedSide(null);
   };
 
   const handleShare = (amount: string, isWin: boolean) => {
+    stopMusic();
     setViewState("select");
     setFlipResult(null);
     setPnlData({ amount, isWin });
@@ -101,7 +105,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      <div className="w-full max-w-2xl mx-auto py-4">
+      <div className="mx-auto w-full max-w-2xl py-4">
         <GameHeader gameName="Rafla Flip" />
       </div>
 
@@ -113,11 +117,12 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         flipResult={flipResult}
         onPlay={() => {
           unlockAudio();
+          void playMusic("flip");
           setShowStakeModal(true);
         }}
       />
 
-      <GameStakeModal
+      <GameStakeModal key={showStakeModal ? "flip-stake-open" : "flip-stake-closed"}
         open={showStakeModal}
         gameName="Flip stake"
         actionLabel="Flip now"

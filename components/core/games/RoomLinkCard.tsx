@@ -1,7 +1,7 @@
 "use client";
 
-import { Copy, Check, Link2 } from "lucide-react";
 import { useState } from "react";
+import { Check, Copy, Link2 } from "lucide-react";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
 interface RoomLinkCardProps {
@@ -15,7 +15,7 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
     try {
       await navigator.clipboard.writeText(roomLink);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -26,10 +26,10 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
-            Room Link
+            Room link
           </p>
           <p className="text-sm leading-relaxed text-[#A3A3A3]">
-            Share this invite link with friends. It stays inside the card on mobile.
+            Share this invite with friends. The full URL stays wrapped inside the card.
           </p>
         </div>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#CBCBCB]">

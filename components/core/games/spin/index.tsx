@@ -36,7 +36,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     effectiveRoomId,
     "spin",
   );
-  const { playSound, unlockAudio } = useSound();
+  const { playSound, playMusic, stopMusic, unlockAudio } = useSound();
 
   const [showWinLoss, setShowWinLoss] = useState(false);
   const [showPnl, setShowPnl] = useState(false);
@@ -55,6 +55,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedAmount(amount);
     setShowWinLoss(true);
     setExternalSpinTrigger(false);
+    stopMusic();
 
     if (segment.label.toLowerCase().includes("win")) {
       playSound("win");
@@ -89,12 +90,14 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   }, [lastSpinResult, playSound]);
 
   const handleWinLossClose = () => {
+    stopMusic();
     setShowWinLoss(false);
     setLandedSegment(undefined);
     setLandedAmount("$0");
   };
 
   const handleShare = (amount: string, isWin: boolean) => {
+    stopMusic();
     setPnlData({ amount, isWin });
     setShowWinLoss(false);
     setShowPnl(true);
@@ -128,7 +131,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         />
       )}
 
-      <div className="w-full max-w-2xl mx-auto py-4">
+      <div className="mx-auto w-full max-w-2xl py-4">
         <GameHeader gameName="Rafla Spin" />
       </div>
 
@@ -138,12 +141,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         targetIndex={targetIndex}
         onPlay={() => {
           unlockAudio();
+          void playMusic("spin");
           setShowStakeModal(true);
         }}
         isLoading={loading}
       />
 
-      <GameStakeModal
+      <GameStakeModal key={showStakeModal ? "spin-stake-open" : "spin-stake-closed"}
         open={showStakeModal}
         gameName="Spin stake"
         actionLabel="Spin now"

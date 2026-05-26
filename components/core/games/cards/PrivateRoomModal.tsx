@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Copy, Link2 } from "lucide-react";
 import { useRoom } from "@/hooks/useRoom";
 import { useAuthContext } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
 const PRICE_OPTIONS = [
   { label: "$1", value: 1 },
@@ -18,15 +20,11 @@ type Mode = "choose" | "create" | "join" | "created";
 
 interface PrivateRoomModalProps {
   gameType: GameType;
-  roomId?: string; // if passed from URL, skip straight to join
+  roomId?: string;
   onClose: () => void;
 }
 
-export function PrivateRoomModal({
-  gameType,
-  roomId: urlRoomId,
-  onClose,
-}: PrivateRoomModalProps) {
+export function PrivateRoomModal({ gameType, roomId: urlRoomId, onClose }: PrivateRoomModalProps) {
   const router = useRouter();
   const { isAuthenticated, signIn } = useAuthContext();
   const {
@@ -39,7 +37,6 @@ export function PrivateRoomModal({
     error,
   } = useRoom();
 
-  // If roomId came from URL → skip straight to join screen
   const [mode, setMode] = useState<Mode>(urlRoomId ? "join" : "choose");
   const [joinRoomId, setJoinRoomId] = useState(urlRoomId ?? "");
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
@@ -54,37 +51,10 @@ export function PrivateRoomModal({
   const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
   const effectivePlayers = customPlayers ? Number(customPlayers) : selectedPlayers;
 
-  // ── Create flow ───────────────────────────────────────────────────────────
-
-  const handleCreate = async () => {
-    if (!isAuthenticated) {
-      await signIn();
-      return;
-    }
-    if (!effectivePrice || !effectivePlayers) return;
-
-    const room = await createRoom({
-      gameType,
-      stakeAmountDollars: effectivePrice,
-      minPlayers: effectivePlayers,
-    });
-    if (room) setMode("created");
-  };
-
-  const handleCopy = async () => {
-    if (!createdRoom) return;
-    await copyRoomLink(createdRoom.id, gameType);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const roomLink = createdRoom
     ? `${typeof window !== "undefined" ? window.location.origin : "https://rafla.xyz"}/${gameType}/${createdRoom.id}`
     : "";
 
-  // ── Join flow ─────────────────────────────────────────────────────────────
-
-  // Fetch room stake when joinRoomId changes
   const fetchRoomData = async (id: string): Promise<number | null> => {
     if (!id.trim()) return null;
     setFetchingRoom(true);
@@ -115,11 +85,36 @@ export function PrivateRoomModal({
     }
   }, [urlRoomId]);
 
+  const handleCreate = async () => {
+    if (!isAuthenticated) {
+      await signIn();
+      return;
+    }
+
+    if (!effectivePrice || !effectivePlayers) return;
+
+    const room = await createRoom({
+      gameType,
+      stakeAmountDollars: effectivePrice,
+      minPlayers: effectivePlayers,
+    });
+
+    if (room) setMode("created");
+  };
+
+  const handleCopy = async () => {
+    if (!createdRoom) return;
+    await copyRoomLink(createdRoom.id, gameType);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleJoin = async () => {
     if (!isAuthenticated) {
       await signIn();
       return;
     }
+
     const finalRoomId = joinRoomId.trim();
     if (!finalRoomId) return;
 
@@ -129,321 +124,327 @@ export function PrivateRoomModal({
     const ok = await joinRoom(finalRoomId, stake);
     if (ok) {
       setJoinSuccess(true);
-      setTimeout(() => {
+      window.setTimeout(() => {
         router.push(`/${gameType}/${finalRoomId}`);
       }, 1000);
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative flex flex-col w-full max-w-[345px] rounded-3xl bg-[#141414] border-[1.5px] border-[#282828] p-5 gap-5">
-        {/* Close */}
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
+      <SurfaceCard className="relative w-full max-w-[560px] p-5 md:p-6">
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#737373] hover:text-[#CBCBCB] transition-colors text-lg leading-none"
+          className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#CBCBCB] transition-colors hover:border-white/20 hover:bg-white/10"
+          aria-label="Close"
         >
           ✕
         </button>
 
-        {/* ── Choose mode ── */}
-        {mode === "choose" && (
-          <>
-            <div className="flex flex-col gap-1">
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                Private Room
+        {mode === "choose" ? (
+          <div className="space-y-5 pr-10">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
+                Private room
               </p>
-              <p className="text-[14px] text-[#737373]">
-                Create a new room or join an existing one
+              <h2 className="text-xl font-semibold text-[#F3F3F3]">
+                Create a room or join by ID.
+              </h2>
+              <p className="text-sm leading-relaxed text-[#A3A3A3]">
+                Pick the flow that matches how you want to play.
               </p>
             </div>
-            <button
-              onClick={() => setMode("create")}
-              className="w-full h-11 rounded-xl bg-white text-[#0A0A0A] text-[14px] font-medium hover:bg-[#E8E8E8] transition-colors"
-            >
-              Create Private Room
-            </button>
-            <button
-              onClick={() => setMode("join")}
-              className="w-full h-11 rounded-xl border border-[#282828] text-[#CBCBCB] text-[14px] font-medium hover:border-[#444] transition-colors"
-            >
-              Join with Room ID
-            </button>
-          </>
-        )}
 
-        {/* ── Create mode ── */}
-        {mode === "create" && (
-          <>
-            <div className="flex flex-col gap-1">
+            <div className="grid gap-3 sm:grid-cols-2">
               <button
+                type="button"
+                onClick={() => setMode("create")}
+                className="flex min-h-[140px] flex-col justify-between rounded-[26px] border border-white/10 bg-white/[0.04] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+              >
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+                    Create
+                  </p>
+                  <p className="text-lg font-semibold text-[#F3F3F3]">
+                    Start a new invite
+                  </p>
+                  <p className="text-sm text-[#9A9A9A]">
+                    Set stake and minimum players.
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-[#CBCBCB]" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode("join")}
+                className="flex min-h-[140px] flex-col justify-between rounded-[26px] border border-white/10 bg-white/[0.04] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+              >
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+                    Join
+                  </p>
+                  <p className="text-lg font-semibold text-[#F3F3F3]">
+                    Enter a room ID
+                  </p>
+                  <p className="text-sm text-[#9A9A9A]">
+                    Paste the invite and we’ll fetch the stake.
+                  </p>
+                </div>
+                <Link2 className="h-5 w-5 text-[#CBCBCB]" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {mode === "create" ? (
+          <div className="space-y-5 pr-10">
+            <div className="space-y-1">
+              <button
+                type="button"
                 onClick={() => setMode("choose")}
-                className="text-[12px] text-[#737373] hover:text-[#CBCBCB] text-left mb-1"
+                className="text-left text-xs text-[#8A8A8A] transition-colors hover:text-[#E8E8E8]"
               >
                 ← Back
               </button>
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                Create Private Room
-              </p>
-              <p className="text-[14px] text-[#737373]">
-                Set your stake and player count
+              <h2 className="text-xl font-semibold text-[#F3F3F3]">
+                Create private room
+              </h2>
+              <p className="text-sm text-[#A3A3A3]">
+                Set your ticket price and invite size.
               </p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-[14px] text-[#CBCBCB]">Price per ticket</p>
-              <div className="flex flex-wrap gap-2">
-                {PRICE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.label}
-                    onClick={() => {
-                      setSelectedPrice(opt.value);
-                      setCustomPrice("");
-                    }}
-                    className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                      selectedPrice === opt.value
-                        ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                        : "border-[#282828] bg-[#0A0A0A]"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-                <div className="flex-1 min-w-[100px] relative">
-                  <input
-                    type="number"
-                    placeholder="Custom"
-                    value={customPrice}
-                    onChange={(e) => {
-                      setCustomPrice(e.target.value);
-                      setSelectedPrice(null);
-                    }}
-                    className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
-                      customPrice ? "border-[#CBCBCB]" : "border-[#282828]"
-                    }`}
-                  />
-                  {customPrice && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#737373]">USDC</span>
-                  )}
-                </div>
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-[#E8E8E8]">Price per ticket</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {PRICE_OPTIONS.map((opt) => {
+                  const active = selectedPrice === opt.value && !customPrice;
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPrice(opt.value);
+                        setCustomPrice("");
+                      }}
+                      className={`h-11 rounded-2xl border text-sm font-medium transition-colors ${active ? "border-white bg-white text-black" : "border-white/10 bg-black/20 text-[#CBCBCB] hover:bg-white/5"}`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Custom"
+                  value={customPrice}
+                  onChange={(e) => {
+                    setCustomPrice(e.target.value);
+                    setSelectedPrice(null);
+                  }}
+                  className="h-11 rounded-2xl border border-white/10 bg-black/20 px-3 text-sm text-[#CBCBCB] outline-none placeholder:text-[#555] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
+                />
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-[14px] text-[#CBCBCB]">Minimum players</p>
-              <div className="flex flex-wrap gap-2">
-                {PLAYER_OPTIONS.map((count) => (
-                  <button
-                    key={count}
-                    onClick={() => {
-                      setSelectedPlayers(count);
-                      setCustomPlayers("");
-                    }}
-                    className={`flex-1 min-w-[60px] h-9 rounded-lg border text-[14px] text-[#CBCBCB] transition-colors ${
-                      selectedPlayers === count
-                        ? "border-[#CBCBCB] bg-[#1f1f1f]"
-                        : "border-[#282828] bg-[#0A0A0A]"
-                    }`}
-                  >
-                    {count}
-                  </button>
-                ))}
-                <div className="flex-1 min-w-[100px]">
-                  <input
-                    type="number"
-                    placeholder="Custom"
-                    value={customPlayers}
-                    onChange={(e) => {
-                      setCustomPlayers(e.target.value);
-                      setSelectedPlayers(null);
-                    }}
-                    className={`w-full h-9 px-3 rounded-lg border text-[14px] text-[#CBCBCB] bg-[#0A0A0A] outline-none transition-colors placeholder-[#444] ${
-                      customPlayers ? "border-[#CBCBCB]" : "border-[#282828]"
-                    }`}
-                  />
-                </div>
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-[#E8E8E8]">Minimum players</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {PLAYER_OPTIONS.map((count) => {
+                  const active = selectedPlayers === count && !customPlayers;
+                  return (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlayers(count);
+                        setCustomPlayers("");
+                      }}
+                      className={`h-11 rounded-2xl border text-sm font-medium transition-colors ${active ? "border-white bg-white text-black" : "border-white/10 bg-black/20 text-[#CBCBCB] hover:bg-white/5"}`}
+                    >
+                      {count}
+                    </button>
+                  );
+                })}
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Custom"
+                  value={customPlayers}
+                  onChange={(e) => {
+                    setCustomPlayers(e.target.value);
+                    setSelectedPlayers(null);
+                  }}
+                  className="h-11 rounded-2xl border border-white/10 bg-black/20 px-3 text-sm text-[#CBCBCB] outline-none placeholder:text-[#555] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
+                />
               </div>
             </div>
 
-            {error && <p className="text-[12px] text-red-400">{error}</p>}
+            {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
             <button
+              type="button"
               onClick={handleCreate}
               disabled={!effectivePrice || !effectivePlayers || isCreating}
-              className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-                effectivePrice && effectivePlayers && !isCreating
-                  ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
-                  : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
-              }`}
+              className={`inline-flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-colors ${effectivePrice && effectivePlayers && !isCreating ? "bg-white text-black hover:bg-[#F5F5F5]" : "cursor-not-allowed bg-white/5 text-[#4A4A4A]"}`}
             >
-              {!isAuthenticated
-                ? "Sign in to Create"
-                : isCreating
-                  ? "Creating..."
-                  : "Create Room"}
+              {!isAuthenticated ? "Sign in to create" : isCreating ? "Creating..." : "Create room"}
             </button>
-          </>
-        )}
+          </div>
+        ) : null}
 
-        {/* ── Created — share screen ── */}
-        {mode === "created" && createdRoom && (
-          <>
-            <div className="flex flex-col gap-1">
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                Room Created! 🎉
+        {mode === "created" && createdRoom ? (
+          <div className="space-y-5 pr-10">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
+                Room created
               </p>
-              <p className="text-[14px] text-[#737373]">
-                Share the link or ID with friends
+              <h2 className="text-xl font-semibold text-[#F3F3F3]">
+                Share the room with friends.
+              </h2>
+              <p className="text-sm leading-relaxed text-[#A3A3A3]">
+                The link and room ID are contained inside the card on every screen size.
               </p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-[12px] text-[#737373] uppercase tracking-wider">
+            <div className="grid gap-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
                 Room ID
               </p>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#282828]">
-                <span className="flex-1 text-[13px] text-[#CBCBCB] font-mono truncate">
+              <div className="flex items-center gap-2 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
+                <span className="min-w-0 flex-1 truncate font-mono text-sm text-[#E8E8E8]">
                   {createdRoom.id}
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(createdRoom.id);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    void handleCopy();
                   }}
-                  className="text-[12px] text-[#737373] hover:text-[#CBCBCB] transition-colors shrink-0"
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 text-xs font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                 >
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? "Copied" : "Copy"}
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-[12px] text-[#737373] uppercase tracking-wider">
-                Room Link
+            <div className="grid gap-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
+                Room link
               </p>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#282828]">
-                <span className="flex-1 text-[13px] text-[#CBCBCB] truncate">
+              <div className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
+                <p className="break-all text-sm leading-relaxed text-[#CBCBCB]">
                   {roomLink}
-                </span>
+                </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <button
+                type="button"
                 onClick={handleCopy}
-                className="flex-1 h-11 rounded-xl bg-white text-[#0A0A0A] text-[14px] font-medium hover:bg-[#E8E8E8] transition-colors"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
               >
-                {copied ? "Copied!" : "Copy Link"}
+                <Copy className="h-4 w-4" />
+                {copied ? "Link copied" : "Copy link"}
               </button>
               <button
+                type="button"
                 onClick={() => router.push(`/${gameType}/${createdRoom.id}`)}
-                className="flex-1 h-11 rounded-xl border border-[#282828] text-[#CBCBCB] text-[14px] font-medium hover:border-[#444] transition-colors"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
               >
-                Enter Room
+                Enter room
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-          </>
-        )}
+          </div>
+        ) : null}
 
-        {/* ── Join mode ── */}
-        {mode === "join" && (
-          <>
-            <div className="flex flex-col gap-1">
-              {!urlRoomId && (
+        {mode === "join" ? (
+          <div className="space-y-5 pr-10">
+            <div className="space-y-1">
+              {!urlRoomId ? (
                 <button
+                  type="button"
                   onClick={() => setMode("choose")}
-                  className="text-[12px] text-[#737373] hover:text-[#CBCBCB] text-left mb-1"
+                  className="text-left text-xs text-[#8A8A8A] transition-colors hover:text-[#E8E8E8]"
                 >
                   ← Back
                 </button>
-              )}
-              <p className="text-[16px] font-semibold text-[#D9D9D9]">
-                {urlRoomId ? "Join Room" : "Join Private Room"}
-              </p>
-              <p className="text-[14px] text-[#737373]">
+              ) : null}
+              <h2 className="text-xl font-semibold text-[#F3F3F3]">
+                {urlRoomId ? "Join room" : "Join private room"}
+              </h2>
+              <p className="text-sm text-[#A3A3A3]">
                 {urlRoomId
-                  ? "You've been invited. Deposit stake to join."
-                  : "Enter a room ID to join your friend's game"}
+                  ? "Deposit the required stake to enter."
+                  : "Paste a room ID and we’ll fetch the stake before you join."}
               </p>
             </div>
 
-            {/* Room ID input — hidden if passed from URL */}
-            {!urlRoomId && (
-              <div className="flex flex-col gap-2">
-                <p className="text-[14px] text-[#CBCBCB]">Room ID</p>
+            {!urlRoomId ? (
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-[#E8E8E8]">Room ID</label>
                 <input
                   value={joinRoomId}
                   onChange={(e) => {
                     const id = e.target.value;
                     setJoinRoomId(id);
-                    if (id.length >= 6) fetchRoomData(id);
+                    if (id.length >= 6) {
+                      void fetchRoomData(id);
+                    }
                   }}
-                  onBlur={() => fetchRoomData(joinRoomId)}
+                  onBlur={() => void fetchRoomData(joinRoomId)}
                   placeholder="Paste room ID here"
-                  className="h-10 px-3 rounded-xl bg-[#0A0A0A] border border-[#282828] text-[14px] text-[#CBCBCB] placeholder-[#444] outline-none focus:border-[#555] transition-colors"
+                  className="h-12 rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-[#CBCBCB] outline-none placeholder:text-[#555] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
                 />
               </div>
-            )}
-
-            {/* Show room ID if from URL */}
-            {urlRoomId && (
-              <div className="px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#282828]">
-                <p className="text-[12px] text-[#737373] mb-1">Room ID</p>
-                <p className="text-[13px] text-[#CBCBCB] font-mono truncate">
+            ) : (
+              <div className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
+                  Room ID
+                </p>
+                <p className="mt-2 truncate font-mono text-sm text-[#E8E8E8]">
                   {urlRoomId}
                 </p>
               </div>
             )}
 
-            {/* Stake display (Fixed) */}
-            <div className="flex flex-col gap-2">
-              <p className="text-[14px] text-[#CBCBCB]">Required Stake</p>
-              <div className="h-11 px-4 flex items-center justify-between rounded-xl bg-[#0A0A0A] border border-[#282828]">
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-[#E8E8E8]">Required stake</p>
+              <div className="flex h-12 items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4">
                 {fetchingRoom ? (
-                  <div className="w-4 h-4 border-2 border-[#CBCBCB] border-t-transparent rounded-full animate-spin" />
+                  <div className="h-4 w-4 rounded-full border-2 border-white/60 border-t-transparent animate-spin" />
                 ) : roomStake !== null ? (
                   <>
-                    <span className="text-[14px] text-[#CBCBCB] font-medium">${roomStake} USDC</span>
-                    <span className="text-[11px] text-[#737373]">Fixed by creator</span>
+                    <span className="text-sm text-[#E8E8E8]">${roomStake} USDC</span>
+                    <span className="text-xs text-[#8A8A8A]">Fixed by creator</span>
                   </>
                 ) : (
-                  <span className="text-[13px] text-[#4a4a4a]">Enter valid Room ID</span>
+                  <span className="text-sm text-[#737373]">Enter a valid room ID</span>
                 )}
               </div>
             </div>
 
-            {error && <p className="text-[12px] text-red-400">{error}</p>}
-            {joinSuccess && (
-              <p className="text-[12px] text-green-400 text-center">
-                Joined! Entering room...
+            {error ? <p className="text-sm text-red-300">{error}</p> : null}
+            {joinSuccess ? (
+              <p className="text-sm text-emerald-400 text-center">
+                Joined. Entering room...
               </p>
-            )}
+            ) : null}
 
             <button
+              type="button"
               onClick={handleJoin}
-              disabled={
-                (!joinRoomId.trim() && !urlRoomId) || isJoining || joinSuccess || roomStake === null
-              }
-              className={`w-full h-11 rounded-xl text-[14px] font-medium transition-colors ${
-                (joinRoomId.trim() || urlRoomId) && !isJoining && !joinSuccess && roomStake !== null
-                  ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E8] cursor-pointer"
-                  : "bg-[#1A1A1A] text-[#4a4a4a] cursor-not-allowed"
-              }`}
+              disabled={((!joinRoomId.trim() && !urlRoomId) || isJoining || joinSuccess || roomStake === null)}
+              className={`inline-flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-colors ${((joinRoomId.trim() || urlRoomId) && !isJoining && !joinSuccess && roomStake !== null) ? "bg-white text-black hover:bg-[#F5F5F5]" : "cursor-not-allowed bg-white/5 text-[#4A4A4A]"}`}
             >
-              {!isAuthenticated
-                ? "Sign in to Join"
-                : isJoining
-                  ? "Joining..."
-                  : joinSuccess
-                    ? "Joined!"
-                    : "Join Room"}
+              {!isAuthenticated ? "Sign in to join" : isJoining ? "Joining..." : joinSuccess ? "Joined" : "Join room"}
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        ) : null}
+      </SurfaceCard>
     </div>
   );
 }
