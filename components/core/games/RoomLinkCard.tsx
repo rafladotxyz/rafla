@@ -1,8 +1,8 @@
 "use client";
 
-import { GlassCard } from "@/components/ui/GlassCard";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Link2 } from "lucide-react";
 import { useState } from "react";
+import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
 interface RoomLinkCardProps {
   roomLink: string;
@@ -22,31 +22,35 @@ export function RoomLinkCard({ roomLink }: RoomLinkCardProps) {
   };
 
   return (
-    <GlassCard className="bg-[#0A0A0A] p-5">
-      <label className="text-sm font-medium text-[#A3A3A3] block mb-3">
-        Room Link
-      </label>
-
-      <div className="flex items-center gap-2 bg-[#0A0A0A] rounded-lg p-3 border border-[#2A2A2A]">
-        <input
-          type="text"
-          value={roomLink}
-          readOnly
-          className="flex-1 bg-transparent text-sm text-[#E8E8E8] outline-none font-mono"
-        />
-
-        <button
-          onClick={copyToClipboard}
-          className="shrink-0 p-2 hover:bg-[#2A2A2A] rounded transition-colors"
-          title={copied ? "Copied!" : "Copy to clipboard"}
-        >
-          {copied ? (
-            <Check className="w-4 h-4 text-[#22C55E]" />
-          ) : (
-            <Copy className="w-4 h-4 text-[#A3A3A3]" />
-          )}
-        </button>
+    <SurfaceCard className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
+            Room Link
+          </p>
+          <p className="text-sm leading-relaxed text-[#A3A3A3]">
+            Share this invite link with friends. It stays inside the card on mobile.
+          </p>
+        </div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#CBCBCB]">
+          <Link2 className="h-4 w-4" />
+        </div>
       </div>
-    </GlassCard>
+
+      <div className="mt-4 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
+        <p className="break-all font-mono text-[12px] leading-relaxed text-[#E8E8E8] sm:text-sm">
+          {roomLink}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={copyToClipboard}
+        className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      >
+        {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+        {copied ? "Copied" : "Copy link"}
+      </button>
+    </SurfaceCard>
   );
 }

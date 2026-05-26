@@ -1,6 +1,7 @@
 import { FlipCard } from "./FlipCard";
 import { FlipResultCard } from "./FlipResult";
 import { FlippingScreen } from "./FlipScreen";
+
 type CoinSide = "heads" | "tails";
 type FlipResult = "win" | "loss";
 type ViewState = "select" | "flipping" | "result";
@@ -15,19 +16,19 @@ export const FlipGame = ({
   viewState,
   selectedSide,
   flipResult,
-  handleFlip,
   handleFlipAgain,
   handleShare,
+  onPlay,
 }: {
   viewState: ViewState;
   selectedSide: CoinSide | null;
   flipResult: FlipData;
-  handleFlip: (side: CoinSide, amount: string) => void;
   handleFlipAgain: () => void;
   handleShare: (amount: string, isWin: boolean) => void;
+  onPlay: () => void;
 }) => (
-  <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-12 px-4">
-    {viewState === "select" && <FlipCard onFlip={handleFlip} />}
+  <div className="flex w-full max-w-2xl mx-auto items-center justify-center px-4 py-8 sm:py-12">
+    {viewState === "select" && <FlipCard onPlay={onPlay} />}
     {viewState === "flipping" && selectedSide && (
       <FlippingScreen side={selectedSide} />
     )}

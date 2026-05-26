@@ -13,6 +13,7 @@ export type SoundType = keyof typeof SOUND_EFFECTS;
 export function useSound() {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+  const unlockedRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("soundEnabled");
@@ -20,11 +21,32 @@ export function useSound() {
       setIsSoundEnabled(saved === "true");
     }
 
-    // Preload sounds
     Object.entries(SOUND_EFFECTS).forEach(([key, url]) => {
       const audio = new Audio(url);
       audio.preload = "auto";
+      audio.crossOrigin = "anonymous";
+      audio.playsInline = true;
       audioRefs.current[key] = audio;
+    });
+  }, []);
+
+  const unlockAudio = useCallback(() => {
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
+
+    Object.values(audioRefs.current).forEach((audio) => {
+      const originalMuted = audio.muted;
+      audio.muted = true;
+      void audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = originalMuted;
+        })
+        .catch(() => {
+          audio.muted = originalMuted;
+        });
     });
   }, []);
 
@@ -39,13 +61,15 @@ export function useSound() {
   const playSound = useCallback(
     (type: SoundType) => {
       if (!isSoundEnabled) return;
+      unlockAudio();
       const audio = audioRefs.current[type];
       if (audio) {
         audio.currentTime = 0;
+        audio.muted = false;
         audio.play().catch((e) => console.warn("Sound play failed:", e));
       }
     },
-    [isSoundEnabled],
+    [isSoundEnabled, unlockAudio],
   );
 
   const stopSound = useCallback((type: SoundType) => {
@@ -56,5 +80,5 @@ export function useSound() {
     }
   }, []);
 
-  return { isSoundEnabled, toggleSound, playSound, stopSound };
+  return { isSoundEnabled, toggleSound, playSound, stopSound, unlockAudio };
 }

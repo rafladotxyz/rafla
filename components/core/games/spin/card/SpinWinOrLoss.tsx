@@ -4,6 +4,7 @@ import Image from "next/image";
 import Win from "@/assets/won.svg";
 import Loss from "@/assets/loss.svg";
 import Breakeven from "@/assets/eq.svg";
+import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
 type Segment = {
   label: string;
@@ -17,7 +18,7 @@ interface WinOrLossProps {
   handleClick: () => void;
   onShare: (amount: string, isWin: boolean) => void;
   segment?: Segment;
-  amount?: string; // ✅ now receives amount from parent
+  amount?: string;
   winnerAddress?: string;
 }
 
@@ -40,24 +41,24 @@ const RESULT_CONFIG: Record<
 > = {
   win: {
     image: Win,
-    heading: "You Won",
+    heading: "You won",
     amountColor: "text-[#1C9DF7]",
     amountPrefix: "+",
-    buttonLabel: "Spin Again",
+    buttonLabel: "Spin again",
   },
   loss: {
     image: Loss,
-    heading: "You Lost",
+    heading: "You lost",
     amountColor: "text-[#DF1C41]",
     amountPrefix: "-",
-    buttonLabel: "Spin Again",
+    buttonLabel: "Spin again",
   },
   breakeven: {
     image: Breakeven,
     heading: "Breakeven",
     amountColor: "text-[#F5A623]",
     amountPrefix: "",
-    buttonLabel: "Spin Again",
+    buttonLabel: "Spin again",
   },
 };
 
@@ -65,11 +66,11 @@ export const SWinOrLoss = ({
   handleClick,
   onShare,
   segment,
-  amount = "$0", // ✅ safe default
+  amount = "$0",
   winnerAddress = "0x9i0j...1k21",
 }: WinOrLossProps) => {
   return (
-    <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 px-3 py-3 backdrop-blur-xl">
       <WinOrLossCard
         handleClick={handleClick}
         onShare={onShare}
@@ -92,58 +93,49 @@ const WinOrLossCard = ({
   const config = RESULT_CONFIG[result];
 
   return (
-    <div className="relative w-[414px] bg-[#0A0A0A] flex flex-col items-center border-[1.5px] border-[#282828] rounded-3xl overflow-hidden px-6 pb-8 pt-0">
-      {/* Background texture */}
-      <div className="absolute top-0 left-0 w-full h-44">
-        <Group className="w-full h-full" />
-      </div>
+    <SurfaceCard className="w-full max-w-[520px] p-4 sm:p-6">
+      <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black/20 px-5 pb-6 pt-7 sm:px-6">
+        <div className="absolute inset-x-0 top-0 h-44 pointer-events-none">
+          <Group className="w-full h-full" />
+        </div>
 
-      {/* Result icon */}
-      <div className="mt-8 mb-6 z-10">
-        <Image
-          src={config.image}
-          height={149}
-          width={94}
-          alt={config.heading}
-        />
-      </div>
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="mb-5">
+            <Image src={config.image} height={149} width={94} alt={config.heading} />
+          </div>
 
-      {/* Text */}
-      <div className="flex flex-col items-center gap-1 mb-8 z-10">
-        <p className="text-[48px] font-semibold leading-tight text-[#737373]">
-          {config.heading}
-        </p>
-        {/* ✅ amount now correctly shown with prefix */}
-        <p
-          className={`text-[48px] font-bold leading-tight ${config.amountColor}`}
-        >
-          {config.amountPrefix}
-          {amount}
-        </p>
-        {result !== "breakeven" ? null : (
-          <p className="text-[13px] text-[#737373] mt-1">
-            Your entry has been refunded
-          </p>
-        )}
-      </div>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-4xl font-semibold leading-tight text-[#737373] sm:text-[48px]">
+              {config.heading}
+            </p>
+            <p className={`text-4xl font-bold leading-tight sm:text-[48px] ${config.amountColor}`}>
+              {config.amountPrefix}
+              {amount}
+            </p>
+            {result === "breakeven" ? (
+              <p className="mt-1 text-[13px] text-[#737373]">
+                Your entry has been refunded
+              </p>
+            ) : null}
+          </div>
 
-      {/* Buttons */}
-      <div className="w-full flex flex-col gap-3 z-10">
-        <button
-          onClick={handleClick}
-          className="w-full h-11 rounded-xl bg-white text-black text-sm font-medium flex items-center justify-center"
-        >
-          {config.buttonLabel}
-        </button>
-        {/* ✅ passes correct amount and win state up to parent */}
-        <button
-          onClick={() => onShare(amount, result === "win")}
-          className="w-full h-11 rounded-xl border border-[#282828] text-white text-sm font-medium flex items-center justify-center backdrop-blur-lg"
-        >
-          Share
-        </button>
+          <div className="mt-6 grid w-full gap-3 sm:grid-cols-2">
+            <button
+              onClick={handleClick}
+              className="h-12 rounded-2xl bg-white text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            >
+              {config.buttonLabel}
+            </button>
+            <button
+              onClick={() => onShare(amount, result === "win")}
+              className="h-12 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            >
+              Share
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </SurfaceCard>
   );
 };
 
