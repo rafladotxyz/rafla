@@ -22,6 +22,7 @@ export function JoinRoomModal({ gameType, roomId, onJoined }: JoinRoomModalProps
 
   const [joined, setJoined] = useState(false);
   const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [roomToken, setRoomToken] = useState<string>("USDC");
   const [fetchingRoom, setFetchingRoom] = useState(true);
 
   useEffect(() => {
@@ -35,7 +36,10 @@ export function JoinRoomModal({ gameType, roomId, onJoined }: JoinRoomModalProps
 
         if (res.ok) {
           const { room } = await res.json();
-          setRoomStake(room && room.stakeAmount ? Number(room.stakeAmount) / 1_000_000 : null);
+          const token: string = room?.token ?? "USDC";
+          const decimals = token === "USDC" ? 1_000_000 : 1e18;
+          setRoomToken(token);
+          setRoomStake(room?.stakeAmount ? Number(room.stakeAmount) / decimals : null);
         } else {
           setRoomStake(null);
         }
@@ -61,7 +65,7 @@ export function JoinRoomModal({ gameType, roomId, onJoined }: JoinRoomModalProps
 
     if (roomStake === null) return;
 
-    const ok = await joinRoom(roomId, roomStake);
+    const ok = await joinRoom(roomId, roomToken, roomStake);
     if (ok) {
       setJoined(true);
       window.setTimeout(() => onJoined(), 800);
@@ -100,7 +104,9 @@ export function JoinRoomModal({ gameType, roomId, onJoined }: JoinRoomModalProps
                 <div className="h-4 w-4 rounded-full border-2 border-white/60 border-t-transparent animate-spin" />
               ) : roomStake !== null ? (
                 <>
-                  <span className="text-sm text-[#E8E8E8]">${roomStake} USDC</span>
+                  <span className="text-sm text-[#E8E8E8]">
+                    {roomToken === "USDC" ? `$${roomStake}` : roomToken === "ETH" ? `Ξ${roomStake}` : `◈${roomStake}`} {roomToken}
+                  </span>
                   <span className="text-xs text-[#8A8A8A]">Fixed by creator</span>
                 </>
               ) : (

@@ -251,21 +251,31 @@ export function useContractGame() {
       }
 
       if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
-        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        setError("Previous round ended — settling it now, please hold on...");
+        setIsDepositing(true);
         try {
-          await writeContractAsync({
+          const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
             abi: RAFFLE_ABI,
             functionName: "endRound",
             gas: BASE_SEPOLIA_GAS_LIMIT,
           });
+          await publicClient.waitForTransactionReceipt({ hash: endTx });
+          await refetchRound();
+          // Small delay so the contract state settles
+          await new Promise((r) => setTimeout(r, 1500));
         } catch (e) {
           console.error("Auto endRound failed", e);
+          setError("Could not settle the previous round. Please try again.");
+          setIsDepositing(false);
+          return null;
         }
-        return null;
+        // Clear the settling message and proceed with deposit below
+        setError(null);
+      } else {
+        setError(null);
       }
 
-      setError(null);
       setIsDepositing(true);
 
       try {
@@ -335,21 +345,29 @@ export function useContractGame() {
       }
 
       if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
-        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        setError("Previous round ended — settling it now, please hold on...");
+        setIsDepositing(true);
         try {
-          await writeContractAsync({
+          const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
             abi: RAFFLE_ABI,
             functionName: "endRound",
             gas: BASE_SEPOLIA_GAS_LIMIT,
           });
+          await publicClient.waitForTransactionReceipt({ hash: endTx });
+          await refetchRound();
+          await new Promise((r) => setTimeout(r, 1500));
         } catch (e) {
           console.error("Auto endRound failed", e);
+          setError("Could not settle the previous round. Please try again.");
+          setIsDepositing(false);
+          return null;
         }
-        return null;
+        setError(null);
+      } else {
+        setError(null);
       }
 
-      setError(null);
       setIsDepositing(true);
 
       try {
@@ -413,21 +431,29 @@ export function useContractGame() {
       }
 
       if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
-        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        setError("Previous round ended — settling it now, please hold on...");
+        setIsDepositing(true);
         try {
-          await writeContractAsync({
+          const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
             abi: RAFFLE_ABI,
             functionName: "endRound",
             gas: BASE_SEPOLIA_GAS_LIMIT,
           });
+          await publicClient.waitForTransactionReceipt({ hash: endTx });
+          await refetchRound();
+          await new Promise((r) => setTimeout(r, 1500));
         } catch (e) {
           console.error("Auto endRound failed", e);
+          setError("Could not settle the previous round. Please try again.");
+          setIsDepositing(false);
+          return null;
         }
-        return null;
+        setError(null);
+      } else {
+        setError(null);
       }
 
-      setError(null);
       setIsDepositing(true);
 
       try {
