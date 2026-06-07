@@ -28,7 +28,8 @@ model User {
 model GameRoom {
   id            String            @id @default(cuid())
   gameType      String // "spin" | "flip" | "draw"
-  stakeAmount   String // USDC amount as string (6 decimals)
+  stakeAmount   String // Amount in raw units
+  token         String            @default("USDC") // "USDC" | "OAR" | "ETH"
   minPlayers    Int               @default(3)
   contractRound BigInt // on-chain roundId
   status        String            @default("waiting") // waiting | active | completed | cancelled

@@ -8,6 +8,7 @@ export interface CreatedRoom {
   id: string;
   gameType: string;
   stakeAmount: string;
+  token: string;
   status: string;
   drawTime: string | null;
   contractRound: string | null;
@@ -28,7 +29,8 @@ export function useRoom() {
   const createRoom = useCallback(
     async (params: {
       gameType: "spin" | "flip" | "draw";
-      stakeAmountDollars: number;
+      stakeAmount: number;
+      token: "USDC" | "OAR" | "ETH";
       minPlayers: number;
     }): Promise<CreatedRoom | null> => {
       if (!isAuthenticated) {
@@ -45,6 +47,14 @@ export function useRoom() {
           ? new Date(Number(currentRound.endTime) * 1000).toISOString()
           : new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
+        let rawAmount = "";
+        if (params.token === "USDC") rawAmount = String(Math.round(params.stakeAmount * 1_000_000));
+        else if (params.token === "ETH" || params.token === "OAR") {
+          const [whole, frac = ""] = params.stakeAmount.toString().split(".");
+          const padded = frac.padEnd(18, "0").slice(0, 18);
+          rawAmount = (BigInt(whole) * BigInt(10 ** 18) + BigInt(padded)).toString();
+        }
+
         const res = await fetch("/api/rooms/create", {
           method: "POST",
           headers: {
@@ -53,7 +63,8 @@ export function useRoom() {
           },
           body: JSON.stringify({
             gameType: params.gameType,
-            stakeAmount: String(params.stakeAmountDollars * 1_000_000), // USDC 6 decimals
+            stakeAmount: rawAmount,
+            token: params.token,
             minPlayers: params.minPlayers,
             drawTime,
             contractRound: currentRound?.id?.toString() ?? null,

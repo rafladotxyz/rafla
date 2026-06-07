@@ -250,6 +250,21 @@ export function useContractGame() {
         return null;
       }
 
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        try {
+          await writeContractAsync({
+            address: RAFFLE_ADDRESS,
+            abi: RAFFLE_ABI,
+            functionName: "endRound",
+            gas: BASE_SEPOLIA_GAS_LIMIT,
+          });
+        } catch (e) {
+          console.error("Auto endRound failed", e);
+        }
+        return null;
+      }
+
       setError(null);
       setIsDepositing(true);
 
@@ -304,7 +319,7 @@ export function useContractGame() {
     },
     [
       address, publicClient, writeContractAsync, refetchRound,
-      currentRoundId, currentRoundStatus, minUsdcDepositRaw, isSupportedChain,
+      currentRound, currentRoundId, currentRoundStatus, minUsdcDepositRaw, isSupportedChain,
     ],
   );
 
@@ -316,6 +331,21 @@ export function useContractGame() {
       if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
       if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
         setError("The raffle round is not active or is being settled.");
+        return null;
+      }
+
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        try {
+          await writeContractAsync({
+            address: RAFFLE_ADDRESS,
+            abi: RAFFLE_ABI,
+            functionName: "endRound",
+            gas: BASE_SEPOLIA_GAS_LIMIT,
+          });
+        } catch (e) {
+          console.error("Auto endRound failed", e);
+        }
         return null;
       }
 
@@ -367,7 +397,7 @@ export function useContractGame() {
     },
     [
       address, publicClient, writeContractAsync, refetchRound,
-      currentRoundId, currentRoundStatus, minOarDepositRaw, isSupportedChain,
+      currentRound, currentRoundId, currentRoundStatus, minOarDepositRaw, isSupportedChain,
     ],
   );
 
@@ -379,6 +409,21 @@ export function useContractGame() {
       if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
       if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
         setError("The raffle round is not active or is being settled.");
+        return null;
+      }
+
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+        setError("Round expired. Settling the previous round... Please wait a moment and try again.");
+        try {
+          await writeContractAsync({
+            address: RAFFLE_ADDRESS,
+            abi: RAFFLE_ABI,
+            functionName: "endRound",
+            gas: BASE_SEPOLIA_GAS_LIMIT,
+          });
+        } catch (e) {
+          console.error("Auto endRound failed", e);
+        }
         return null;
       }
 
@@ -419,7 +464,7 @@ export function useContractGame() {
     },
     [
       address, publicClient, writeContractAsync, refetchRound,
-      currentRoundId, currentRoundStatus, minEthDepositRaw, isSupportedChain,
+      currentRound, currentRoundId, currentRoundStatus, minEthDepositRaw, isSupportedChain,
     ],
   );
 

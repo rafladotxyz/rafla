@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { gameType, stakeAmount, drawTime, contractRound, minPlayers } = body;
+    const { gameType, stakeAmount, drawTime, contractRound, minPlayers, token } = body;
 
     const parsedStake = Number(stakeAmount);
     const parsedMinPlayers = Number(minPlayers ?? 3);
@@ -40,10 +40,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invalid gameType" }, { status: 400 });
     }
 
+    const resolvedToken = token || "USDC";
+    if (!["USDC", "OAR", "ETH"].includes(resolvedToken)) {
+      return NextResponse.json({ error: "invalid token" }, { status: 400 });
+    }
+
     const room = await prisma.gameRoom.create({
       data: {
         gameType,
-        stakeAmount: String(parsedStake),
+        stakeAmount: String(parsedStake), // stored as raw token units
+        token: resolvedToken,
         minPlayers: parsedMinPlayers,
         contractRound: contractRound ? BigInt(contractRound) : 0,
         drawTime: drawTime ? new Date(drawTime) : null,
