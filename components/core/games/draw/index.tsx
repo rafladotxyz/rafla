@@ -11,6 +11,8 @@ import { useGameState } from "@/hooks/useGameState";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { useContractGame, RoundStatus } from "@/hooks/useContractGame";
 import { GameUI } from "./GameUi";
+import { GameStakeModal } from "@/components/core/games/GameStakeModal";
+import type { StakeToken } from "@/components/core/games/GameStakeModal";
 
 const EMPTY_ID = "3455654";
 type TabType = "public" | "private";
@@ -26,6 +28,7 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
     isPrivateRoom ? "private" : "public",
   );
   const [hasJoined, setHasJoined] = useState(false);
+  const [showStakeModal, setShowStakeModal] = useState(false);
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
   const { gameState, players, loading, addEntry, error } = useGameState(
@@ -41,7 +44,19 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   const showJoinModal = isPrivateRoom && !hasJoined;
 
   const handleTabChange = (tab: TabType) => setActiveTab(tab);
-  const handleAddEntry = async () => addEntry(gameState.yourEntry || 5.0);
+
+  /** Opens the token-selector stake modal */
+  const handleAddEntry = () => setShowStakeModal(true);
+
+  /** Called when the modal confirms — routes to the right on-chain deposit */
+  const handleConfirmStake = async (
+    amount: number,
+    _side?: "heads" | "tails",
+    token?: StakeToken,
+  ) => {
+    setShowStakeModal(false);
+    await addEntry(amount, { token });
+  };
 
   return (
     <div className="px-4 py-0">
@@ -96,6 +111,19 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
             <div className="h-6 w-6 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
           </div>
         ))}
+
+      {/* Token-selector stake modal for Draw */}
+      <GameStakeModal
+        key={showStakeModal ? "draw-stake-open" : "draw-stake-closed"}
+        open={showStakeModal}
+        gameName="Rafla Draw — Enter"
+        actionLabel="Enter draw"
+        description="Choose the token you want to stake and set your entry amount. All three are accepted — your win-weight is proportional to your deposit value."
+        availableTokens={["USDC", "OAR", "ETH"]}
+        onClose={() => setShowStakeModal(false)}
+        onConfirm={handleConfirmStake}
+        isSubmitting={loading}
+      />
     </div>
   );
 };

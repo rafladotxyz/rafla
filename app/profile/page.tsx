@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { useBalances } from "@/hooks/useBalances";
 import { Navbar } from "@/components/layout/Navbar";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
 import { ModalShell } from "@/components/ui/ModalShell";
@@ -86,6 +87,8 @@ export default function ProfilePage() {
     twitter: "",
     telegram: "",
   });
+
+  const { balances, isLoading: loadingBalances } = useBalances();
 
   const {
     inputRef,
@@ -376,6 +379,28 @@ export default function ProfilePage() {
           className="hidden"
           onChange={handleFileChange}
         />
+
+        <section className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "USDC Balance", value: loadingBalances ? "..." : Number(balances.USDC.formatted).toFixed(2), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
+            { label: "OAR Balance", value: loadingBalances ? "..." : Number(balances.OAR.formatted).toFixed(4), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
+            { label: "ETH Balance", value: loadingBalances ? "..." : Number(balances.ETH.formatted).toFixed(4), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
+          ].map(({ label, value, symbol, color, bg, icon }) => (
+            <SurfaceCard key={label} className="p-4">
+              <div className="flex items-center gap-2 text-[#8A8A8A]">
+                <div className={`flex h-6 w-6 items-center justify-center rounded-md ${bg} ${color} text-xs font-bold`}>
+                  {icon}
+                </div>
+                <span className="text-[11px] uppercase tracking-[0.18em]">
+                  {label}
+                </span>
+              </div>
+              <p className="mt-4 text-2xl font-semibold text-[#F3F3F3]">
+                {value} <span className="text-sm font-medium text-[#8A8A8A]">{symbol}</span>
+              </p>
+            </SurfaceCard>
+          ))}
+        </section>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
