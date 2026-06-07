@@ -17,6 +17,7 @@ const CONTRACT_ERROR_MAP: Record<string, string> = {
   RoundNotActive: "This round is not active right now.",
   RoundNotEnded: "The round has not ended yet.",
   VRFAlreadyRequested: "Randomness has already been requested for this round.",
+  "0x0f5eeea6": "This round has already ended. Wait for the new round to start.",
 };
 
 const USER_REJECTION_PATTERNS = [

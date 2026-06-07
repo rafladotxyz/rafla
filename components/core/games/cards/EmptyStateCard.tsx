@@ -7,12 +7,20 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useRoom } from "@/hooks/useRoom";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
-const PRICE_OPTIONS = [
-  { label: "$1", value: 1 },
-  { label: "$2", value: 2 },
-  { label: "$3", value: 3 },
-  { label: "$5", value: 5 },
-];
+type StakeToken = "USDC" | "OAR" | "ETH";
+
+const TOKEN_PRESETS: Record<StakeToken, number[]> = {
+  USDC: [1, 2, 3, 5],
+  OAR: [0.5, 1, 5, 10],
+  ETH: [0.0001, 0.001, 0.005, 0.01],
+};
+
+const TOKEN_SYMBOLS: Record<StakeToken, string> = {
+  USDC: "$",
+  OAR: "◈",
+  ETH: "Ξ",
+};
+
 const PLAYER_OPTIONS = [2, 4, 6, 8];
 
 type GameType = "spin" | "flip" | "draw";
@@ -29,6 +37,8 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
   const { createRoom, joinRoom, createdRoom, isCreating, isJoining, error } = useRoom();
 
   const [mode, setMode] = useState<Mode>("idle");
+  const availableTokens: StakeToken[] = gameType === "draw" ? ["USDC", "OAR", "ETH"] : ["OAR"];
+  const [selectedToken, setSelectedToken] = useState<StakeToken>(availableTokens[0]);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [customPrice, setCustomPrice] = useState<string>("");
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
@@ -40,6 +50,7 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
 
   const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
   const effectivePlayers = customPlayers ? Number(customPlayers) : selectedPlayers;
+  const currentPresets = TOKEN_PRESETS[selectedToken];
 
   const roomLink = createdRoom
     ? `${typeof window !== "undefined" ? window.location.origin : "https://rafla.xyz"}/${gameType}/${createdRoom.id}`
@@ -79,7 +90,8 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
 
     const room = await createRoom({
       gameType,
-      stakeAmountDollars: effectivePrice,
+      stakeAmount: effectivePrice,
+      token: selectedToken,
       minPlayers: effectivePlayers,
     });
 
@@ -180,24 +192,41 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-[#E8E8E8]">Price per ticket</p>
-            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#8A8A8A]">
-              <Link2 className="h-3.5 w-3.5" /> USDC
-            </span>
+            <div className="flex items-center gap-2">
+              {availableTokens.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setSelectedToken(t);
+                    setSelectedPrice(null);
+                    setCustomPrice("");
+                  }}
+                  className={`rounded border px-2 py-1 text-xs font-semibold uppercase transition-colors ${
+                    selectedToken === t
+                      ? "border-white/30 bg-white/10 text-white"
+                      : "border-transparent text-[#8A8A8A] hover:text-[#CBCBCB]"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {PRICE_OPTIONS.map((opt) => {
-              const active = selectedPrice === opt.value && !customPrice;
+            {currentPresets.map((val) => {
+              const active = selectedPrice === val && !customPrice;
               return (
                 <button
-                  key={opt.label}
+                  key={val}
                   type="button"
                   onClick={() => {
-                    setSelectedPrice(opt.value);
+                    setSelectedPrice(val);
                     setCustomPrice("");
                   }}
                   className={`h-11 rounded-2xl border text-sm font-medium transition-colors ${active ? "border-white bg-white text-black" : "border-white/10 bg-black/20 text-[#CBCBCB] hover:bg-white/5"}`}
                 >
-                  {opt.label}
+                  {TOKEN_SYMBOLS[selectedToken]}
+                  {val}
                 </button>
               );
             })}
