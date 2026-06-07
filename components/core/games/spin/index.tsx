@@ -72,10 +72,10 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
   const targetIndex = lastSpinResult
     ? lastSpinResult.payout > lastSpinResult.amount
-      ? 2
+      ? 2  // win (payout > stake)
       : lastSpinResult.payout === lastSpinResult.amount
-        ? 1
-        : 0
+        ? 1  // breakeven
+        : 0  // loss
     : null;
 
   useEffect(() => {
@@ -147,11 +147,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         isLoading={loading}
       />
 
-      <GameStakeModal key={showStakeModal ? "spin-stake-open" : "spin-stake-closed"}
+      <GameStakeModal
+        key={showStakeModal ? "spin-stake-open" : "spin-stake-closed"}
         open={showStakeModal}
         gameName="Spin stake"
         actionLabel="Spin now"
-        description="Choose your stake, confirm the amount, and the wheel will launch once your transaction is ready."
+        description="Set your OAR stake and confirm. The wheel launches once your transaction is confirmed on-chain."
+        availableTokens={["OAR"]}
         onClose={() => setShowStakeModal(false)}
         onConfirm={(amount) => {
           playSound("click");

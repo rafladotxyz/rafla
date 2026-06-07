@@ -17,7 +17,7 @@ export const GameUI = ({
   players: Player[];
   gameState: GameState;
   loading: boolean;
-  onAddEntry: () => Promise<boolean>;
+  onAddEntry: () => void;
   roomId?: string;
   error?: string | null;
 }) => (

@@ -15,49 +15,70 @@ import {
   FLIP_ADDRESS,
   SPIN_ADDRESS,
   USDC_ADDRESS,
+  OAR_COIN_ADDRESS,
   RAFFLE_ABI,
   FLIP_ABI,
   SPIN_ABI,
   ERC20_ABI,
   toUSDCUnits,
   fromUSDCUnits,
+  toOARUnits,
+  fromOARUnits,
   RoundStatus,
 } from "@/lib/contract";
 import { normalizeContractError } from "@/lib/contract-errors";
 
-function formatUsdValue(value: bigint): string {
-  return Number(value).toLocaleString(undefined, {
-    maximumFractionDigits: 6,
-  });
-}
-
 // Re-export so views only need one import
 export { RoundStatus };
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Base Sepolia gas cap ─────────────────────────────────────────────────────
+// Base Sepolia enforces a per-tx gas ceiling of ~15 000 000 at the RPC level.
+// We cap every write at a safe budget that covers all contract paths while
+// staying well under that ceiling.
+const BASE_SEPOLIA_GAS_LIMIT = 500_000n;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Render a raw OAR bigint as a readable string (18 dec) */
+function fmtOAR(raw: bigint): string {
+  return fromOARUnits(raw).toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+/** Render a raw USDC bigint as a readable string (6 dec) */
+function fmtUSDC(raw: bigint): string {
+  return fromUSDCUnits(raw).toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CurrentRound {
   id: bigint;
   startTime: bigint;
   endTime: bigint;
-  prizePool: number; // dollars
+  /** Raw weighted prizePool as returned by the contract (mixed units — display only) */
+  prizePoolRaw: bigint;
   playerCount: number;
   winner: string;
   status: RoundStatus;
   timeRemaining: number; // seconds
 }
 
+/**
+ * WinnerSelected now carries three separate prize buckets (ETH / USDC / OAR).
+ * All values are stored as raw bigints; convert for display.
+ */
 export interface WinnerEvent {
   roundId: bigint;
   winner: string;
-  prizeAmount: number;
-  fee: number;
+  ethPrize: bigint;
+  usdcPrize: bigint;
+  oarPrize: bigint;
 }
 
 export interface FlipResultEvent {
   player: string;
-  amount: number;
-  choice: number;
+  amount: bigint;  // raw OAR (18 dec)
+  choice: number;  // 0 = Heads, 1 = Tails
   result: number;
   won: boolean;
   transactionHash: string;
@@ -65,45 +86,35 @@ export interface FlipResultEvent {
 
 export interface SpinResultEvent {
   player: string;
-  amount: number;
-  roll: bigint;
-  multiplier: bigint;
-  payout: number;
+  amount: bigint;      // raw OAR (18 dec)
+  roll: bigint;        // 0-99
+  multiplier: bigint;  // percentage points (e.g. 150 = 1.5×)
+  payout: bigint;      // raw OAR (18 dec)
   transactionHash: string;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useContractGame() {
   const { address } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
-  const isSupportedChain = chainId === 84532;
+  const isSupportedChain = chainId === 84532; // Base Sepolia
   const unsupportedChainMessage =
     "Please switch to Base Sepolia before joining or paying.";
 
-  const [approveTxHash, setApproveTxHash] = useState<
-    `0x${string}` | undefined
-  >();
-  const [depositTxHash, setDepositTxHash] = useState<
-    `0x${string}` | undefined
-  >();
-  const [endRoundTxHash, setEndRoundTxHash] = useState<
-    `0x${string}` | undefined
-  >();
+  const [approveTxHash, setApproveTxHash] = useState<`0x${string}` | undefined>();
+  const [depositTxHash, setDepositTxHash] = useState<`0x${string}` | undefined>();
+  const [endRoundTxHash, setEndRoundTxHash] = useState<`0x${string}` | undefined>();
   const [isDepositing, setIsDepositing] = useState(false);
   const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
-  const [lastFlipResult, setLastFlipResult] = useState<FlipResultEvent | null>(
-    null,
-  );
-  const [lastSpinResult, setLastSpinResult] = useState<SpinResultEvent | null>(
-    null,
-  );
+  const [lastFlipResult, setLastFlipResult] = useState<FlipResultEvent | null>(null);
+  const [lastSpinResult, setLastSpinResult] = useState<SpinResultEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
 
-  // ── Read current round ────────────────────────────────────────────────────
+  // ── Read current round ──────────────────────────────────────────────────────
 
   const { data: roundData, refetch: refetchRound } = useReadContract({
     address: RAFFLE_ADDRESS,
@@ -112,12 +123,30 @@ export function useContractGame() {
     query: { enabled: isSupportedChain },
   });
 
-  const { data: minDepositRaw } = useReadContract({
+  // ── Read min deposits (Raffle) ──────────────────────────────────────────────
+
+  const { data: minUsdcDepositRaw } = useReadContract({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
-    functionName: "MIN_DEPOSIT",
+    functionName: "MIN_USDC_DEPOSIT",
     query: { enabled: isSupportedChain },
   });
+
+  const { data: minEthDepositRaw } = useReadContract({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_ABI,
+    functionName: "MIN_ETH_DEPOSIT",
+    query: { enabled: isSupportedChain },
+  });
+
+  const { data: minOarDepositRaw } = useReadContract({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_ABI,
+    functionName: "MIN_OAR_DEPOSIT",
+    query: { enabled: isSupportedChain },
+  });
+
+  // ── Read min bets (Flip / Spin — OAR, 18 dec) ──────────────────────────────
 
   const { data: minBetFlipRaw } = useReadContract({
     address: FLIP_ADDRESS,
@@ -133,49 +162,30 @@ export function useContractGame() {
     query: { enabled: isSupportedChain },
   });
 
-  const { data: raffleTokenAddress } = useReadContract({
-    address: RAFFLE_ADDRESS,
-    abi: RAFFLE_ABI,
-    functionName: "usdc",
-    query: { enabled: isSupportedChain },
-  });
-
-  const { data: flipTokenAddress } = useReadContract({
-    address: FLIP_ADDRESS,
-    abi: FLIP_ABI,
-    functionName: "oarCoin",
-    query: { enabled: isSupportedChain },
-  });
-
-  const { data: spinTokenAddress } = useReadContract({
-    address: SPIN_ADDRESS,
-    abi: SPIN_ABI,
-    functionName: "oarCoin",
-    query: { enabled: isSupportedChain },
-  });
+  // ── Derive round shape ──────────────────────────────────────────────────────
 
   const currentRound: CurrentRound | null = roundData
     ? {
         id: roundData[0],
         startTime: roundData[1],
         endTime: roundData[2],
-        prizePool: fromUSDCUnits(roundData[3]),
+        prizePoolRaw: roundData[3],
         playerCount: Number(roundData[4]),
         winner: roundData[5],
         status: roundData[6] as RoundStatus,
         timeRemaining: Number(roundData[7]),
       }
     : null;
+
   const currentRoundId = currentRound?.id;
   const currentRoundStatus = currentRound?.status;
 
-  // ── Read player deposit for current round ─────────────────────────────────
+  // ── Read per-player per-token deposits ─────────────────────────────────────
 
   const { data: playerDepositRaw } = useReadContract({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     functionName: "getPlayerDeposit",
-    // Only run when both values are defined to avoid type errors
     args:
       currentRound?.id !== undefined && address
         ? [currentRound.id, address]
@@ -183,13 +193,10 @@ export function useContractGame() {
     query: { enabled: isSupportedChain && !!currentRound?.id && !!address },
   });
 
-  const raffleToken = ((raffleTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
-  const flipToken = ((flipTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
-  const spinToken = ((spinTokenAddress as `0x${string}` | undefined) ?? USDC_ADDRESS) as `0x${string}`;
+  /** Raw weighted deposit (mixed units — for win-chance display only) */
+  const yourDepositRaw: bigint = playerDepositRaw ?? 0n;
 
-  const yourDeposit = playerDepositRaw ? fromUSDCUnits(playerDepositRaw) : 0;
-
-  // ── Wait for approve tx (used to gate deposit) ────────────────────────────
+  // ── Wait for approve tx ─────────────────────────────────────────────────────
 
   const { isLoading: isApproving } = useWaitForTransactionReceipt({
     hash: approveTxHash,
@@ -198,18 +205,48 @@ export function useContractGame() {
   const { isLoading: isEndingRound, isSuccess: endRoundSuccess } =
     useWaitForTransactionReceipt({ hash: endRoundTxHash });
 
-  // ── depositUSDC — approve then wait for receipt, then deposit ─────────────
-  // Fixes the flaky 2s setTimeout approach by using publicClient.waitForTransactionReceipt
+  // ── Internal: ERC-20 approve helper ────────────────────────────────────────
+
+  /**
+   * Checks current allowance and submits an approve tx only if needed.
+   * Waits for on-chain confirmation before returning.
+   */
+  async function ensureAllowance(
+    tokenAddress: `0x${string}`,
+    spender: `0x${string}`,
+    rawAmount: bigint,
+  ): Promise<void> {
+    if (!address || !publicClient) throw new Error("Wallet not connected");
+
+    const allowance = await publicClient.readContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "allowance",
+      args: [address, spender],
+    });
+
+    if (allowance < rawAmount) {
+      const approveTx = await writeContractAsync({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        // Approve 100× the amount to batch future txs and avoid re-approvals
+        args: [spender, rawAmount * 100n],
+        gas: BASE_SEPOLIA_GAS_LIMIT,
+      });
+      setApproveTxHash(approveTx);
+      await publicClient.waitForTransactionReceipt({ hash: approveTx });
+    }
+  }
+
+  // ── depositUSDC ─────────────────────────────────────────────────────────────
 
   const depositUSDC = useCallback(
     async (dollarAmount: number): Promise<`0x${string}` | null> => {
-      if (!address || !publicClient) {
-        setError("wallet not connected");
-        return null;
-      }
-
-      if (!isSupportedChain) {
-        setError(unsupportedChainMessage);
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+      if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
+        setError("The raffle round is not active or is being settled.");
         return null;
       }
 
@@ -219,57 +256,30 @@ export function useContractGame() {
       try {
         const rawAmount = toUSDCUnits(dollarAmount);
 
-        // Check balance first
-        const balance = await publicClient.readContract({
-          address: raffleToken,
-          abi: ERC20_ABI,
-          functionName: "balanceOf",
-          args: [address],
-        });
-
-        if (balance < rawAmount) {
-          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
-          return null;
-        }
-
-        // Check round status — allow if Active, regardless of timer (let contract decide)
-        if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
-          setError("The raffle round is not active or is being settled.");
-          return null;
-        }
-
-        // Check MIN_DEPOSIT
-        if (minDepositRaw && (minDepositRaw as bigint) > 0n) {
-          const min = minDepositRaw as bigint;
-          if (rawAmount < min) {
-            const minUsdc = fromUSDCUnits(min);
-            setError(
-              minUsdc >= 1_000_000
-                ? `The contract minimum deposit is ${formatUsdValue(min)} USDC. That looks misconfigured on-chain, so check the deployed contract settings.`
-                : `Amount too small. Minimum deposit is ${formatUsdValue(BigInt(Math.round(minUsdc)))} USDC.`,
-            );
+        // Gate: minimum deposit check
+        if (minUsdcDepositRaw && (minUsdcDepositRaw as bigint) > 0n) {
+          if (rawAmount < (minUsdcDepositRaw as bigint)) {
+            setError(`Minimum USDC deposit is ${fmtUSDC(minUsdcDepositRaw as bigint)} USDC.`);
             return null;
           }
         }
 
-        // Step 1: Check allowance
-        const allowance = await publicClient.readContract({
-          address: raffleToken,
+        // Gate: balance check
+        const balance = await publicClient.readContract({
+          address: USDC_ADDRESS,
           abi: ERC20_ABI,
-          functionName: "allowance",
-          args: [address, RAFFLE_ADDRESS],
+          functionName: "balanceOf",
+          args: [address],
         });
-
-        if (allowance < rawAmount) {
-          const approveTx = await writeContractAsync({
-            address: raffleToken,
-            abi: ERC20_ABI,
-            functionName: "approve",
-            args: [RAFFLE_ADDRESS, rawAmount * BigInt(100)], // Approve more to save txs
-          });
-          setApproveTxHash(approveTx);
-          await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        if (balance < rawAmount) {
+          setError(
+            `Insufficient USDC balance. You have ${fmtUSDC(balance)} but need ${dollarAmount}.`,
+          );
+          return null;
         }
+
+        // Step 1: ensure approval
+        await ensureAllowance(USDC_ADDRESS, RAFFLE_ADDRESS, rawAmount);
 
         // Step 2: deposit
         const depositTx = await writeContractAsync({
@@ -277,6 +287,7 @@ export function useContractGame() {
           abi: RAFFLE_ABI,
           functionName: "depositUSDC",
           args: [rawAmount],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
         });
         setDepositTxHash(depositTx);
         await publicClient.waitForTransactionReceipt({ hash: depositTx });
@@ -285,18 +296,134 @@ export function useContractGame() {
         return depositTx;
       } catch (err: unknown) {
         const normalized = normalizeContractError(err);
-        if (!normalized.isUserRejected) {
-          setError(normalized.message);
-        }
+        if (!normalized.isUserRejected) setError(normalized.message);
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, refetchRound, currentRoundId, currentRoundStatus, minDepositRaw, raffleToken, isSupportedChain, unsupportedChainMessage],
+    [
+      address, publicClient, writeContractAsync, refetchRound,
+      currentRoundId, currentRoundStatus, minUsdcDepositRaw, isSupportedChain,
+    ],
   );
 
-  // ── endRound ──────────────────────────────────────────────────────────────
+  // ── depositOARCOIN ──────────────────────────────────────────────────────────
+
+  const depositOARCOIN = useCallback(
+    async (oarAmount: number): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+      if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
+        setError("The raffle round is not active or is being settled.");
+        return null;
+      }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawAmount = toOARUnits(oarAmount);
+
+        if (minOarDepositRaw && (minOarDepositRaw as bigint) > 0n) {
+          if (rawAmount < (minOarDepositRaw as bigint)) {
+            setError(`Minimum OAR deposit is ${fmtOAR(minOarDepositRaw as bigint)} OAR.`);
+            return null;
+          }
+        }
+
+        const balance = await publicClient.readContract({
+          address: OAR_COIN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [address],
+        });
+        if (balance < rawAmount) {
+          setError(`Insufficient OAR balance. You have ${fmtOAR(balance)} but need ${oarAmount}.`);
+          return null;
+        }
+
+        await ensureAllowance(OAR_COIN_ADDRESS, RAFFLE_ADDRESS, rawAmount);
+
+        const depositTx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_ABI,
+          functionName: "depositOARCOIN",
+          args: [rawAmount],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        setDepositTxHash(depositTx);
+        await publicClient.waitForTransactionReceipt({ hash: depositTx });
+
+        refetchRound();
+        return depositTx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [
+      address, publicClient, writeContractAsync, refetchRound,
+      currentRoundId, currentRoundStatus, minOarDepositRaw, isSupportedChain,
+    ],
+  );
+
+  // ── depositETH ──────────────────────────────────────────────────────────────
+
+  const depositETH = useCallback(
+    async (ethAmount: number): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+      if (!currentRoundId || currentRoundStatus !== RoundStatus.Active) {
+        setError("The raffle round is not active or is being settled.");
+        return null;
+      }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        // Convert ETH to wei
+        const rawWei = BigInt(Math.round(ethAmount * 1e18));
+
+        if (minEthDepositRaw && (minEthDepositRaw as bigint) > 0n) {
+          if (rawWei < (minEthDepositRaw as bigint)) {
+            const minEth = Number(minEthDepositRaw as bigint) / 1e18;
+            setError(`Minimum ETH deposit is ${minEth} ETH.`);
+            return null;
+          }
+        }
+
+        const depositTx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_ABI,
+          functionName: "depositETH",
+          value: rawWei,
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        setDepositTxHash(depositTx);
+        await publicClient.waitForTransactionReceipt({ hash: depositTx });
+
+        refetchRound();
+        return depositTx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [
+      address, publicClient, writeContractAsync, refetchRound,
+      currentRoundId, currentRoundStatus, minEthDepositRaw, isSupportedChain,
+    ],
+  );
+
+  // ── endRound ────────────────────────────────────────────────────────────────
 
   const endRound = useCallback(async (): Promise<`0x${string}` | null> => {
     setError(null);
@@ -305,6 +432,7 @@ export function useContractGame() {
         address: RAFFLE_ADDRESS,
         abi: RAFFLE_ABI,
         functionName: "endRound",
+        gas: BASE_SEPOLIA_GAS_LIMIT,
       });
       setEndRoundTxHash(tx);
       return tx;
@@ -315,192 +443,119 @@ export function useContractGame() {
     }
   }, [writeContractAsync]);
 
-  // ── selectWinnerManual (dev/testing only) ─────────────────────────────────
-
-  const selectWinnerManual = useCallback(
-    async (roundId: bigint): Promise<`0x${string}` | null> => {
-      setError(null);
-      try {
-        const tx = await writeContractAsync({
-          address: RAFFLE_ADDRESS,
-          abi: RAFFLE_ABI,
-          functionName: "selectWinnerManual",
-          args: [roundId],
-        });
-        return tx;
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "selectWinnerManual failed";
-        setError(msg);
-        return null;
-      }
-    },
-    [writeContractAsync],
-  );
-
-  // ── playFlip ─────────────────────────────────────────────────────────────
+  // ── playFlip — OAR (18 dec) ─────────────────────────────────────────────────
 
   const playFlip = useCallback(
-    async (choice: number, dollarAmount: number): Promise<`0x${string}` | null> => {
-      if (!address || !publicClient) {
-        setError("wallet not connected");
-        return null;
-      }
-
-      if (!isSupportedChain) {
-        setError(unsupportedChainMessage);
-        return null;
-      }
+    async (
+      choice: 0 | 1, // 0 = Heads, 1 = Tails  (matches Flip.Side enum)
+      oarAmount: number,
+    ): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
 
       setError(null);
       setIsDepositing(true);
 
       try {
-        const rawAmount = toUSDCUnits(dollarAmount);
+        const rawAmount = toOARUnits(oarAmount);
 
-        // Check balance
+        // Min-bet guard
+        if (minBetFlipRaw && rawAmount < (minBetFlipRaw as bigint)) {
+          setError(`Bet too small. Minimum is ${fmtOAR(minBetFlipRaw as bigint)} OAR.`);
+          return null;
+        }
+
+        // Balance guard
         const balance = await publicClient.readContract({
-          address: flipToken,
+          address: OAR_COIN_ADDRESS,
           abi: ERC20_ABI,
           functionName: "balanceOf",
           args: [address],
         });
-
         if (balance < rawAmount) {
-          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          setError(`Insufficient OAR balance. You have ${fmtOAR(balance)} but need ${oarAmount}.`);
           return null;
         }
 
-        // Check minBet
-        if (minBetFlipRaw && rawAmount < (minBetFlipRaw as bigint)) {
-          setError(`Bet too small. Minimum bet is ${formatUsdValue(minBetFlipRaw as bigint)} USDC.`);
-          return null;
-        }
+        // Approve if needed
+        await ensureAllowance(OAR_COIN_ADDRESS, FLIP_ADDRESS, rawAmount);
 
-        // Check allowance
-        const allowance = await publicClient.readContract({
-          address: flipToken,
-          abi: ERC20_ABI,
-          functionName: "allowance",
-          args: [address, FLIP_ADDRESS],
-        });
-
-        if (allowance < rawAmount) {
-          const approveTx = await writeContractAsync({
-            address: flipToken,
-            abi: ERC20_ABI,
-            functionName: "approve",
-            args: [FLIP_ADDRESS, rawAmount * BigInt(100)],
-          });
-          setApproveTxHash(approveTx);
-          await publicClient.waitForTransactionReceipt({ hash: approveTx });
-        }
-
-        // Step 2: flip
+        // Flip — Flip.Side is a uint8 enum (0 | 1)
         const flipTx = await writeContractAsync({
           address: FLIP_ADDRESS,
           abi: FLIP_ABI,
           functionName: "flip",
           args: [choice, rawAmount],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
         });
         await publicClient.waitForTransactionReceipt({ hash: flipTx });
 
         return flipTx;
       } catch (err: unknown) {
         const normalized = normalizeContractError(err, "Flip transaction failed.");
-        if (!normalized.isUserRejected) {
-          setError(normalized.message);
-        }
+        if (!normalized.isUserRejected) setError(normalized.message);
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, minBetFlipRaw, flipToken, isSupportedChain, unsupportedChainMessage],
+    [address, publicClient, writeContractAsync, minBetFlipRaw, isSupportedChain],
   );
 
-  // ── playSpin ─────────────────────────────────────────────────────────────
+  // ── playSpin — OAR (18 dec) ─────────────────────────────────────────────────
 
   const playSpin = useCallback(
-    async (dollarAmount: number): Promise<`0x${string}` | null> => {
-      if (!address || !publicClient) {
-        setError("wallet not connected");
-        return null;
-      }
-
-      if (!isSupportedChain) {
-        setError(unsupportedChainMessage);
-        return null;
-      }
+    async (oarAmount: number): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
 
       setError(null);
       setIsDepositing(true);
 
       try {
-        const rawAmount = toUSDCUnits(dollarAmount);
+        const rawAmount = toOARUnits(oarAmount);
 
-        // Check balance
+        if (minBetSpinRaw && rawAmount < (minBetSpinRaw as bigint)) {
+          setError(`Bet too small. Minimum is ${fmtOAR(minBetSpinRaw as bigint)} OAR.`);
+          return null;
+        }
+
         const balance = await publicClient.readContract({
-          address: spinToken,
+          address: OAR_COIN_ADDRESS,
           abi: ERC20_ABI,
           functionName: "balanceOf",
           args: [address],
         });
-
         if (balance < rawAmount) {
-          setError(`Insufficient USDC balance. You have ${fromUSDCUnits(balance)} but need ${dollarAmount}.`);
+          setError(`Insufficient OAR balance. You have ${fmtOAR(balance)} but need ${oarAmount}.`);
           return null;
         }
 
-        // Check minBet
-        if (minBetSpinRaw && rawAmount < (minBetSpinRaw as bigint)) {
-          setError(`Bet too small. Minimum bet is ${formatUsdValue(minBetSpinRaw as bigint)} USDC.`);
-          return null;
-        }
+        await ensureAllowance(OAR_COIN_ADDRESS, SPIN_ADDRESS, rawAmount);
 
-        // Check allowance
-        const allowance = await publicClient.readContract({
-          address: spinToken,
-          abi: ERC20_ABI,
-          functionName: "allowance",
-          args: [address, SPIN_ADDRESS],
-        });
-
-        if (allowance < rawAmount) {
-          const approveTx = await writeContractAsync({
-            address: spinToken,
-            abi: ERC20_ABI,
-            functionName: "approve",
-            args: [SPIN_ADDRESS, rawAmount * BigInt(100)],
-          });
-          setApproveTxHash(approveTx);
-          await publicClient.waitForTransactionReceipt({ hash: approveTx });
-        }
-
-        // Step 2: spin
         const spinTx = await writeContractAsync({
           address: SPIN_ADDRESS,
           abi: SPIN_ABI,
           functionName: "spin",
           args: [rawAmount],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
         });
         await publicClient.waitForTransactionReceipt({ hash: spinTx });
 
         return spinTx;
       } catch (err: unknown) {
         const normalized = normalizeContractError(err, "Spin transaction failed.");
-        if (!normalized.isUserRejected) {
-          setError(normalized.message);
-        }
+        if (!normalized.isUserRejected) setError(normalized.message);
         return null;
       } finally {
         setIsDepositing(false);
       }
     },
-    [address, publicClient, writeContractAsync, minBetSpinRaw, spinToken, isSupportedChain, unsupportedChainMessage],
+    [address, publicClient, writeContractAsync, minBetSpinRaw, isSupportedChain],
   );
 
-  // ── Watch WinnerSelected ──────────────────────────────────────────────────
+  // ── Watch WinnerSelected ────────────────────────────────────────────────────
+  // New event shape: WinnerSelected(roundId, winner, ethPrize, usdcPrize, oarPrize)
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
@@ -509,23 +564,19 @@ export function useContractGame() {
     onLogs(logs: Array<{ args?: unknown; transactionHash: `0x${string}` }>) {
       const log = logs[0];
       if (!log?.args) return;
-      const { roundId, winner, prizeAmount, fee } = log.args as {
+      const { roundId, winner, ethPrize, usdcPrize, oarPrize } = log.args as {
         roundId: bigint;
         winner: `0x${string}`;
-        prizeAmount: bigint;
-        fee: bigint;
+        ethPrize: bigint;
+        usdcPrize: bigint;
+        oarPrize: bigint;
       };
-      setLastWinner({
-        roundId,
-        winner,
-        prizeAmount: fromUSDCUnits(prizeAmount),
-        fee: fromUSDCUnits(fee),
-      });
+      setLastWinner({ roundId, winner, ethPrize, usdcPrize, oarPrize });
       refetchRound();
     },
   });
 
-  // ── Watch Flipped ─────────────────────────────────────────────────────────
+  // ── Watch Flipped ───────────────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: FLIP_ADDRESS,
@@ -536,14 +587,14 @@ export function useContractGame() {
       if (!log?.args) return;
       const { player, amount, choice, result, won } = log.args as {
         player: `0x${string}`;
-        amount: bigint;
-        choice: bigint;
+        amount: bigint;   // raw OAR
+        choice: bigint;   // enum uint8
         result: bigint;
         won: boolean;
       };
       setLastFlipResult({
         player,
-        amount: fromUSDCUnits(amount),
+        amount,
         choice: Number(choice),
         result: Number(result),
         won: Boolean(won),
@@ -552,7 +603,7 @@ export function useContractGame() {
     },
   });
 
-  // ── Watch Spun ────────────────────────────────────────────────────────────
+  // ── Watch Spun ──────────────────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: SPIN_ADDRESS,
@@ -570,59 +621,57 @@ export function useContractGame() {
       };
       setLastSpinResult({
         player,
-        amount: fromUSDCUnits(amount),
-        roll: BigInt(roll),
-        multiplier: BigInt(multiplier),
-        payout: fromUSDCUnits(payout),
+        amount,
+        roll,
+        multiplier,
+        payout,
         transactionHash: log.transactionHash,
       });
     },
   });
 
-  // ── Watch Deposited ───────────────────────────────────────────────────────
+  // ── Watch Deposited / RoundStarted / RoundCancelled ────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     eventName: "Deposited",
-    onLogs() {
-      refetchRound();
-    },
+    onLogs() { refetchRound(); },
   });
-
-  // ── Watch RoundStarted ────────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     eventName: "RoundStarted",
-    onLogs() {
-      refetchRound();
-    },
+    onLogs() { refetchRound(); },
   });
-
-  // ── Watch RoundCancelled ──────────────────────────────────────────────────
 
   useWatchContractEvent({
     address: RAFFLE_ADDRESS,
     abi: RAFFLE_ABI,
     eventName: "RoundCancelled",
-    onLogs() {
-      refetchRound();
-    },
+    onLogs() { refetchRound(); },
   });
 
+  // ── Public surface ──────────────────────────────────────────────────────────
+
   return {
+    // Round state
     currentRound,
-    yourDeposit,
+    yourDepositRaw,
     refetchRound,
 
+    // Raffle actions
     depositUSDC,
+    depositOARCOIN,
+    depositETH,
+    endRound,
+
+    // Game actions
     playFlip,
     playSpin,
-    endRound,
-    selectWinnerManual,
 
+    // Tx state
     isApproving,
     isDepositing,
     isEndingRound,
@@ -630,9 +679,12 @@ export function useContractGame() {
     depositTxHash,
     endRoundSuccess,
 
+    // Events
     lastWinner,
     lastFlipResult,
     lastSpinResult,
+
+    // Error
     error,
   };
 }

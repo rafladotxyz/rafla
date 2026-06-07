@@ -9,6 +9,7 @@ import { FlipGame } from "./FlipGame";
 import { useGameState } from "@/hooks/useGameState";
 import { useSound } from "@/hooks/useSound";
 import { GameStakeModal } from "../GameStakeModal";
+import { fromOARUnits } from "@/lib/contract";
 
 const EMPTY_ID = "3455654";
 type CoinSide = "heads" | "tails";
@@ -58,10 +59,12 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
       const timer = window.setTimeout(() => {
         const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
         const result: FlipResult = lastFlipResult.won ? "win" : "loss";
+        // amount is raw OAR (18 dec bigint) — convert to readable OAR string
+        const oarAmount = fromOARUnits(lastFlipResult.amount).toFixed(4);
         setFlipResult({
           result,
           landedSide,
-          amount: `$${lastFlipResult.amount}`,
+          amount: `${oarAmount} OAR`,
         });
         setViewState("result");
         stopMusic();
@@ -122,12 +125,14 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         }}
       />
 
-      <GameStakeModal key={showStakeModal ? "flip-stake-open" : "flip-stake-closed"}
+      <GameStakeModal
+        key={showStakeModal ? "flip-stake-open" : "flip-stake-closed"}
         open={showStakeModal}
         gameName="Flip stake"
         actionLabel="Flip now"
-        description="Pick the side you want to call, choose a stake, and confirm to start the flip."
+        description="Pick a side, set your OAR stake, and confirm to launch the flip. The result is settled on-chain instantly."
         showSideSelector
+        availableTokens={["OAR"]}
         onClose={() => setShowStakeModal(false)}
         onConfirm={(amount, side) => {
           if (!side) return;

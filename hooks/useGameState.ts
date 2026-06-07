@@ -5,6 +5,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
 import { usePusherRoom } from "./usePusherRoom";
 import type { PlayerJoinedPayload } from "@/lib/pusher";
+import type { StakeToken } from "@/components/core/games/GameStakeModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -51,8 +52,10 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   const { user, authHeaders } = useAuthContext();
   const {
     currentRound,
-    yourDeposit,
+    yourDepositRaw,
     depositUSDC,
+    depositOARCOIN,
+    depositETH,
     playFlip,
     playSpin,
     isApproving,
@@ -169,7 +172,8 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
           },
           body: JSON.stringify({
             winnerWallet: lastWinner!.winner,
-            prizeAmount: lastWinner!.prizeAmount.toString(),
+            // Send the USDC prize (most human-readable). ETH + OAR are also available.
+            prizeAmount: lastWinner!.usdcPrize.toString(),
             vrfRequestId: lastWinner!.roundId.toString(),
             txHash: `vrf-${lastWinner!.roundId}`,
           }),
@@ -224,21 +228,25 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
     if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
       recordedTxs.current.add(lastFlipResult.transactionHash);
+      // amount / payout are raw OAR bigints — convert to float for the API
+      const stakeOAR = Number(lastFlipResult.amount) / 1e18;
       void recordGame({
         gameType: "flip",
-        stakeAmount: lastFlipResult.amount,
+        stakeAmount: stakeOAR,
         txHash: lastFlipResult.transactionHash,
         won: lastFlipResult.won,
-        prizeAmount: lastFlipResult.won ? lastFlipResult.amount * 2 : 0,
+        prizeAmount: lastFlipResult.won ? stakeOAR * 2 * 0.97 : 0, // 3% fee
       });
     } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
       recordedTxs.current.add(lastSpinResult.transactionHash);
+      const stakeOAR = Number(lastSpinResult.amount) / 1e18;
+      const payoutOAR = Number(lastSpinResult.payout) / 1e18;
       void recordGame({
         gameType: "spin",
-        stakeAmount: lastSpinResult.amount,
+        stakeAmount: stakeOAR,
         txHash: lastSpinResult.transactionHash,
-        won: lastSpinResult.payout > 0,
-        prizeAmount: lastSpinResult.payout,
+        won: lastSpinResult.payout > 0n,
+        prizeAmount: payoutOAR,
       });
     }
   }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
@@ -247,11 +255,13 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
   const gameState: GameState = {
     roomId,
-    pricePool: currentRound?.prizePool ?? 0,
+    // prizePoolRaw is a mixed-unit weighted sum — display as raw bigint converted to number
+    pricePool: currentRound ? Number(currentRound.prizePoolRaw) : 0,
     totalPlayers: currentRound?.playerCount ?? players.length,
     minPlayers: roomMinPlayers,
-    yourEntry: yourDeposit,
-    potentialWin: (currentRound?.prizePool ?? 0) * (1 - FEE_PERCENT),
+    // yourDepositRaw is a bigint — convert to number for the UI
+    yourEntry: Number(yourDepositRaw),
+    potentialWin: currentRound ? Number(currentRound.prizePoolRaw) * (1 - FEE_PERCENT) : 0,
     drawTime: currentRound
       ? Number(currentRound.endTime) * 1000
       : Date.now() + 180_000,
@@ -262,7 +272,10 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   // ── addEntry — approve + deposit on-chain + record in API ─────────────────
 
   const addEntry = useCallback(
-    async (amount: number, extra?: { choice?: "heads" | "tails" }): Promise<boolean> => {
+    async (
+      amount: number,
+      extra?: { choice?: "heads" | "tails"; token?: StakeToken },
+    ): Promise<boolean> => {
       if (!user) return false;
 
       setPersistenceError(null);
@@ -278,12 +291,21 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
         let txHash: `0x${string}` | null = null;
 
         if (gameType === "draw") {
-          txHash = await depositUSDC(amount);
+          // Route to the right deposit based on chosen token (default USDC)
+          const token = extra?.token ?? "USDC";
+          if (token === "ETH") {
+            txHash = await depositETH(amount);
+          } else if (token === "OAR") {
+            txHash = await depositOARCOIN(amount);
+          } else {
+            txHash = await depositUSDC(amount);
+          }
         } else if (gameType === "flip") {
-          // choice: 0 for heads, 1 for tails
-          const choice = extra?.choice === "tails" ? 1 : 0;
+          // Flip always uses OAR
+          const choice = (extra?.choice === "tails" ? 1 : 0) as 0 | 1;
           txHash = await playFlip(choice, amount);
         } else if (gameType === "spin") {
+          // Spin always uses OAR
           txHash = await playSpin(amount);
         }
 
@@ -319,7 +341,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
         setLoading(false);
       }
     },
-    [user, roomId, gameType, depositUSDC, playFlip, playSpin, authHeaders, isEmptyState],
+    [user, roomId, gameType, depositUSDC, depositOARCOIN, depositETH, playFlip, playSpin, authHeaders, isEmptyState],
   );
 
   return {
