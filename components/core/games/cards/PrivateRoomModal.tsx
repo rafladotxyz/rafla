@@ -56,6 +56,7 @@ export function PrivateRoomModal({ gameType, roomId: urlRoomId, onClose }: Priva
   const [copied, setCopied] = useState(false);
   const [joinSuccess, setJoinSuccess] = useState(false);
   const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [roomToken, setRoomToken] = useState<string>("USDC");
   const [fetchingRoom, setFetchingRoom] = useState(false);
 
   const effectivePrice = customPrice ? Number(customPrice) : selectedPrice;
@@ -74,7 +75,10 @@ export function PrivateRoomModal({ gameType, roomId: urlRoomId, onClose }: Priva
       if (res.ok) {
         const { room } = await res.json();
         if (room && room.stakeAmount) {
-          const stake = Number(room.stakeAmount) / 1_000_000;
+          const token: string = room.token ?? "USDC";
+          const decimals = token === "USDC" ? 1_000_000 : 1e18;
+          const stake = Number(room.stakeAmount) / decimals;
+          setRoomToken(token);
           setRoomStake(stake);
           return stake;
         }
@@ -133,7 +137,7 @@ export function PrivateRoomModal({ gameType, roomId: urlRoomId, onClose }: Priva
     const stake = roomStake ?? (await fetchRoomData(finalRoomId));
     if (stake === null) return;
 
-    const ok = await joinRoom(finalRoomId, stake);
+    const ok = await joinRoom(finalRoomId, roomToken, stake);
     if (ok) {
       setJoinSuccess(true);
       window.setTimeout(() => {

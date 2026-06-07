@@ -45,6 +45,7 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
   const [customPlayers, setCustomPlayers] = useState<string>("");
   const [joinRoomId, setJoinRoomId] = useState("");
   const [roomStake, setRoomStake] = useState<number | null>(null);
+  const [roomToken, setRoomToken] = useState<string>("USDC");
   const [fetchingRoom, setFetchingRoom] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -56,7 +57,7 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
     ? `${typeof window !== "undefined" ? window.location.origin : "https://rafla.xyz"}/${gameType}/${createdRoom.id}`
     : "";
 
-  const fetchRoomData = async (id: string): Promise<number | null> => {
+  const fetchRoomData = async (id: string): Promise<{ stake: number; token: string } | null> => {
     const trimmed = id.trim();
     if (!trimmed) return null;
 
@@ -69,9 +70,12 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
       }
 
       const { room } = await res.json();
-      const stake = room?.stakeAmount ? Number(room.stakeAmount) / 1_000_000 : null;
+      const token: string = room?.token ?? "USDC";
+      const decimals = token === "USDC" ? 1_000_000 : 1e18;
+      const stake = room?.stakeAmount ? Number(room.stakeAmount) / decimals : null;
+      setRoomToken(token);
       setRoomStake(stake);
-      return stake;
+      return stake !== null ? { stake, token } : null;
     } catch {
       setRoomStake(null);
       return null;
@@ -107,10 +111,16 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
     const trimmed = joinRoomId.trim();
     if (!trimmed) return;
 
-    const stake = roomStake ?? (await fetchRoomData(trimmed));
-    if (stake === null) return;
+    let stake = roomStake;
+    let token = roomToken;
+    if (stake === null) {
+      const data = await fetchRoomData(trimmed);
+      if (!data) return;
+      stake = data.stake;
+      token = data.token;
+    }
 
-    const ok = await joinRoom(trimmed, stake);
+    const ok = await joinRoom(trimmed, token, stake);
     if (ok) {
       router.push(`/${gameType}/${trimmed}`);
     }
@@ -406,7 +416,9 @@ export function EmptyStateCard({ gameType, isPublic }: EmptyStateCardProps) {
               <div className="h-4 w-4 rounded-full border-2 border-white/60 border-t-transparent animate-spin" />
             ) : roomStake !== null ? (
               <>
-                <span className="text-sm text-[#E8E8E8]">${roomStake} USDC</span>
+                <span className="text-sm text-[#E8E8E8]">
+                  {roomToken === "USDC" ? `$${roomStake}` : roomToken === "ETH" ? `Ξ${roomStake}` : `◈${roomStake}`} {roomToken}
+                </span>
                 <span className="text-xs text-[#8A8A8A]">Fixed by creator</span>
               </>
             ) : (

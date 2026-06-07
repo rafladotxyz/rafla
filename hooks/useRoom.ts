@@ -16,8 +16,15 @@ export interface CreatedRoom {
 
 export function useRoom() {
   const { authHeaders, isAuthenticated } = useAuthContext();
-  const { currentRound, depositUSDC, isDepositing, isApproving, error: contractError } =
-    useContractGame();
+  const {
+    currentRound,
+    depositUSDC,
+    depositOARCOIN,
+    depositETH,
+    isDepositing,
+    isApproving,
+    error: contractError,
+  } = useContractGame();
 
   const [createdRoom, setCreatedRoom] = useState<CreatedRoom | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -92,7 +99,7 @@ export function useRoom() {
   // ── Join a room (deposit on-chain + record in DB) ─────────────────────────
 
   const joinRoom = useCallback(
-    async (roomId: string, stakeAmountDollars: number): Promise<boolean> => {
+    async (roomId: string, token: string, stakeAmount: number): Promise<boolean> => {
       if (!isAuthenticated) {
         setError("please sign in first");
         return false;
@@ -102,8 +109,15 @@ export function useRoom() {
       setError(null);
 
       try {
-        // 1. Approve + deposit USDC on-chain
-        const txHash = await depositUSDC(stakeAmountDollars);
+        let txHash: `0x${string}` | null = null;
+        if (token === "USDC") {
+          txHash = await depositUSDC(stakeAmount);
+        } else if (token === "OAR") {
+          txHash = await depositOARCOIN(stakeAmount);
+        } else if (token === "ETH") {
+          txHash = await depositETH(stakeAmount);
+        }
+
         if (!txHash) {
           // Error is already set in useContractGame
           return false;
@@ -133,7 +147,7 @@ export function useRoom() {
         setIsJoining(false);
       }
     },
-    [isAuthenticated, authHeaders, depositUSDC],
+    [isAuthenticated, authHeaders, depositUSDC, depositOARCOIN, depositETH],
   );
 
   // ── Room share helpers ────────────────────────────────────────────────────
