@@ -211,7 +211,7 @@ export default function ProfilePage() {
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
         <SurfaceCard as="section" className="overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_32%)]" />
+          <div className="absolute inset-0" />
           <div className="relative z-10 p-5 md:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1 space-y-6">
