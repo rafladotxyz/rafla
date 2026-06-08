@@ -24,8 +24,9 @@ interface WinOrLossProps {
 
 const getResultState = (segment?: Segment): ResultState => {
   if (!segment) return "loss";
-  if (segment.label === "Yaay $2 won!") return "win";
-  if (segment.label === "Breakeven!") return "breakeven";
+  const label = segment.label.toLowerCase();
+  if (label.includes("won") || label.includes("win")) return "win";
+  if (label.includes("breakeven")) return "breakeven";
   return "loss";
 };
 

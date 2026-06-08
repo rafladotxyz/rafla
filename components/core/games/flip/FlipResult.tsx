@@ -21,8 +21,15 @@ export const FlipResultCard = ({
   onShare: (amount: string, isWin: boolean) => void;
 }) => {
   const isWin = result === "win";
-  const winAmount = `$${parseInt(amount.replace("$", "")) * 2}.00`;
-  const lossAmount = amount.replace("$", "") + ".00";
+  const match = amount.match(/^([\d.]+)\s*(\w+)?$/);
+  const numericAmount = match ? parseFloat(match[1]) : parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
+  const token = match && match[2] ? match[2] : "OAR";
+
+  const winAmountVal = numericAmount * 2;
+  const lossAmountVal = numericAmount;
+
+  const winAmount = `${winAmountVal.toFixed(4)} ${token}`;
+  const lossAmount = `${lossAmountVal.toFixed(4)} ${token}`;
   const isHeads = landedSide === "heads";
   const displayAmount = isWin ? winAmount : lossAmount;
 

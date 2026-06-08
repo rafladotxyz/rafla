@@ -10,6 +10,7 @@ import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { SpinGame } from "./SpinGame";
 import { useSound } from "@/hooks/useSound";
 import { GameStakeModal } from "../GameStakeModal";
+import { fromOARUnits } from "@/lib/contract";
 
 const EMPTY_ID = "3455654";
 
@@ -50,16 +51,30 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const [showStakeModal, setShowStakeModal] = useState(false);
 
   const handleSpinResult = (segment: Segment) => {
-    const amount = getAmountFromSegment(segment);
+    let displayAmount = "0.0000 OAR";
+    if (lastSpinResult) {
+      const isLoss = lastSpinResult.payout < lastSpinResult.amount;
+      const oarStake = fromOARUnits(lastSpinResult.amount).toFixed(4);
+      const oarPayout = fromOARUnits(lastSpinResult.payout).toFixed(4);
+      
+      if (isLoss) {
+        displayAmount = `${oarStake} OAR`;
+      } else {
+        displayAmount = `${oarPayout} OAR`;
+      }
+    } else {
+      displayAmount = getAmountFromSegment(segment);
+    }
     setLandedSegment(segment);
-    setLandedAmount(amount);
+    setLandedAmount(displayAmount);
     setShowWinLoss(true);
     setExternalSpinTrigger(false);
     stopMusic();
 
-    if (segment.label.toLowerCase().includes("win")) {
+    const label = segment.label.toLowerCase();
+    if (label.includes("won") || label.includes("win")) {
       playSound("win");
-    } else if (segment.label.toLowerCase().includes("lose")) {
+    } else if (label.includes("lose") || label.includes("loss")) {
       playSound("loss");
     }
   };
