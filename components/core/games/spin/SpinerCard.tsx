@@ -46,6 +46,7 @@ export const SpinWheel = ({
   onPlay,
   isLoading,
   isWaitingForChain,
+  isSpinning,
 }: {
   onResult?: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
@@ -53,6 +54,7 @@ export const SpinWheel = ({
   onPlay: () => void;
   isLoading?: boolean;
   isWaitingForChain?: boolean;
+  isSpinning?: boolean;
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -255,6 +257,22 @@ export const SpinWheel = ({
                 </p>
                 <p className="mt-0.5 text-xs text-[#8A8A8A]">
                   The VRF is resolving your spin. The wheel will launch automatically.
+                </p>
+              </div>
+            </div>
+          ) : isSpinning ? (
+            /* Wheel is physically spinning — block new stakes */
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/10" />
+                <span className="relative inline-flex h-5 w-5 rounded-full bg-white/20" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#F3F3F3]">
+                  Spinning&hellip;
+                </p>
+                <p className="mt-0.5 text-xs text-[#8A8A8A]">
+                  Result incoming — hang tight.
                 </p>
               </div>
             </div>

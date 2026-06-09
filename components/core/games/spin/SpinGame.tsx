@@ -14,6 +14,7 @@ export const SpinGame = ({
   onPlay,
   isLoading,
   isWaitingForChain,
+  isSpinning,
 }: {
   handleSpinResult: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
@@ -21,6 +22,7 @@ export const SpinGame = ({
   onPlay: () => void;
   isLoading?: boolean;
   isWaitingForChain?: boolean;
+  isSpinning?: boolean;
 }) => (
   <div className="w-full px-4 py-8 sm:py-12">
     <SpinWheel
@@ -30,6 +32,7 @@ export const SpinGame = ({
       onPlay={onPlay}
       isLoading={isLoading}
       isWaitingForChain={isWaitingForChain}
+      isSpinning={isSpinning}
     />
   </div>
 );

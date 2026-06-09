@@ -40,6 +40,10 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     lastSpinResultRef.current = lastSpinResult;
   }, [lastSpinResult]);
 
+  // Tracks the txHash of the last result we already acted on, so we never
+  // re-trigger the wheel for a stale result that was in state on mount.
+  const processedTxRef = useRef<string | null>(null);
+
   const [showWinLoss, setShowWinLoss] = useState(false);
   const [showPnl, setShowPnl] = useState(false);
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>();
@@ -53,6 +57,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     isBreakeven?: boolean;
   } | null>(null);
   const [externalSpinTrigger, setExternalSpinTrigger] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
   const [showStakeModal, setShowStakeModal] = useState(false);
 
   // Called by SpinWheel once the CSS animation finishes (~8 s after spin starts).
@@ -67,6 +72,9 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
     }
 
+    // Defensively clear both flags — animation is done, result is in hand.
+    setIsWaitingForChain(false);
+    setIsSpinning(false);
     setLandedSegment(segment);
     setLandedAmount(displayAmount);
     setShowWinLoss(true);
@@ -101,8 +109,12 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
 
   useEffect(() => {
     if (!lastSpinResult) return;
-    // VRF result arrived — clear the "waiting for chain" state and kick the wheel.
+    // Skip if we already processed this exact result (stale data on mount or re-render).
+    if (processedTxRef.current === lastSpinResult.transactionHash) return;
+    processedTxRef.current = lastSpinResult.transactionHash;
+    // VRF result arrived — clear waiting state, kick the wheel.
     setIsWaitingForChain(false);
+    setIsSpinning(true);
     const timer = window.setTimeout(() => {
       setExternalSpinTrigger(true);
     }, 0);
@@ -116,6 +128,8 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedSegment(undefined);
     setLandedAmount("0.0000 OAR");
     setStakeAmount("0.0000 OAR");
+    setIsWaitingForChain(false);
+    setIsSpinning(false);
   };
 
   const handleShare = (amount: string, resultType: "win" | "loss" | "breakeven") => {
@@ -174,6 +188,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         }}
         isLoading={loading}
         isWaitingForChain={isWaitingForChain}
+        isSpinning={isSpinning}
       />
 
       <GameStakeModal
