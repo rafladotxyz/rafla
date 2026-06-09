@@ -2,7 +2,13 @@ import Image from "next/image";
 import head from "@/assets/head1.svg";
 import tail from "@/assets/tail.svg";
 type CoinSide = "heads" | "tails";
-export const FlippingScreen = ({ side }: { side: CoinSide }) => {
+export const FlippingScreen = ({
+  side,
+  isWaitingForChain,
+}: {
+  side: CoinSide;
+  isWaitingForChain?: boolean;
+}) => {
   const isHeads = side === "heads";
 
   return (
@@ -26,6 +32,17 @@ export const FlippingScreen = ({ side }: { side: CoinSide }) => {
         You called:{" "}
         <span className="text-[#D9D9D9] font-semibold capitalize">{side}</span>
       </p>
+      {isWaitingForChain && (
+        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white/60" />
+          </span>
+          <p className="text-xs text-[#8A8A8A]">
+            Waiting for on-chain result&hellip;
+          </p>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin3d {

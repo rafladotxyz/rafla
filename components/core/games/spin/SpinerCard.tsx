@@ -45,12 +45,14 @@ export const SpinWheel = ({
   targetIndex,
   onPlay,
   isLoading,
+  isWaitingForChain,
 }: {
   onResult?: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
   targetIndex?: number | null;
   onPlay: () => void;
   isLoading?: boolean;
+  isWaitingForChain?: boolean;
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -240,29 +242,48 @@ export const SpinWheel = ({
         </div>
 
         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
-                Stake first
-              </p>
-              <p className="mt-2 text-base font-medium text-[#F3F3F3]">
-                Pick your amount before spinning.
-              </p>
+          {isWaitingForChain ? (
+            /* Waiting for VRF result from chain */
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/20" />
+                <span className="relative inline-flex h-5 w-5 rounded-full bg-white/40" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#F3F3F3]">
+                  Waiting for on-chain result&hellip;
+                </p>
+                <p className="mt-0.5 text-xs text-[#8A8A8A]">
+                  The VRF is resolving your spin. The wheel will launch automatically.
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={onPlay}
-              className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-            >
-              Set stake
-            </button>
-          </div>
-          <p className="mt-3 text-sm leading-relaxed text-[#9A9A9A]">
-            The wheel will start as soon as the transaction is confirmed.
-          </p>
-          {isLoading ? (
-            <p className="mt-2 text-sm text-[#8A8A8A]">Waiting for transaction confirmation...</p>
-          ) : null}
+          ) : (
+            /* Default: prompt user to stake */
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
+                    Stake first
+                  </p>
+                  <p className="mt-2 text-base font-medium text-[#F3F3F3]">
+                    Pick your amount before spinning.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onPlay}
+                  disabled={isLoading}
+                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Confirming…" : "Set stake"}
+                </button>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-[#9A9A9A]">
+                The wheel starts as soon as your transaction is confirmed on-chain.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </SurfaceCard>

@@ -10,6 +10,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 interface PnLProps {
   isWin?: boolean;
+  isBreakeven?: boolean;
   amount?: string;
   handleClick?: () => void;
   shareUrl?: string; // URL to encode in QR — defaults to RAFLA.XYZ
@@ -17,6 +18,7 @@ interface PnLProps {
 
 export const PnL = ({
   isWin,
+  isBreakeven,
   amount,
   handleClick,
   shareUrl = "https://rafla.xyz",
@@ -25,6 +27,7 @@ export const PnL = ({
     <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
       <PnLCard
         isWin={isWin}
+        isBreakeven={isBreakeven}
         amount={amount}
         handleClick={handleClick}
         shareUrl={shareUrl}
@@ -35,6 +38,7 @@ export const PnL = ({
 
 const PnLCard = ({
   isWin = true,
+  isBreakeven = false,
   amount = "$109.25",
   handleClick,
   shareUrl = "https://rafla.xyz",
@@ -55,7 +59,7 @@ const PnLCard = ({
     });
 
     const link = document.createElement("a");
-    link.download = `rafla-pnl-${isWin ? "win" : "loss"}.png`;
+    link.download = `rafla-pnl-${isBreakeven ? "breakeven" : isWin ? "win" : "loss"}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
@@ -64,9 +68,11 @@ const PnLCard = ({
   const handleTwitterShare = async () => {
     if (!cardRef.current) return;
 
-    const tweetText = isWin
-      ? `🏆 Hey, I just won ${amount} on @RaflaXYZ! Chance made social. Try your luck 👇`
-      : `😤 I lost ${amount} on @RaflaXYZ today... but I'm not done! Chance made social 👇`;
+    const tweetText = isBreakeven
+      ? `🤝 Ended in breakeven on @RaflaXYZ! My stake was returned. Social gaming on Base 👇`
+      : isWin
+        ? `🏆 Hey, I just won ${amount} on @RaflaXYZ! Chance made social. Try your luck 👇`
+        : `😤 I lost ${amount} on @RaflaXYZ today... but I'm not done! Chance made social 👇`;
 
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`;
 
@@ -90,13 +96,19 @@ const PnLCard = ({
           {/* Win/Loss text + amount */}
           <div className="flex flex-col gap-1">
             <p className="text-[24px] text-[#737373]">
-              You {isWin ? "won" : "lost"}
+              {isBreakeven ? "Breakeven" : `You ${isWin ? "won" : "lost"}`}
             </p>
             <p
               className="text-[64px] font-bold leading-none"
-              style={{ color: isWin ? "#229EFF" : "#DF1C41" }}
+              style={{
+                color: isBreakeven
+                  ? "#F5A623"
+                  : isWin
+                    ? "#229EFF"
+                    : "#DF1C41",
+              }}
             >
-              {isWin ? "+" : "-"}
+              {isBreakeven ? "" : isWin ? "+" : "-"}
               {amount}
             </p>
           </div>

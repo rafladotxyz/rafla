@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { PnL } from "../cards/PnLCard";
@@ -10,6 +10,7 @@ import { useDisclaimer } from "@/hooks/useDisclaimer";
 import { SpinGame } from "./SpinGame";
 import { useSound } from "@/hooks/useSound";
 import { GameStakeModal } from "../GameStakeModal";
+import { fromOARUnits } from "@/lib/contract";
 
 const EMPTY_ID = "3455654";
 
@@ -18,12 +19,6 @@ type Segment = {
   asset: string;
   color: string;
   strokeColor: string;
-};
-
-const getAmountFromSegment = (segment: Segment): string => {
-  if (segment.label === "Yaay $2 won!") return "$2.00";
-  if (segment.label === "Breakeven!") return "$1.00";
-  return "$1.00";
 };
 
 export const SpinView = ({ roomId }: { roomId?: string }) => {
@@ -38,28 +33,50 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   );
   const { playSound, playMusic, stopMusic, unlockAudio } = useSound();
 
+  // Always-fresh ref so handleSpinResult (called 8 s after animation starts)
+  // reads the current value rather than a stale closure capture.
+  const lastSpinResultRef = useRef(lastSpinResult);
+  useEffect(() => {
+    lastSpinResultRef.current = lastSpinResult;
+  }, [lastSpinResult]);
+
   const [showWinLoss, setShowWinLoss] = useState(false);
   const [showPnl, setShowPnl] = useState(false);
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>();
-  const [landedAmount, setLandedAmount] = useState("$0");
+  const [landedAmount, setLandedAmount] = useState("0.0000 OAR");
+  const [stakeAmount, setStakeAmount] = useState("0.0000 OAR");
+  // True after the stake tx confirms, until the VRF result event arrives.
+  const [isWaitingForChain, setIsWaitingForChain] = useState(false);
   const [pnlData, setPnlData] = useState<{
     amount: string;
     isWin: boolean;
+    isBreakeven?: boolean;
   } | null>(null);
   const [externalSpinTrigger, setExternalSpinTrigger] = useState(false);
   const [showStakeModal, setShowStakeModal] = useState(false);
 
+  // Called by SpinWheel once the CSS animation finishes (~8 s after spin starts).
+  // Uses a ref so it always sees the latest lastSpinResult, not a stale capture.
   const handleSpinResult = (segment: Segment) => {
-    const amount = getAmountFromSegment(segment);
+    const result = lastSpinResultRef.current;
+    let displayAmount = "—";
+    if (result) {
+      const isLoss = result.payout < result.amount;
+      const oarStake = fromOARUnits(result.amount).toFixed(4);
+      const oarPayout = fromOARUnits(result.payout).toFixed(4);
+      displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+    }
+
     setLandedSegment(segment);
-    setLandedAmount(amount);
+    setLandedAmount(displayAmount);
     setShowWinLoss(true);
     setExternalSpinTrigger(false);
     stopMusic();
 
-    if (segment.label.toLowerCase().includes("win")) {
+    const label = segment.label.toLowerCase();
+    if (label.includes("won") || label.includes("win")) {
       playSound("win");
-    } else if (segment.label.toLowerCase().includes("lose")) {
+    } else if (label.includes("lose") || label.includes("loss")) {
       playSound("loss");
     }
   };
@@ -68,24 +85,28 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setShowStakeModal(false);
     const ok = await addEntry(amount);
     if (!ok) return;
+    // Tx confirmed — now waiting for the VRF result event from the contract.
+    setIsWaitingForChain(true);
+    // Track staked amount so the result card can show "Staked: X OAR".
+    setStakeAmount(`${amount.toFixed(4)} OAR`);
   };
 
   const targetIndex = lastSpinResult
     ? lastSpinResult.payout > lastSpinResult.amount
-      ? 2  // win (payout > stake)
+      ? 2 // win
       : lastSpinResult.payout === lastSpinResult.amount
-        ? 1  // breakeven
-        : 0  // loss
+        ? 1 // breakeven
+        : 0 // loss
     : null;
 
   useEffect(() => {
     if (!lastSpinResult) return;
-
+    // VRF result arrived — clear the "waiting for chain" state and kick the wheel.
+    setIsWaitingForChain(false);
     const timer = window.setTimeout(() => {
       setExternalSpinTrigger(true);
     }, 0);
     playSound("spin");
-
     return () => window.clearTimeout(timer);
   }, [lastSpinResult, playSound]);
 
@@ -93,12 +114,17 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     stopMusic();
     setShowWinLoss(false);
     setLandedSegment(undefined);
-    setLandedAmount("$0");
+    setLandedAmount("0.0000 OAR");
+    setStakeAmount("0.0000 OAR");
   };
 
-  const handleShare = (amount: string, isWin: boolean) => {
+  const handleShare = (amount: string, resultType: "win" | "loss" | "breakeven") => {
     stopMusic();
-    setPnlData({ amount, isWin });
+    setPnlData({
+      amount,
+      isWin: resultType === "win",
+      isBreakeven: resultType === "breakeven",
+    });
     setShowWinLoss(false);
     setShowPnl(true);
   };
@@ -117,6 +143,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         <SWinOrLoss
           segment={landedSegment}
           amount={landedAmount}
+          stakeAmount={stakeAmount}
           handleClick={handleWinLossClose}
           onShare={handleShare}
         />
@@ -127,6 +154,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           handleClick={() => setShowPnl(false)}
           amount={pnlData.amount}
           isWin={pnlData.isWin}
+          isBreakeven={pnlData.isBreakeven}
           shareUrl={`https://rafla.xyz/spin/${isEmptyState ? "" : roomId}`}
         />
       )}
@@ -145,6 +173,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           setShowStakeModal(true);
         }}
         isLoading={loading}
+        isWaitingForChain={isWaitingForChain}
       />
 
       <GameStakeModal

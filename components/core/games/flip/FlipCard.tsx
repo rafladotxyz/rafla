@@ -6,9 +6,15 @@ import { SurfaceCard } from "@/components/ui/SurfaceCard";
 type CoinSide = "heads" | "tails";
 
 export const FlipCard = ({
+  selectedSide,
+  onSelectSide,
   onPlay,
+  isLoading,
 }: {
+  selectedSide: CoinSide | null;
+  onSelectSide: (side: CoinSide) => void;
   onPlay: () => void;
+  isLoading?: boolean;
 }) => {
   return (
     <SurfaceCard className="mx-auto w-full max-w-[520px] p-4 sm:p-6">
@@ -32,32 +38,53 @@ export const FlipCard = ({
 
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            { label: "Heads", image: head },
-            { label: "Tails", image: tail },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-3 rounded-[24px] border border-white/10 bg-black/20 px-4 py-4"
-            >
-              <Image src={item.image} height={72} width={72} alt={item.label} className="h-16 w-16 shrink-0 object-contain" />
-              <div>
-                <p className="text-sm uppercase tracking-[0.24em] text-[#8A8A8A]">
-                  {item.label}
-                </p>
-                <p className="mt-1 text-base font-medium text-[#F3F3F3]">
-                  2x payout if you call it right.
-                </p>
-              </div>
-            </div>
-          ))}
+            { label: "Heads", value: "heads" as CoinSide, image: head },
+            { label: "Tails", value: "tails" as CoinSide, image: tail },
+          ].map((item) => {
+            const active = selectedSide === item.value;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => onSelectSide(item.value)}
+                disabled={isLoading}
+                className={`flex items-center gap-3 rounded-[24px] border px-4 py-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  active
+                    ? "border-white/30 bg-white/[0.12] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
+                    : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-black/35"
+                }`}
+              >
+                <Image
+                  src={item.image}
+                  height={72}
+                  width={72}
+                  alt={item.label}
+                  className="h-16 w-16 shrink-0 object-contain"
+                />
+                <div>
+                  <p className="text-sm uppercase tracking-[0.24em] text-[#8A8A8A]">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-base font-medium text-[#F3F3F3]">
+                    2x payout if you call it right.
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <button
           type="button"
           onClick={onPlay}
-          className="h-14 rounded-2xl bg-white text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          disabled={isLoading}
+          className="h-14 rounded-2xl bg-white text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Choose stake and flip
+          {isLoading
+            ? "Confirming…"
+            : selectedSide
+              ? `Stake and Flip ${selectedSide.toUpperCase()}`
+              : "Choose side and stake"}
         </button>
       </div>
     </SurfaceCard>

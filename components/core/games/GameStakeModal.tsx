@@ -46,8 +46,8 @@ export const TOKEN_META: Record<StakeToken, TokenMeta> = {
     bgColor: "bg-[#F5A623]/10",
     borderColor: "border-[#F5A623]/30",
     description: "Native platform token",
-    presets: [0.5, 1, 5, 10],
-    minAmount: 0.001,
+    presets: [50, 100, 500, 1000],
+    minAmount: 10,
     step: "0.001",
   },
   ETH: {
@@ -80,6 +80,7 @@ type GameStakeModalProps = {
   onConfirm: (amount: number, side?: CoinSide, token?: StakeToken) => void;
   isSubmitting?: boolean;
   defaultAmount?: number;
+  defaultSide?: CoinSide;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -95,8 +96,9 @@ export function GameStakeModal({
   onConfirm,
   isSubmitting = false,
   defaultAmount,
+  defaultSide,
 }: GameStakeModalProps) {
-  const [selectedSide, setSelectedSide] = useState<CoinSide>("heads");
+  const [selectedSide, setSelectedSide] = useState<CoinSide>(defaultSide ?? "heads");
   const [selectedToken, setSelectedToken] = useState<StakeToken>(availableTokens[0]);
   const [preset, setPreset] = useState<number | null>(
     defaultAmount ?? TOKEN_META[availableTokens[0]].presets[0],
