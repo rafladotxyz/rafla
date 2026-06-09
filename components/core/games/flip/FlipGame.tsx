@@ -15,6 +15,7 @@ type FlipData = {
 export const FlipGame = ({
   viewState,
   selectedSide,
+  onSelectSide,
   flipResult,
   handleFlipAgain,
   handleShare,
@@ -22,13 +23,20 @@ export const FlipGame = ({
 }: {
   viewState: ViewState;
   selectedSide: CoinSide | null;
+  onSelectSide: (side: CoinSide) => void;
   flipResult: FlipData;
   handleFlipAgain: () => void;
-  handleShare: (amount: string, isWin: boolean) => void;
+  handleShare: (amount: string, result: FlipResult) => void;
   onPlay: () => void;
 }) => (
   <div className="flex w-full max-w-2xl mx-auto items-center justify-center px-4 py-8 sm:py-12">
-    {viewState === "select" && <FlipCard onPlay={onPlay} />}
+    {viewState === "select" && (
+      <FlipCard
+        selectedSide={selectedSide}
+        onSelectSide={onSelectSide}
+        onPlay={onPlay}
+      />
+    )}
     {viewState === "flipping" && selectedSide && (
       <FlippingScreen side={selectedSide} />
     )}

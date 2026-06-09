@@ -16,7 +16,7 @@ type ResultState = "win" | "loss" | "breakeven";
 
 interface WinOrLossProps {
   handleClick: () => void;
-  onShare: (amount: string, isWin: boolean) => void;
+  onShare: (amount: string, result: ResultState) => void;
   segment?: Segment;
   amount?: string;
   winnerAddress?: string;
@@ -128,7 +128,7 @@ const WinOrLossCard = ({
               {config.buttonLabel}
             </button>
             <button
-              onClick={() => onShare(amount, result === "win")}
+              onClick={() => onShare(amount, result)}
               className="h-12 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               Share

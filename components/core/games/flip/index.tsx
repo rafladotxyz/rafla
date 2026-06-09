@@ -81,11 +81,11 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     setSelectedSide(null);
   };
 
-  const handleShare = (amount: string, isWin: boolean) => {
+  const handleShare = (amount: string, resultType: FlipResult) => {
     stopMusic();
     setViewState("select");
     setFlipResult(null);
-    setPnlData({ amount, isWin });
+    setPnlData({ amount, isWin: resultType === "win" });
     setShowPnl(true);
   };
 
@@ -115,9 +115,10 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
       <FlipGame
         viewState={viewState}
         selectedSide={selectedSide}
-        handleFlipAgain={handleFlipAgain}
+        onSelectSide={setSelectedSide}
         handleShare={handleShare}
         flipResult={flipResult}
+        handleFlipAgain={handleFlipAgain}
         onPlay={() => {
           unlockAudio();
           void playMusic("flip");
@@ -133,6 +134,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         description="Pick a side, set your OAR stake, and confirm to launch the flip. The result is settled on-chain instantly."
         showSideSelector
         availableTokens={["OAR"]}
+        defaultSide={selectedSide ?? undefined}
         onClose={() => setShowStakeModal(false)}
         onConfirm={(amount, side) => {
           if (!side) return;

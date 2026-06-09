@@ -18,7 +18,7 @@ export const FlipResultCard = ({
   landedSide: CoinSide;
   amount: string;
   onFlipAgain: () => void;
-  onShare: (amount: string, isWin: boolean) => void;
+  onShare: (amount: string, result: FlipResult) => void;
 }) => {
   const isWin = result === "win";
   const match = amount.match(/^([\d.]+)\s*(\w+)?$/);
@@ -75,7 +75,7 @@ export const FlipResultCard = ({
               Flip again
             </button>
             <button
-              onClick={() => onShare(displayAmount, isWin)}
+              onClick={() => onShare(displayAmount, result)}
               className="h-12 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               Share

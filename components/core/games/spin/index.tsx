@@ -46,6 +46,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const [pnlData, setPnlData] = useState<{
     amount: string;
     isWin: boolean;
+    isBreakeven?: boolean;
   } | null>(null);
   const [externalSpinTrigger, setExternalSpinTrigger] = useState(false);
   const [showStakeModal, setShowStakeModal] = useState(false);
@@ -111,9 +112,13 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     setLandedAmount("$0");
   };
 
-  const handleShare = (amount: string, isWin: boolean) => {
+  const handleShare = (amount: string, resultType: "win" | "loss" | "breakeven") => {
     stopMusic();
-    setPnlData({ amount, isWin });
+    setPnlData({
+      amount,
+      isWin: resultType === "win",
+      isBreakeven: resultType === "breakeven",
+    });
     setShowWinLoss(false);
     setShowPnl(true);
   };
@@ -142,6 +147,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           handleClick={() => setShowPnl(false)}
           amount={pnlData.amount}
           isWin={pnlData.isWin}
+          isBreakeven={pnlData.isBreakeven}
           shareUrl={`https://rafla.xyz/spin/${isEmptyState ? "" : roomId}`}
         />
       )}
