@@ -45,6 +45,8 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
   const stakedAmountRef = useRef<number>(0);
   // True while tx is confirmed on-chain but the contract event hasn't arrived yet.
   const [isWaitingForChain, setIsWaitingForChain] = useState(false);
+  // Prevents re-firing the result flow for a stale lastFlipResult already in state on mount.
+  const processedTxRef = useRef<string | null>(null);
 
   const handleFlip = async (side: CoinSide, amount: number) => {
     setSelectedSide(side);
@@ -63,30 +65,30 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
   };
 
   useEffect(() => {
-    if (lastFlipResult && viewState === "flipping") {
-      setIsWaitingForChain(false);
-      const timer = window.setTimeout(() => {
-        const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
-        const result: FlipResult = lastFlipResult.won ? "win" : "loss";
-        // Convert raw OAR bigint → readable string.
-        const oarStake = fromOARUnits(lastFlipResult.amount).toFixed(4);
-        // FlipResultEvent has no payout field — derive it:
-        // win: stake × 2 × 0.97 (3% protocol fee), loss: just stake
-        const oarPayout = lastFlipResult.won
-          ? (fromOARUnits(lastFlipResult.amount) * 2 * 0.97).toFixed(4)
-          : oarStake;
-        setFlipResult({
-          result,
-          landedSide,
-          amount: result === "win" ? `${oarPayout} OAR` : `${oarStake} OAR`,
-          stakeAmount: `${oarStake} OAR`,
-        });
-        setViewState("result");
-        stopMusic();
-        playSound(lastFlipResult.won ? "win" : "loss");
-      }, 1500);
-      return () => window.clearTimeout(timer);
-    }
+    if (!lastFlipResult) return;
+    // Skip if we already processed this exact result (stale data on mount).
+    if (processedTxRef.current === lastFlipResult.transactionHash) return;
+    processedTxRef.current = lastFlipResult.transactionHash;
+    if (viewState !== "flipping") return;
+    setIsWaitingForChain(false);
+    const timer = window.setTimeout(() => {
+      const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
+      const result: FlipResult = lastFlipResult.won ? "win" : "loss";
+      const oarStake = fromOARUnits(lastFlipResult.amount).toFixed(4);
+      const oarPayout = lastFlipResult.won
+        ? (fromOARUnits(lastFlipResult.amount) * 2 * 0.97).toFixed(4)
+        : oarStake;
+      setFlipResult({
+        result,
+        landedSide,
+        amount: result === "win" ? `${oarPayout} OAR` : `${oarStake} OAR`,
+        stakeAmount: `${oarStake} OAR`,
+      });
+      setViewState("result");
+      stopMusic();
+      playSound(lastFlipResult.won ? "win" : "loss");
+    }, 1500);
+    return () => window.clearTimeout(timer);
   }, [lastFlipResult, viewState, playSound, stopMusic]);
 
   const handleFlipAgain = () => {
