@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { Disclaimer } from "../cards/DisclaimerCard";
 import { PnL } from "../cards/PnLCard";
@@ -21,7 +21,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
 
   const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
-  const { addEntry, lastFlipResult, error } = useGameState(
+  const { addEntry, loading, lastFlipResult, error } = useGameState(
     effectiveRoomId,
     "flip",
   );
@@ -33,6 +33,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     result: FlipResult;
     landedSide: CoinSide;
     amount: string;
+    stakeAmount: string;
   } | null>(null);
   const [showPnl, setShowPnl] = useState(false);
   const [pnlData, setPnlData] = useState<{
@@ -40,31 +41,45 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     isWin: boolean;
   } | null>(null);
   const [showStakeModal, setShowStakeModal] = useState(false);
+  // Tracks what the user staked so the result card can show it.
+  const stakedAmountRef = useRef<number>(0);
+  // True while tx is confirmed on-chain but the contract event hasn't arrived yet.
+  const [isWaitingForChain, setIsWaitingForChain] = useState(false);
 
   const handleFlip = async (side: CoinSide, amount: number) => {
     setSelectedSide(side);
     setShowStakeModal(false);
+    stakedAmountRef.current = amount;
     const ok = await addEntry(amount, { choice: side });
     if (!ok) {
       setSelectedSide(null);
       stopMusic();
       return;
     }
+    // Tx confirmed — show the flipping animation and wait for the contract event.
     setViewState("flipping");
+    setIsWaitingForChain(true);
     playSound("flip");
   };
 
   useEffect(() => {
     if (lastFlipResult && viewState === "flipping") {
+      setIsWaitingForChain(false);
       const timer = window.setTimeout(() => {
         const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
         const result: FlipResult = lastFlipResult.won ? "win" : "loss";
-        // amount is raw OAR (18 dec bigint) — convert to readable OAR string
-        const oarAmount = fromOARUnits(lastFlipResult.amount).toFixed(4);
+        // Convert raw OAR bigint → readable string.
+        const oarStake = fromOARUnits(lastFlipResult.amount).toFixed(4);
+        // FlipResultEvent has no payout field — derive it:
+        // win: stake × 2 × 0.97 (3% protocol fee), loss: just stake
+        const oarPayout = lastFlipResult.won
+          ? (fromOARUnits(lastFlipResult.amount) * 2 * 0.97).toFixed(4)
+          : oarStake;
         setFlipResult({
           result,
           landedSide,
-          amount: `${oarAmount} OAR`,
+          amount: result === "win" ? `${oarPayout} OAR` : `${oarStake} OAR`,
+          stakeAmount: `${oarStake} OAR`,
         });
         setViewState("result");
         stopMusic();
@@ -79,6 +94,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     setViewState("select");
     setFlipResult(null);
     setSelectedSide(null);
+    stakedAmountRef.current = 0;
   };
 
   const handleShare = (amount: string, resultType: FlipResult) => {
@@ -119,6 +135,8 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         handleShare={handleShare}
         flipResult={flipResult}
         handleFlipAgain={handleFlipAgain}
+        isLoading={loading}
+        isWaitingForChain={isWaitingForChain}
         onPlay={() => {
           unlockAudio();
           void playMusic("flip");
@@ -141,7 +159,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
           playSound("click");
           void handleFlip(side, amount);
         }}
-        isSubmitting={viewState === "flipping"}
+        isSubmitting={loading || viewState === "flipping"}
       />
     </div>
   );

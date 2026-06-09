@@ -19,6 +19,7 @@ interface WinOrLossProps {
   onShare: (amount: string, result: ResultState) => void;
   segment?: Segment;
   amount?: string;
+  stakeAmount?: string;
   winnerAddress?: string;
 }
 
@@ -38,6 +39,7 @@ const RESULT_CONFIG: Record<
     amountColor: string;
     amountPrefix: string;
     buttonLabel: string;
+    subLabel: string;
   }
 > = {
   win: {
@@ -46,6 +48,7 @@ const RESULT_CONFIG: Record<
     amountColor: "text-[#1C9DF7]",
     amountPrefix: "+",
     buttonLabel: "Spin again",
+    subLabel: "Payout",
   },
   loss: {
     image: Loss,
@@ -53,6 +56,7 @@ const RESULT_CONFIG: Record<
     amountColor: "text-[#DF1C41]",
     amountPrefix: "-",
     buttonLabel: "Spin again",
+    subLabel: "Staked",
   },
   breakeven: {
     image: Breakeven,
@@ -60,6 +64,7 @@ const RESULT_CONFIG: Record<
     amountColor: "text-[#F5A623]",
     amountPrefix: "",
     buttonLabel: "Spin again",
+    subLabel: "Returned",
   },
 };
 
@@ -67,16 +72,27 @@ export const SWinOrLoss = ({
   handleClick,
   onShare,
   segment,
-  amount = "$0",
+  amount = "—",
+  stakeAmount,
   winnerAddress = "0x9i0j...1k21",
 }: WinOrLossProps) => {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 px-3 py-3 backdrop-blur-xl">
+      <style>{`
+        @keyframes spinResultIn {
+          from { opacity: 0; transform: scale(0.94) translateY(14px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    }
+        }
+        .spin-result-enter {
+          animation: spinResultIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+      `}</style>
       <WinOrLossCard
         handleClick={handleClick}
         onShare={onShare}
         segment={segment}
         amount={amount}
+        stakeAmount={stakeAmount}
         winnerAddress={winnerAddress}
       />
     </div>
@@ -87,14 +103,14 @@ const WinOrLossCard = ({
   handleClick,
   onShare,
   segment,
-  amount = "$0",
-  winnerAddress,
+  amount = "—",
+  stakeAmount,
 }: WinOrLossProps) => {
   const result = getResultState(segment);
   const config = RESULT_CONFIG[result];
 
   return (
-    <SurfaceCard className="w-full max-w-[520px] p-4 sm:p-6">
+    <SurfaceCard className="spin-result-enter w-full max-w-[520px] p-4 sm:p-6">
       <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black/20 px-5 pb-6 pt-7 sm:px-6">
         <div className="absolute inset-x-0 top-0 h-44 pointer-events-none">
           <Group className="w-full h-full" />
@@ -113,9 +129,15 @@ const WinOrLossCard = ({
               {config.amountPrefix}
               {amount}
             </p>
+
+            {/* Contextual sub-label */}
             {result === "breakeven" ? (
               <p className="mt-1 text-[13px] text-[#737373]">
                 Your entry has been refunded
+              </p>
+            ) : stakeAmount ? (
+              <p className="mt-1 text-[13px] text-[#737373]">
+                {config.subLabel} · Staked {stakeAmount}
               </p>
             ) : null}
           </div>
