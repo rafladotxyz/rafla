@@ -76,3 +76,102 @@ export enum RoundStatus {
   Completed = 2,
   Cancelled = 3,
 }
+
+import { keccak256, toBytes } from "viem";
+
+/**
+ * Convert a DB room ID string (CUID) to a deterministic bytes32
+ * for use as the on-chain private room identifier.
+ */
+export function roomIdToBytes32(roomId: string): `0x${string}` {
+  return keccak256(toBytes(roomId));
+}
+
+/** Default private room duration in seconds (30 min). Used when drawTime is unknown. */
+export const DEFAULT_PRIVATE_ROOM_DURATION_SECS = 1800;
+
+/**
+ * ABI fragment for the private room functions added in the upgraded Raffle contract.
+ * Use alongside RAFFLE_ABI once the new contract is deployed.
+ */
+export const RAFFLE_PRIVATE_ROOM_ABI = [
+  // ── Custom errors ────────────────────────────────────────────────────────────
+  { inputs: [], name: "InvalidRoomId",        type: "error" },
+  { inputs: [], name: "InvalidMinPlayers",     type: "error" },
+  { inputs: [], name: "InvalidDuration",       type: "error" },
+  { inputs: [], name: "MismatchedTokenType",   type: "error" },
+  { inputs: [], name: "MismatchedStakeAmount", type: "error" },
+  // ── Events ───────────────────────────────────────────────────────────────────
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true,  internalType: "bytes32", name: "roomId",    type: "bytes32" },
+      { indexed: true,  internalType: "address", name: "winner",    type: "address" },
+      { indexed: false, internalType: "uint256", name: "ethPrize",  type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "usdcPrize", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "oarPrize",  type: "uint256" },
+    ],
+    name: "PrivateWinnerSelected",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true,  internalType: "bytes32", name: "roomId",    type: "bytes32" },
+      { indexed: true,  internalType: "address", name: "player",    type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount",    type: "uint256" },
+      { indexed: false, internalType: "uint8",   name: "tokenType", type: "uint8"   },
+    ],
+    name: "PrivateDeposited",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, internalType: "bytes32", name: "roomId", type: "bytes32" }],
+    name: "PrivateRoomCancelled",
+    type: "event",
+  },
+  // ── Functions ─────────────────────────────────────────────────────────────────
+  {
+    inputs: [
+      { internalType: "bytes32", name: "roomId",     type: "bytes32" },
+      { internalType: "uint256", name: "minPlayers", type: "uint256" },
+      { internalType: "uint256", name: "duration",   type: "uint256" },
+    ],
+    name: "depositPrivateETH",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "bytes32", name: "roomId",     type: "bytes32" },
+      { internalType: "uint256", name: "amount",     type: "uint256" },
+      { internalType: "uint256", name: "minPlayers", type: "uint256" },
+      { internalType: "uint256", name: "duration",   type: "uint256" },
+    ],
+    name: "depositPrivateUSDC",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "bytes32", name: "roomId",     type: "bytes32" },
+      { internalType: "uint256", name: "amount",     type: "uint256" },
+      { internalType: "uint256", name: "minPlayers", type: "uint256" },
+      { internalType: "uint256", name: "duration",   type: "uint256" },
+    ],
+    name: "depositPrivateOARCOIN",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "bytes32", name: "roomId", type: "bytes32" }],
+    name: "endPrivateRoom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+] as const;

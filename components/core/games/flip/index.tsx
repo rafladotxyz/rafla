@@ -121,6 +121,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         <PnL
           amount={pnlData.amount}
           isWin={pnlData.isWin}
+          gameType="flip"
           handleClick={() => setShowPnl(false)}
           shareUrl={`https://rafla.xyz/flip/${isEmptyState ? "" : roomId}`}
         />

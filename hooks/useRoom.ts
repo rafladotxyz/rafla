@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useContractGame } from "./useContractGame";
+import { normalizeContractError } from "@/lib/contract-errors";
 
 export interface CreatedRoom {
   id: string;
@@ -86,8 +87,9 @@ export function useRoom() {
 
         setCreatedRoom(json.room);
         return json.room;
-      } catch {
-        setError("network error");
+      } catch (err) {
+        const { message } = normalizeContractError(err, "Network error — please check your connection.");
+        setError(message);
         return null;
       } finally {
         setIsCreating(false);
@@ -140,8 +142,9 @@ export function useRoom() {
         }
 
         return true;
-      } catch {
-        setError("failed to join room");
+      } catch (err) {
+        const { message } = normalizeContractError(err, "Failed to join room — please try again.");
+        setError(message);
         return false;
       } finally {
         setIsJoining(false);
