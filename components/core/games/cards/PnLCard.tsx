@@ -14,6 +14,7 @@ interface PnLProps {
   amount?: string;
   handleClick?: () => void;
   shareUrl?: string; // URL to encode in QR — defaults to RAFLA.XYZ
+  gameType?: "flip" | "spin" | "draw"; // controls bottom-right label
 }
 
 export const PnL = ({
@@ -22,6 +23,7 @@ export const PnL = ({
   amount,
   handleClick,
   shareUrl = "https://rafla.xyz",
+  gameType = "draw",
 }: PnLProps) => {
   return (
     <div className="fixed inset-0 z-[999] backdrop-blur-sm flex items-center justify-center">
@@ -31,6 +33,7 @@ export const PnL = ({
         amount={amount}
         handleClick={handleClick}
         shareUrl={shareUrl}
+        gameType={gameType}
       />
     </div>
   );
@@ -42,8 +45,10 @@ const PnLCard = ({
   amount = "$109.25",
   handleClick,
   shareUrl = "https://rafla.xyz",
+  gameType = "draw",
 }: PnLProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const gameLabel = gameType.charAt(0).toUpperCase() + gameType.slice(1);
 
   // ─── Download as image ──────────────────────────────────────────────────────
   const handleDownload = async () => {
@@ -137,7 +142,7 @@ const PnLCard = ({
             <div className="flex flex-col items-center gap-1">
               <Image src={Logo} height={43.88} width={96} alt="logo" />
               <p className="text-white text-[16px] font-semibold tracking-wide">
-                Draw
+                {gameLabel}
               </p>
             </div>
           </div>

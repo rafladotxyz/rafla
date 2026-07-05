@@ -114,7 +114,7 @@ export function JoinRoomModal({ gameType, roomId, onJoined }: JoinRoomModalProps
               )}
             </div>
             <p className="text-xs text-[#8A8A8A]">
-              USDC will be approved and deposited on-chain.
+              {roomToken} will be approved and deposited on-chain.
             </p>
           </div>
 

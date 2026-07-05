@@ -107,6 +107,7 @@ export function useContractGame() {
   const [depositTxHash, setDepositTxHash] = useState<`0x${string}` | undefined>();
   const [endRoundTxHash, setEndRoundTxHash] = useState<`0x${string}` | undefined>();
   const [isDepositing, setIsDepositing] = useState(false);
+  const [isSettling, setIsSettling] = useState(false); // true while auto-endRound is in flight
   const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
   const [lastFlipResult, setLastFlipResult] = useState<FlipResultEvent | null>(null);
   const [lastSpinResult, setLastSpinResult] = useState<SpinResultEvent | null>(null);
@@ -250,9 +251,10 @@ export function useContractGame() {
         return null;
       }
 
-      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000 && currentRound.playerCount > 0) {
         setError("Previous round ended — settling it now, please hold on...");
         setIsDepositing(true);
+        setIsSettling(true);
         try {
           const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
@@ -268,10 +270,12 @@ export function useContractGame() {
           console.error("Auto endRound failed", e);
           setError("Could not settle the previous round. Please try again.");
           setIsDepositing(false);
+          setIsSettling(false);
           return null;
         }
         // Clear the settling message and proceed with deposit below
         setError(null);
+        setIsSettling(false);
       } else {
         setError(null);
       }
@@ -344,9 +348,10 @@ export function useContractGame() {
         return null;
       }
 
-      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000 && currentRound.playerCount > 0) {
         setError("Previous round ended — settling it now, please hold on...");
         setIsDepositing(true);
+        setIsSettling(true);
         try {
           const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
@@ -361,9 +366,11 @@ export function useContractGame() {
           console.error("Auto endRound failed", e);
           setError("Could not settle the previous round. Please try again.");
           setIsDepositing(false);
+          setIsSettling(false);
           return null;
         }
         setError(null);
+        setIsSettling(false);
       } else {
         setError(null);
       }
@@ -430,9 +437,10 @@ export function useContractGame() {
         return null;
       }
 
-      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000) {
+      if (currentRound && Date.now() >= Number(currentRound.endTime) * 1000 && currentRound.playerCount > 0) {
         setError("Previous round ended — settling it now, please hold on...");
         setIsDepositing(true);
+        setIsSettling(true);
         try {
           const endTx = await writeContractAsync({
             address: RAFFLE_ADDRESS,
@@ -447,9 +455,11 @@ export function useContractGame() {
           console.error("Auto endRound failed", e);
           setError("Could not settle the previous round. Please try again.");
           setIsDepositing(false);
+          setIsSettling(false);
           return null;
         }
         setError(null);
+        setIsSettling(false);
       } else {
         setError(null);
       }
@@ -745,6 +755,7 @@ export function useContractGame() {
     // Tx state
     isApproving,
     isDepositing,
+    isSettling,
     isEndingRound,
     approveTxHash,
     depositTxHash,

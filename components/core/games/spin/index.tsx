@@ -64,15 +64,40 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   // Uses a ref so it always sees the latest lastSpinResult, not a stale capture.
   const handleSpinResult = (segment: Segment) => {
     const result = lastSpinResultRef.current;
-    let displayAmount = "—";
-    if (result) {
-      const isLoss = result.payout < result.amount;
-      const oarStake = fromOARUnits(result.amount).toFixed(4);
-      const oarPayout = fromOARUnits(result.payout).toFixed(4);
-      displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+
+    if (!result) {
+      // VRF hasn't arrived yet — poll every 500 ms until it does (max 30 s).
+      let attempts = 0;
+      const MAX_ATTEMPTS = 60; // 30 s
+      const poll = setInterval(() => {
+        attempts++;
+        const polledResult = lastSpinResultRef.current;
+        if (polledResult || attempts >= MAX_ATTEMPTS) {
+          clearInterval(poll);
+          const isLoss = polledResult ? polledResult.payout < polledResult.amount : true;
+          const oarStake = polledResult ? fromOARUnits(polledResult.amount).toFixed(4) : "0.0000";
+          const oarPayout = polledResult ? fromOARUnits(polledResult.payout).toFixed(4) : "0.0000";
+          const displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+          setIsWaitingForChain(false);
+          setIsSpinning(false);
+          setLandedSegment(segment);
+          setLandedAmount(displayAmount);
+          setShowWinLoss(true);
+          setExternalSpinTrigger(false);
+          stopMusic();
+          const label = segment.label.toLowerCase();
+          if (label.includes("won") || label.includes("win")) playSound("win");
+          else if (label.includes("lose") || label.includes("loss")) playSound("loss");
+        }
+      }, 500);
+      return;
     }
 
-    // Defensively clear both flags — animation is done, result is in hand.
+    const isLoss = result.payout < result.amount;
+    const oarStake = fromOARUnits(result.amount).toFixed(4);
+    const oarPayout = fromOARUnits(result.payout).toFixed(4);
+    const displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+
     setIsWaitingForChain(false);
     setIsSpinning(false);
     setLandedSegment(segment);
@@ -169,6 +194,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           amount={pnlData.amount}
           isWin={pnlData.isWin}
           isBreakeven={pnlData.isBreakeven}
+          gameType="spin"
           shareUrl={`https://rafla.xyz/spin/${isEmptyState ? "" : roomId}`}
         />
       )}

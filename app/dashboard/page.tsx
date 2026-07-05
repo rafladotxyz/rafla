@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   History,
@@ -43,11 +44,21 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-  const { user, isAuthenticated, signIn, signOut } = useAuthContext();
+  const { user, isAuthenticated, signIn, signOut, authHeaders } = useAuthContext();
   const displayName = user?.username ? `@${user.username}` : "Anonymous";
   const shortWallet = user?.wallet
     ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`
     : "Not connected";
+
+  const [gameCount, setGameCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) { setGameCount(null); return; }
+    fetch("/api/user/history", { headers: authHeaders() })
+      .then((r) => r.json())
+      .then(({ history }) => setGameCount(Array.isArray(history) ? history.length : 0))
+      .catch(() => setGameCount(0));
+  }, [isAuthenticated, authHeaders]);
 
   return (
     <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
@@ -153,7 +164,7 @@ function DashboardContent() {
             <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373]">Quick stats</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {[
-                { label: "Games", value: "3" },
+                { label: "Games", value: isAuthenticated ? (gameCount === null ? "…" : String(gameCount)) : "—" },
                 { label: "Modes", value: "Public / Private" },
                 { label: "Network", value: "Base Sepolia" },
                 { label: "Status", value: isAuthenticated ? "Signed in" : "Guest" },

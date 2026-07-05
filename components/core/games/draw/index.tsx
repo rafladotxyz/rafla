@@ -31,15 +31,14 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   const [showStakeModal, setShowStakeModal] = useState(false);
 
   const effectiveRoomId = isEmptyState ? EMPTY_ID : roomId!;
-  const { gameState, players, loading, addEntry, error } = useGameState(
+  const { gameState, players, loading, isSettling, addEntry, error } = useGameState(
     effectiveRoomId,
     "draw",
   );
 
   const isPublicGameOpen =
     currentRound !== null &&
-    currentRound.status === RoundStatus.Active &&
-    currentRound.playerCount > 0;
+    currentRound.status === RoundStatus.Active;
 
   const showJoinModal = isPrivateRoom && !hasJoined;
 
@@ -61,6 +60,15 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
   return (
     <div className="px-4 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
+
+      {/* Settling overlay — shown when auto-endRound tx is in flight */}
+      {isSettling && (
+        <div className="fixed inset-0 z-[998] flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-sm">
+          <div className="h-8 w-8 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
+          <p className="text-sm font-medium text-[#E8E8E8]">Settling previous round…</p>
+          <p className="text-xs text-[#737373]">Please wait. The new round will start automatically.</p>
+        </div>
+      )}
 
       {showJoinModal && (
         <JoinRoomModal
