@@ -6,6 +6,7 @@ import { useContractGame } from "./useContractGame";
 import { usePusherRoom } from "./usePusherRoom";
 import type { PlayerJoinedPayload } from "@/lib/pusher";
 import type { StakeToken } from "@/components/core/games/GameStakeModal";
+import { roomIdToBytes32, DEFAULT_PRIVATE_ROOM_DURATION_SECS } from "@/lib/contract";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,12 +57,16 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     depositUSDC,
     depositOARCOIN,
     depositETH,
+    depositPrivateUSDC,
+    depositPrivateOARCOIN,
+    depositPrivateETH,
     playFlip,
     playSpin,
     isApproving,
     isDepositing,
     isSettling,
     lastWinner,
+    lastPrivateWinner,
     lastFlipResult,
     lastSpinResult,
     error: contractError,
@@ -73,6 +78,9 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   const [loading, setLoading] = useState(false);
   const [roomStatus, setRoomStatus] = useState<GameState["status"]>("waiting");
   const [roomMinPlayers, setRoomMinPlayers] = useState(DEFAULT_MIN_PLAYERS);
+  const [roomDrawTime, setRoomDrawTime] = useState<number | null>(null);
+  const [roomStakeRaw, setRoomStakeRaw] = useState<string | null>(null);
+  const [roomToken, setRoomToken] = useState<string>("USDC");
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   const isEmptyState = roomId === EMPTY_ID;
@@ -92,6 +100,9 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
         const { room } = await res.json();
         setRoomStatus(room.status);
         setRoomMinPlayers(room.minPlayers ?? DEFAULT_MIN_PLAYERS);
+        setRoomStakeRaw(room.stakeAmount ?? null);
+        setRoomToken(room.token ?? "USDC");
+        setRoomDrawTime(room.drawTime ? new Date(room.drawTime).getTime() : null);
 
         const mapped: Player[] = room.participants.map(
           (
@@ -292,14 +303,39 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
         let txHash: `0x${string}` | null = null;
 
         if (gameType === "draw") {
-          // Route to the right deposit based on chosen token (default USDC)
-          const token = extra?.token ?? "USDC";
-          if (token === "ETH") {
-            txHash = await depositETH(amount);
-          } else if (token === "OAR") {
-            txHash = await depositOARCOIN(amount);
+          const token = extra?.token ?? roomToken ?? "USDC";
+
+          // ── Private room: use isolated on-chain pool ───────────────────────
+          if (!isEmptyState) {
+            const roomIdBytes32 = roomIdToBytes32(roomId);
+            // Compute remaining duration from DB drawTime, or fall back to default
+            const durationSeconds = roomDrawTime
+              ? Math.max(60, Math.floor((roomDrawTime - Date.now()) / 1000))
+              : DEFAULT_PRIVATE_ROOM_DURATION_SECS;
+
+            // Use the DB room's stake amount so it matches the on-chain expectation
+            let stakeAmount = amount;
+            if (roomStakeRaw) {
+              const decimals = token === "USDC" ? 1_000_000 : 1e18;
+              stakeAmount = Number(roomStakeRaw) / decimals;
+            }
+
+            if (token === "ETH") {
+              txHash = await depositPrivateETH(roomIdBytes32, stakeAmount, roomMinPlayers, durationSeconds);
+            } else if (token === "OAR") {
+              txHash = await depositPrivateOARCOIN(roomIdBytes32, stakeAmount, roomMinPlayers, durationSeconds);
+            } else {
+              txHash = await depositPrivateUSDC(roomIdBytes32, stakeAmount, roomMinPlayers, durationSeconds);
+            }
           } else {
-            txHash = await depositUSDC(amount);
+            // ── Public game: global round pool ──────────────────────────────
+            if (token === "ETH") {
+              txHash = await depositETH(amount);
+            } else if (token === "OAR") {
+              txHash = await depositOARCOIN(amount);
+            } else {
+              txHash = await depositUSDC(amount);
+            }
           }
         } else if (gameType === "flip") {
           // Flip always uses OAR
@@ -352,6 +388,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     isSettling,
     addEntry,
     lastWinner,
+    lastPrivateWinner,
     lastFlipResult,
     lastSpinResult,
     error: contractError || persistenceError,

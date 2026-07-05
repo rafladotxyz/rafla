@@ -17,6 +17,7 @@ import {
   USDC_ADDRESS,
   OAR_COIN_ADDRESS,
   RAFFLE_ABI,
+  RAFFLE_PRIVATE_ROOM_ABI,
   FLIP_ABI,
   SPIN_ABI,
   ERC20_ABI,
@@ -25,6 +26,7 @@ import {
   toOARUnits,
   fromOARUnits,
   RoundStatus,
+  DEFAULT_PRIVATE_ROOM_DURATION_SECS,
 } from "@/lib/contract";
 import { normalizeContractError } from "@/lib/contract-errors";
 
@@ -93,6 +95,15 @@ export interface SpinResultEvent {
   transactionHash: string;
 }
 
+/** Emitted by PrivateWinnerSelected on the upgraded Raffle contract */
+export interface PrivateWinnerEvent {
+  roomId: `0x${string}`; // bytes32 room id
+  winner: string;
+  ethPrize: bigint;
+  usdcPrize: bigint;
+  oarPrize: bigint;
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useContractGame() {
@@ -108,6 +119,7 @@ export function useContractGame() {
   const [endRoundTxHash, setEndRoundTxHash] = useState<`0x${string}` | undefined>();
   const [isDepositing, setIsDepositing] = useState(false);
   const [isSettling, setIsSettling] = useState(false); // true while auto-endRound is in flight
+  const [lastPrivateWinner, setLastPrivateWinner] = useState<PrivateWinnerEvent | null>(null);
   const [lastWinner, setLastWinner] = useState<WinnerEvent | null>(null);
   const [lastFlipResult, setLastFlipResult] = useState<FlipResultEvent | null>(null);
   const [lastSpinResult, setLastSpinResult] = useState<SpinResultEvent | null>(null);
@@ -504,7 +516,7 @@ export function useContractGame() {
     ],
   );
 
-  // ── endRound ────────────────────────────────────────────────────────────────
+  // ── endRound (public) ───────────────────────────────────────────────────────
 
   const endRound = useCallback(async (): Promise<`0x${string}` | null> => {
     setError(null);
@@ -523,6 +535,168 @@ export function useContractGame() {
       return null;
     }
   }, [writeContractAsync]);
+
+  // ── depositPrivateUSDC ──────────────────────────────────────────────────────
+
+  const depositPrivateUSDC = useCallback(
+    async (
+      roomIdBytes32: `0x${string}`,
+      dollarAmount: number,
+      minPlayers: number,
+      durationSeconds: number,
+    ): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawAmount = toUSDCUnits(dollarAmount);
+
+        const balance = await publicClient.readContract({
+          address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "balanceOf", args: [address],
+        });
+        if (balance < rawAmount) {
+          setError(`Insufficient USDC. You have ${fmtUSDC(balance)} but need ${dollarAmount}.`);
+          return null;
+        }
+
+        await ensureAllowance(USDC_ADDRESS, RAFFLE_ADDRESS, rawAmount);
+
+        const tx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_PRIVATE_ROOM_ABI,
+          functionName: "depositPrivateUSDC",
+          args: [roomIdBytes32, rawAmount, BigInt(minPlayers), BigInt(durationSeconds)],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        setDepositTxHash(tx);
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+        return tx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [address, publicClient, writeContractAsync, isSupportedChain],
+  );
+
+  // ── depositPrivateOARCOIN ───────────────────────────────────────────────────
+
+  const depositPrivateOARCOIN = useCallback(
+    async (
+      roomIdBytes32: `0x${string}`,
+      oarAmount: number,
+      minPlayers: number,
+      durationSeconds: number,
+    ): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawAmount = toOARUnits(oarAmount);
+
+        const balance = await publicClient.readContract({
+          address: OAR_COIN_ADDRESS, abi: ERC20_ABI, functionName: "balanceOf", args: [address],
+        });
+        if (balance < rawAmount) {
+          setError(`Insufficient OAR. You have ${fmtOAR(balance)} but need ${oarAmount}.`);
+          return null;
+        }
+
+        await ensureAllowance(OAR_COIN_ADDRESS, RAFFLE_ADDRESS, rawAmount);
+
+        const tx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_PRIVATE_ROOM_ABI,
+          functionName: "depositPrivateOARCOIN",
+          args: [roomIdBytes32, rawAmount, BigInt(minPlayers), BigInt(durationSeconds)],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        setDepositTxHash(tx);
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+        return tx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [address, publicClient, writeContractAsync, isSupportedChain],
+  );
+
+  // ── depositPrivateETH ───────────────────────────────────────────────────────
+
+  const depositPrivateETH = useCallback(
+    async (
+      roomIdBytes32: `0x${string}`,
+      ethAmount: number,
+      minPlayers: number,
+      durationSeconds: number,
+    ): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      if (!isSupportedChain) { setError(unsupportedChainMessage); return null; }
+
+      setError(null);
+      setIsDepositing(true);
+
+      try {
+        const rawWei = BigInt(Math.round(ethAmount * 1e18));
+
+        const tx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_PRIVATE_ROOM_ABI,
+          functionName: "depositPrivateETH",
+          args: [roomIdBytes32, BigInt(minPlayers), BigInt(durationSeconds)],
+          value: rawWei,
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        setDepositTxHash(tx);
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+        return tx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      } finally {
+        setIsDepositing(false);
+      }
+    },
+    [address, publicClient, writeContractAsync, isSupportedChain],
+  );
+
+  // ── endPrivateRoom ──────────────────────────────────────────────────────────
+
+  const endPrivateRoom = useCallback(
+    async (roomIdBytes32: `0x${string}`): Promise<`0x${string}` | null> => {
+      if (!address || !publicClient) { setError("Wallet not connected"); return null; }
+      setError(null);
+      try {
+        const tx = await writeContractAsync({
+          address: RAFFLE_ADDRESS,
+          abi: RAFFLE_PRIVATE_ROOM_ABI,
+          functionName: "endPrivateRoom",
+          args: [roomIdBytes32],
+          gas: BASE_SEPOLIA_GAS_LIMIT,
+        });
+        return tx;
+      } catch (err: unknown) {
+        const normalized = normalizeContractError(err);
+        if (!normalized.isUserRejected) setError(normalized.message);
+        return null;
+      }
+    },
+    [address, publicClient, writeContractAsync],
+  );
 
   // ── playFlip — OAR (18 dec) ─────────────────────────────────────────────────
 
@@ -734,6 +908,26 @@ export function useContractGame() {
     onLogs() { refetchRound(); },
   });
 
+  // ── Watch PrivateWinnerSelected ─────────────────────────────────────────────
+
+  useWatchContractEvent({
+    address: RAFFLE_ADDRESS,
+    abi: RAFFLE_PRIVATE_ROOM_ABI,
+    eventName: "PrivateWinnerSelected",
+    onLogs(logs) {
+      const log = logs[0];
+      if (!log?.args) return;
+      const { roomId, winner, ethPrize, usdcPrize, oarPrize } = log.args as {
+        roomId: `0x${string}`;
+        winner: string;
+        ethPrize: bigint;
+        usdcPrize: bigint;
+        oarPrize: bigint;
+      };
+      setLastPrivateWinner({ roomId, winner, ethPrize, usdcPrize, oarPrize });
+    },
+  });
+
   // ── Public surface ──────────────────────────────────────────────────────────
 
   return {
@@ -742,11 +936,20 @@ export function useContractGame() {
     yourDepositRaw,
     refetchRound,
 
-    // Raffle actions
+    // Raffle public-game actions
     depositUSDC,
     depositOARCOIN,
     depositETH,
     endRound,
+
+    // Raffle private-room actions
+    depositPrivateUSDC,
+    depositPrivateOARCOIN,
+    depositPrivateETH,
+    endPrivateRoom,
+
+    // Private winner event
+    lastPrivateWinner,
 
     // Game actions
     playFlip,
