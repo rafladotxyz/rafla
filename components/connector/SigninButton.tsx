@@ -4,7 +4,8 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronRight, LogOut } from "lucide-react";
+import { ChevronDown, ChevronRight, LogOut, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import Base from "@/assets/base.png";
 import BaseSepolia from "@/assets/baseSepolia.png";
 import Monad from "@/assets/monad.svg";
@@ -23,6 +24,29 @@ export function SignInButton() {
   const { caipNetwork } = useAppKitNetwork();
   const router = useRouter();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpen]);
+
   const getNetworkIcon = (name: string) => {
     switch (name) {
       case "Base Sepolia":
@@ -39,7 +63,18 @@ export function SignInButton() {
   };
 
   const navigateToProfile = () => {
+    setMenuOpen(false);
     router.push("/profile");
+  };
+
+  const handleSwitchNetwork = () => {
+    setMenuOpen(false);
+    open({ view: "Networks" });
+  };
+
+  const handleSignOut = () => {
+    setMenuOpen(false);
+    signOut();
   };
 
   if (!isConnected) {
@@ -74,12 +109,16 @@ export function SignInButton() {
     ? `@${user.username}`
     : `${user?.wallet.slice(0, 6)}...${user?.wallet.slice(-4)}`;
 
+  const networkName = caipNetwork?.name || "Base";
+
   return (
-    <div className="flex items-center gap-2 md:gap-3">
+    <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={navigateToProfile}
-        className="group inline-flex h-11 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-2.5 pr-3 text-left transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        onClick={() => setMenuOpen((prev) => !prev)}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        className="group inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
         {user?.avatar ? (
           <Image
@@ -95,41 +134,94 @@ export function SignInButton() {
           </div>
         )}
 
-        <div className="hidden min-w-0 sm:flex sm:flex-col sm:items-start">
-          <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
-            {displayName}
-          </span>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
-            Profile
-          </span>
-        </div>
+        <span className="hidden max-w-[100px] truncate text-[13px] font-medium text-[#F3F3F3] sm:inline">
+          {displayName}
+        </span>
 
-        <ChevronRight className="hidden h-4 w-4 text-[#8A8A8A] transition-transform group-hover:translate-x-0.5 sm:block" />
-      </button>
-
-      <button
-        type="button"
-        onClick={signOut}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-      >
-        <LogOut className="h-4 w-4" />
-        <span className="hidden sm:inline">Sign out</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => open()}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 p-1.5 text-[12px] text-[#888] transition-colors hover:border-white/20 hover:bg-white/10 hover:text-[#CBCBCB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-        aria-label={`Open network switcher, current network ${caipNetwork?.name || "Base"}`}
-      >
-        <Image
-          height={16}
-          width={16}
-          src={getNetworkIcon(caipNetwork?.name || "Base")}
-          alt={caipNetwork?.name || "Base"}
-          className="h-full w-full rounded-full object-contain"
+        <ChevronDown
+          className={`h-4 w-4 text-[#8A8A8A] transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
         />
       </button>
+
+      {menuOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+10px)] w-[min(16rem,calc(100vw-2rem))] origin-top-right animate-[fadeIn_0.15s_ease-out] overflow-hidden rounded-2xl border border-white/10 bg-black/80 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={navigateToProfile}
+            className="group/item flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
+          >
+            {user?.avatar ? (
+              <Image
+                src={user.avatar}
+                alt={user?.username ?? "Profile avatar"}
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                width={36}
+                height={36}
+              />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[13px] font-semibold text-[#F3F3F3]">
+                {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
+              </div>
+            )}
+            <div className="flex min-w-0 flex-1 flex-col items-start">
+              <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
+                {displayName}
+              </span>
+              <span className="flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
+                <User className="h-3 w-3" />
+                Profile
+              </span>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A] transition-transform group-hover/item:translate-x-0.5" />
+          </button>
+
+          <div className="mx-4 h-px bg-white/10" />
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleSwitchNetwork}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 p-1.5">
+              <Image
+                height={18}
+                width={18}
+                src={getNetworkIcon(networkName)}
+                alt={networkName}
+                className="h-full w-full rounded-full object-contain"
+              />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col items-start">
+              <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
+                {networkName}
+              </span>
+              <span className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
+                Switch network
+              </span>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
+          </button>
+
+          <div className="mx-4 h-px bg-white/10" />
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
+              <LogOut className="h-4 w-4" />
+            </span>
+            <span className="text-[13px] font-medium">Sign out</span>
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
