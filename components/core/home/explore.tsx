@@ -52,15 +52,10 @@ export const ExploreGames = () => {
     >
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373]">Choose a lane</p>
+        
           <h2 className="mt-2 text-xl font-medium text-[#E8E8E8] md:text-2xl">Explore games</h2>
         </div>
-        <Link
-          href="/dashboard"
-          className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-[#CBCBCB] transition-colors hover:bg-white/10 hover:text-white md:inline-flex"
-        >
-          Dashboard
-        </Link>
+       
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 md:gap-6">

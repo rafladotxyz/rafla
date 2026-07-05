@@ -33,6 +33,7 @@ interface GameHistoryItem {
   prizeAmount: string;
   settledAt: string;
   isWin: boolean;
+  token?: string;
 }
 
 const PROFILE_FIELDS = [
@@ -61,6 +62,12 @@ const PROFILE_FIELDS = [
     autoComplete: "off",
   },
 ];
+
+function formatDisplayAmount(val: number | string): string {
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+  return parseFloat(num.toFixed(6)).toString();
+}
 
 export default function ProfilePage() {
   const {
@@ -161,9 +168,33 @@ export default function ProfilePage() {
   };
 
   const wins = history.filter((h) => h.isWin).length;
-  const totalWon = history
-    .filter((h) => h.isWin)
+  
+  const totalWonUSDC = history
+    .filter((h) => h.isWin && (!h.token || h.token === "USDC"))
     .reduce((acc, h) => acc + Number(h.prizeAmount) / 1_000_000, 0);
+
+  const totalWonOAR = history
+    .filter((h) => h.isWin && h.token === "OAR")
+    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1e18, 0);
+
+  const totalWonETH = history
+    .filter((h) => h.isWin && h.token === "ETH")
+    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1e18, 0);
+
+  const formattedTotalWon = () => {
+    const parts = [];
+    if (totalWonUSDC > 0 || (totalWonOAR === 0 && totalWonETH === 0)) {
+      parts.push(`$${formatDisplayAmount(totalWonUSDC)}`);
+    }
+    if (totalWonOAR > 0) {
+      parts.push(`${formatDisplayAmount(totalWonOAR)} OAR`);
+    }
+    if (totalWonETH > 0) {
+      parts.push(`${formatDisplayAmount(totalWonETH)} ETH`);
+    }
+    return parts.join(" + ");
+  };
+
   const winRate = history.length > 0 ? ((wins / history.length) * 100).toFixed(0) : "0";
   const shortWallet = user?.wallet
     ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`
@@ -335,7 +366,7 @@ export default function ProfilePage() {
                   { label: "Games", value: history.length, icon: Gamepad2 },
                   { label: "Wins", value: wins, icon: Trophy },
                   { label: "Win rate", value: `${winRate}%`, icon: History },
-                  { label: "Total won", value: `$${totalWon.toFixed(2)}`, icon: DollarSign },
+                  { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
                 ].map(({ label, value, icon: Icon }) => (
                   <div
                     key={label}
@@ -382,9 +413,9 @@ export default function ProfilePage() {
 
         <section className="grid gap-3 sm:grid-cols-3">
           {[
-            { label: "USDC Balance", value: loadingBalances ? "..." : Number(balances.USDC.formatted).toFixed(2), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
-            { label: "OAR Balance", value: loadingBalances ? "..." : Number(balances.OAR.formatted).toFixed(4), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
-            { label: "ETH Balance", value: loadingBalances ? "..." : Number(balances.ETH.formatted).toFixed(4), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
+            { label: "USDC Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.USDC.formatted), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
+            { label: "OAR Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.OAR.formatted), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
+            { label: "ETH Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.ETH.formatted), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
           ].map(({ label, value, symbol, color, bg, icon }) => (
             <SurfaceCard key={label} className="p-4">
               <div className="flex items-center gap-2 text-[#8A8A8A]">
@@ -407,7 +438,7 @@ export default function ProfilePage() {
             { label: "Games played", value: history.length, icon: Gamepad2 },
             { label: "Wins", value: wins, icon: Trophy },
             { label: "Win rate", value: `${winRate}%`, icon: History },
-            { label: "Total won", value: `$${totalWon.toFixed(2)}`, icon: DollarSign },
+            { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
           ].map(({ label, value, icon: Icon }) => (
             <SurfaceCard key={label} className="p-4">
               <Icon className="h-4 w-4 text-[#8A8A8A]" />
@@ -469,48 +500,57 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="grid gap-3">
-                {history.slice(0, 10).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"}`}
-                      >
-                        {item.isWin ? (
-                          <Trophy className="h-4 w-4" />
-                        ) : (
-                          <Gamepad2 className="h-4 w-4" />
-                        )}
+                {history.slice(0, 10).map((item) => {
+                  const formattedPrize = () => {
+                    if (!item.isWin) return "—";
+                    const token = item.token || "USDC";
+                    const decimals = token === "USDC" ? 6 : 18;
+                    const amount = Number(item.prizeAmount) / (10 ** decimals);
+                    const formatted = formatDisplayAmount(amount);
+                    return token === "USDC" ? `+$${formatted}` : `+${formatted} ${token}`;
+                  };
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"}`}
+                        >
+                          {item.isWin ? (
+                            <Trophy className="h-4 w-4" />
+                          ) : (
+                            <Gamepad2 className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-[#F3F3F3] capitalize">
+                            Rafla {item.gameType}
+                          </p>
+                          <p className="mt-1 text-xs text-[#8A8A8A]">
+                            {new Date(item.settledAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                            {' '}
+                            · {item.roomId.slice(0, 8)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[#F3F3F3] capitalize">
-                          Rafla {item.gameType}
+                      <div className="text-right">
+                        <p className={`text-sm font-semibold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
+                          {formattedPrize()}
                         </p>
-                        <p className="mt-1 text-xs text-[#8A8A8A]">
-                          {new Date(item.settledAt).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                          {' '}
-                          · {item.roomId.slice(0, 8)}
+                        <p className={`mt-1 text-[10px] uppercase tracking-[0.24em] ${item.isWin ? "text-emerald-400/70" : "text-red-400/70"}`}>
+                          {item.isWin ? "Won" : "Loss"}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
-                        {item.isWin
-                          ? `+$${(Number(item.prizeAmount) / 1_000_000).toFixed(2)}`
-                          : "—"}
-                      </p>
-                      <p className={`mt-1 text-[10px] uppercase tracking-[0.24em] ${item.isWin ? "text-emerald-400/70" : "text-[#737373]"}`}>
-                        {item.isWin ? "Won" : "Played"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

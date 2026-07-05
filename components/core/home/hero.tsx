@@ -23,15 +23,7 @@ export const Hero = () => {
           Rafla turns chance into shared moments. Spin, flip, and draw in real time with wallet-native flow and room-based play.
         </p>
 
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
-          >
-            Open dashboard
-          </Link>
-          
-        </div>
+       
       </div>
     </section>
   );

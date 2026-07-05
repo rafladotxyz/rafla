@@ -30,7 +30,13 @@ export function GameHeader({ gameName }: { gameName?: string }) {
 
       {/* ── Back button ─────────────────────────────────────────────── */}
       <button
-        onClick={() => router.back()}
+        onClick={() => {
+          if (window.history.length > 1) {
+            router.back();
+          } else {
+            router.push("/");
+          }
+        }}
         className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-sm font-medium text-[#D4D4D4] backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/[0.09] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
       >
         <ArrowLeft
