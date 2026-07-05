@@ -18,6 +18,7 @@ import {
   Twitter,
   UserRound,
   X,
+  ExternalLink,
 } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
@@ -34,6 +35,10 @@ interface GameHistoryItem {
   settledAt: string;
   isWin: boolean;
   token?: string;
+  stakeAmount?: string | number;
+  joinedAt?: string;
+  txHash?: string | null;
+  status?: string;
 }
 
 const PROFILE_FIELDS = [
@@ -88,6 +93,8 @@ export default function ProfilePage() {
   const [history, setHistory] = useState<GameHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<GameHistoryItem | null>(null);
+  const [copiedItemField, setCopiedItemField] = useState<string | null>(null);
   const [form, setForm] = useState({
     username: "",
     bio: "",
@@ -167,8 +174,14 @@ export default function ProfilePage() {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
+  const copyToClipboard = async (text: string, field: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedItemField(field);
+    window.setTimeout(() => setCopiedItemField(null), 2000);
+  };
+
   const wins = history.filter((h) => h.isWin).length;
-  
+
   const totalWonUSDC = history
     .filter((h) => h.isWin && (!h.token || h.token === "USDC"))
     .reduce((acc, h) => acc + Number(h.prizeAmount) / 1_000_000, 0);
@@ -234,6 +247,13 @@ export default function ProfilePage() {
     );
   }
 
+  const statTiles = [
+    { label: "Games", value: history.length, icon: Gamepad2 },
+    { label: "Wins", value: wins, icon: Trophy },
+    { label: "Win rate", value: `${winRate}%`, icon: History },
+    { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
+  ];
+
   return (
     <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
       <header className="fixed left-0 right-0 top-4 z-50 flex justify-center pt-6 md:top-6">
@@ -242,17 +262,23 @@ export default function ProfilePage() {
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
         <SurfaceCard as="section" className="overflow-hidden">
-          <div className="absolute inset-0" />
-          <div className="relative z-10 p-5 md:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-[#8A8A8A]">
-                  Profile
-                </div>
+          {/* Cover */}
+          <div className="relative h-24 w-full overflow-hidden sm:h-32">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#171226] via-[#100e1c] to-[#0a0a0f]" />
+            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-emerald-500/20 blur-[70px]" />
+            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-violet-500/25 blur-[80px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.08)_1px,transparent_0)] bg-[length:18px_18px]" />
+            <div className="absolute left-5 top-4 inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-[#C9C9C9] backdrop-blur-sm">
+              Profile
+            </div>
+          </div>
 
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <div className="relative shrink-0">
-                    <div className="h-24 w-24 overflow-hidden rounded-[28px] border border-white/10 bg-black/20 sm:h-28 sm:w-28">
+          <div className="relative z-10 px-5 pb-5 md:px-8 md:pb-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex-1 space-y-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="relative -mt-12 shrink-0 sm:-mt-14">
+                    <div className="h-24 w-24 overflow-hidden rounded-[28px] border-4 border-white/10 bg-black/40 shadow-[0_10px_30px_rgba(0,0,0,0.5)] sm:h-28 sm:w-28">
                       {avatarPreview ? (
                         <Image
                           src={avatarPreview}
@@ -280,23 +306,40 @@ export default function ProfilePage() {
                         <Camera className="h-5 w-5 text-white" />
                       )}
                     </button>
+                    <button
+                      type="button"
+                      onClick={triggerPicker}
+                      disabled={isUploading}
+                      aria-label="Upload avatar"
+                      className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black/60 bg-white text-black shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-transform hover:scale-105 active:scale-95"
+                    >
+                      {isUploading ? (
+                        <div className="h-3.5 w-3.5 rounded-full border-2 border-black/40 border-t-transparent animate-spin" />
+                      ) : (
+                        <Camera className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div>
-                      <h1 className="text-3xl font-semibold tracking-tight text-[#F3F3F3] md:text-4xl">
+                  <div className="min-w-0 flex-1 space-y-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h1 className="text-2xl font-semibold tracking-tight text-[#F3F3F3] sm:text-3xl">
                         {displayName}
                       </h1>
-                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#9A9A9A] md:text-base">
-                        Your wallet identity, wins, and activity live here. Update your profile once, and it stays consistent across Rafla.
-                      </p>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </span>
+                        Connected
+                      </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={copyWallet}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                        className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       >
                         <span className="font-mono text-[12px] text-[#CBCBCB]">
                           {shortWallet}
@@ -313,10 +356,10 @@ export default function ProfilePage() {
                           href={`https://twitter.com/${user.twitter.replace("@", "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                          aria-label="Twitter profile"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                         >
                           <Twitter className="h-4 w-4" />
-                          <span className="hidden sm:inline">Twitter</span>
                         </a>
                       ) : null}
 
@@ -325,10 +368,10 @@ export default function ProfilePage() {
                           href={`https://t.me/${user.telegram.replace("@", "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                          aria-label="Telegram profile"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                         >
                           <Send className="h-4 w-4" />
-                          <span className="hidden sm:inline">Telegram</span>
                         </a>
                       ) : null}
                     </div>
@@ -341,7 +384,47 @@ export default function ProfilePage() {
                   </p>
                 ) : null}
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Details */}
+                <div className="grid gap-x-6 gap-y-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2 sm:p-5">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
+                      Wallet address
+                    </p>
+                    <p className="truncate font-mono text-[13px] text-[#E8E8E8]">
+                      {user.wallet}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
+                      Twitter / X
+                    </p>
+                    <p className="text-[13px] text-[#E8E8E8]">
+                      {user.twitter || (
+                        <span className="text-[#666]">Not linked</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
+                      Telegram
+                    </p>
+                    <p className="text-[13px] text-[#E8E8E8]">
+                      {user.telegram || (
+                        <span className="text-[#666]">Not linked</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
+                      Games played
+                    </p>
+                    <p className="text-[13px] text-[#E8E8E8]">
+                      {history.length} rounds · {winRate}% win rate
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => setEditing(true)}
@@ -361,13 +444,8 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:max-w-[420px]">
-                {[
-                  { label: "Games", value: history.length, icon: Gamepad2 },
-                  { label: "Wins", value: wins, icon: Trophy },
-                  { label: "Win rate", value: `${winRate}%`, icon: History },
-                  { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
-                ].map(({ label, value, icon: Icon }) => (
+              <div className="grid flex-1 grid-cols-2 gap-3 xl:max-w-[420px]">
+                {statTiles.map(({ label, value, icon: Icon }) => (
                   <div
                     key={label}
                     className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4"
@@ -378,7 +456,7 @@ export default function ProfilePage() {
                         {label}
                       </span>
                     </div>
-                    <p className="mt-4 text-2xl font-semibold text-[#F3F3F3]">
+                    <p className="mt-4 break-words text-xl font-semibold text-[#F3F3F3] sm:text-2xl">
                       {value}
                     </p>
                   </div>
@@ -411,7 +489,7 @@ export default function ProfilePage() {
           onChange={handleFileChange}
         />
 
-        <section className="grid gap-3 sm:grid-cols-3">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[
             { label: "USDC Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.USDC.formatted), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
             { label: "OAR Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.OAR.formatted), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
@@ -428,25 +506,6 @@ export default function ProfilePage() {
               </div>
               <p className="mt-4 text-2xl font-semibold text-[#F3F3F3]">
                 {value} <span className="text-sm font-medium text-[#8A8A8A]">{symbol}</span>
-              </p>
-            </SurfaceCard>
-          ))}
-        </section>
-
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: "Games played", value: history.length, icon: Gamepad2 },
-            { label: "Wins", value: wins, icon: Trophy },
-            { label: "Win rate", value: `${winRate}%`, icon: History },
-            { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
-          ].map(({ label, value, icon: Icon }) => (
-            <SurfaceCard key={label} className="p-4">
-              <Icon className="h-4 w-4 text-[#8A8A8A]" />
-              <p className="mt-4 text-2xl font-semibold text-[#F3F3F3]">
-                {value}
-              </p>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#737373]">
-                {label}
               </p>
             </SurfaceCard>
           ))}
@@ -513,7 +572,8 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                      onClick={() => setSelectedHistoryItem(item)}
+                      className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div
@@ -670,6 +730,157 @@ export default function ProfilePage() {
             <Check className="h-4 w-4" />
             Profile updated
           </div>
+        ) : null}
+
+        {selectedHistoryItem ? (
+          <ModalShell
+            onClose={() => setSelectedHistoryItem(null)}
+            title="Game details"
+            description="Overview of your round outcome and transaction status."
+            className="max-w-[480px]"
+          >
+            <div className="space-y-6">
+              {/* Outcome Banner */}
+              <div className={`flex flex-col items-center justify-center rounded-[24px] border p-6 text-center ${selectedHistoryItem.isWin ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400" : "border-white/10 bg-white/[0.02] text-[#9A9A9A]"}`}>
+                <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${selectedHistoryItem.isWin ? "bg-emerald-500/10" : "bg-white/5"}`}>
+                  {selectedHistoryItem.isWin ? (
+                    <Trophy className="h-6 w-6" />
+                  ) : (
+                    <Gamepad2 className="h-6 w-6" />
+                  )}
+                </div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+                  Outcome
+                </p>
+                <h3 className="mt-1 text-3xl font-bold">
+                  {selectedHistoryItem.isWin ? "Won" : "Loss"}
+                </h3>
+                <p className="mt-2 text-sm text-[#CBCBCB]">
+                  {selectedHistoryItem.isWin ? (
+                    <>
+                      You won{" "}
+                      <span className="font-semibold text-emerald-400">
+                        {(() => {
+                          const token = selectedHistoryItem.token || "USDC";
+                          const decimals = token === "USDC" ? 6 : 18;
+                          const amount = Number(selectedHistoryItem.prizeAmount) / (10 ** decimals);
+                          const formatted = formatDisplayAmount(amount);
+                          return token === "USDC" ? `$${formatted}` : `${formatted} ${token}`;
+                        })()}
+                      </span>
+                    </>
+                  ) : (
+                    "Better luck next time!"
+                  )}
+                </p>
+              </div>
+
+              {/* Details List */}
+              <div className="divide-y divide-white/5 rounded-[24px] border border-white/10 bg-white/[0.02] px-4 py-2">
+                <div className="flex items-center justify-between py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Game type</span>
+                  <span className="text-sm font-medium text-[#F3F3F3] capitalize">
+                    Rafla {selectedHistoryItem.gameType}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Stake amount</span>
+                  <span className="text-sm font-medium text-[#F3F3F3]">
+                    {(() => {
+                      const token = selectedHistoryItem.token || "USDC";
+                      const decimals = token === "USDC" ? 6 : 18;
+                      const amount = Number(selectedHistoryItem.stakeAmount || 0) / (10 ** decimals);
+                      const formatted = formatDisplayAmount(amount);
+                      return token === "USDC" ? `$${formatted}` : `${formatted} ${token}`;
+                    })()}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Status</span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${selectedHistoryItem.status === "completed" || selectedHistoryItem.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/10 text-[#A3A3A3]"}`}>
+                    {selectedHistoryItem.status || "Settled"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Date & time</span>
+                  <span className="text-sm font-medium text-[#F3F3F3]">
+                    {new Date(selectedHistoryItem.settledAt).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Room ID</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="truncate font-mono text-xs text-[#CBCBCB]">
+                      {selectedHistoryItem.roomId}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(selectedHistoryItem.roomId, "roomId")}
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
+                      aria-label="Copy Room ID"
+                    >
+                      {copiedItemField === "roomId" ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {selectedHistoryItem.txHash ? (
+                  <div className="flex items-center justify-between gap-4 py-3.5">
+                    <span className="text-xs text-[#8A8A8A]">Transaction</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate font-mono text-xs text-[#CBCBCB]">
+                        {selectedHistoryItem.txHash.slice(0, 6)}...{selectedHistoryItem.txHash.slice(-4)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(selectedHistoryItem.txHash!, "txHash")}
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
+                        aria-label="Copy Tx Hash"
+                      >
+                        {copiedItemField === "txHash" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      <a
+                        href={`https://sepolia.basescan.org/tx/${selectedHistoryItem.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
+                        aria-label="View on BaseScan"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setSelectedHistoryItem(null)}
+                className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-black transition-colors hover:bg-[#F5F5F5]"
+              >
+                Close details
+              </button>
+            </div>
+          </ModalShell>
         ) : null}
       </main>
     </div>
