@@ -21,6 +21,12 @@ type Segment = {
   strokeColor: string;
 };
 
+function formatDisplayAmount(val: number | string): string {
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+  return parseFloat(num.toFixed(6)).toString();
+}
+
 export const SpinView = ({ roomId }: { roomId?: string }) => {
   const isEmptyState = !roomId || roomId === EMPTY_ID;
 
@@ -47,8 +53,8 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   const [showWinLoss, setShowWinLoss] = useState(false);
   const [showPnl, setShowPnl] = useState(false);
   const [landedSegment, setLandedSegment] = useState<Segment | undefined>();
-  const [landedAmount, setLandedAmount] = useState("0.0000 OAR");
-  const [stakeAmount, setStakeAmount] = useState("0.0000 OAR");
+  const [landedAmount, setLandedAmount] = useState("0 OAR");
+  const [stakeAmount, setStakeAmount] = useState("0 OAR");
   // True after the stake tx confirms, until the VRF result event arrives.
   const [isWaitingForChain, setIsWaitingForChain] = useState(false);
   const [pnlData, setPnlData] = useState<{
@@ -75,9 +81,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         if (polledResult || attempts >= MAX_ATTEMPTS) {
           clearInterval(poll);
           const isLoss = polledResult ? polledResult.payout < polledResult.amount : true;
-          const oarStake = polledResult ? fromOARUnits(polledResult.amount).toFixed(4) : "0.0000";
-          const oarPayout = polledResult ? fromOARUnits(polledResult.payout).toFixed(4) : "0.0000";
-          const displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+          const rawStake = polledResult ? fromOARUnits(polledResult.amount) : 0;
+          const oarStake = formatDisplayAmount(rawStake);
+          // Net payout is double (2x) the stake, minus 3% platform fee
+          const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawStake * 2 * 0.97);
+          const displayAmount = `${isLoss ? oarStake : oarPayout} OAR`;
           setIsWaitingForChain(false);
           setIsSpinning(false);
           setLandedSegment(segment);
@@ -94,9 +102,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     }
 
     const isLoss = result.payout < result.amount;
-    const oarStake = fromOARUnits(result.amount).toFixed(4);
-    const oarPayout = fromOARUnits(result.payout).toFixed(4);
-    const displayAmount = isLoss ? `${oarStake} OAR` : `${oarPayout} OAR`;
+    const rawStake = fromOARUnits(result.amount);
+    const oarStake = formatDisplayAmount(rawStake);
+    // Net payout is double (2x) the stake, minus 3% platform fee
+    const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawStake * 2 * 0.97);
+    const displayAmount = `${isLoss ? oarStake : oarPayout} OAR`;
 
     setIsWaitingForChain(false);
     setIsSpinning(false);
@@ -121,7 +131,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     // Tx confirmed — now waiting for the VRF result event from the contract.
     setIsWaitingForChain(true);
     // Track staked amount so the result card can show "Staked: X OAR".
-    setStakeAmount(`${amount.toFixed(4)} OAR`);
+    setStakeAmount(`${formatDisplayAmount(amount)} OAR`);
   };
 
   const targetIndex = lastSpinResult

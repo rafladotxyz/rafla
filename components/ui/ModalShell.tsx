@@ -36,12 +36,12 @@ export function ModalShell({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative w-full max-w-[520px] overflow-hidden rounded-[32px] border border-white/10 bg-[#0B0B0F]/95 shadow-[0_24px_120px_rgba(0,0,0,0.55)] ${className}`}
+        className={`relative w-full max-w-[520px] max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[#0B0B0F]/95 shadow-[0_24px_120px_rgba(0,0,0,0.55)] ${className}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_30%)]" />
-        <div className="relative z-10">
-          <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
+        <div className="relative z-10 flex flex-col min-h-0 flex-1">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
             <div className="space-y-1">
               <p className="text-[11px] uppercase tracking-[0.28em] text-[#8A8A8A]">
                 Rafla
@@ -65,7 +65,7 @@ export function ModalShell({
             </button>
           </div>
 
-          <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">{children}</div>
         </div>
       </div>
     </div>

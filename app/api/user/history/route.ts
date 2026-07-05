@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
       id: p.id,
       roomId: p.roomId,
       gameType: p.room.gameType,
+      token: p.room.token,
       joinedAt: p.joinedAt,
       stakeAmount: p.room.stakeAmount,
       isWin: p.room.result?.winnerId === auth.userId,
