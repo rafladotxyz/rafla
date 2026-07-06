@@ -118,7 +118,7 @@ export function SignInButton() {
         onClick={() => setMenuOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className="group inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="group inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-2 pl-2 pr-2 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
         {user?.avatar ? (
           <Image
@@ -134,9 +134,7 @@ export function SignInButton() {
           </div>
         )}
 
-        <span className="hidden max-w-[100px] truncate text-[13px] font-medium text-[#F3F3F3] sm:inline">
-          {displayName}
-        </span>
+       
 
         <ChevronDown
           className={`h-4 w-4 text-[#8A8A8A] transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
@@ -168,11 +166,8 @@ export function SignInButton() {
               </div>
             )}
             <div className="flex min-w-0 flex-1 flex-col items-start">
-              <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
-                {displayName}
-              </span>
-              <span className="flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
-                <User className="h-3 w-3" />
+         
+              <span className="flex items-center gap-1 text-[11px tracking-[0.2em] text-[#8A8A8A]">
                 Profile
               </span>
             </div>
@@ -200,9 +195,7 @@ export function SignInButton() {
               <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
                 {networkName}
               </span>
-              <span className="text-[11px] uppercase tracking-[0.2em] text-[#8A8A8A]">
-                Switch network
-              </span>
+             
             </div>
             <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
           </button>
@@ -215,9 +208,7 @@ export function SignInButton() {
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
-              <LogOut className="h-4 w-4" />
-            </span>
+           
             <span className="text-[13px] font-medium">Sign out</span>
           </button>
         </div>
