@@ -15,7 +15,7 @@ import { GameStakeModal } from "@/components/core/games/GameStakeModal";
 import type { StakeToken } from "@/components/core/games/GameStakeModal";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, Lock, ArrowLeft } from "lucide-react";
+import { Sparkles, Lock, ArrowLeft, LucideClockFading } from "lucide-react";
 
 const EMPTY_ID = "3455654";
 type TabType = "public" | "private";
@@ -74,22 +74,19 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
 
           {/* Icon */}
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[22px] border border-violet-500/20 bg-violet-500/10 text-violet-400">
-            <Lock className="h-7 w-7" />
+            <LucideClockFading className="h-7 w-7" />
           </div>
 
-          {/* Badge */}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 px-3 py-1 text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-4">
-            <Sparkles className="h-3 w-3" /> Upgrading Contracts
-          </span>
+          
 
           {/* Title */}
           <h2 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-            Draw Game is Upgrading
+            Draw Game is Coming Soon
           </h2>
 
           {/* Description */}
           <p className="mt-3 text-sm leading-relaxed text-[#9A9A9A]">
-            We are upgrading the on-chain Raffle engine to support fully isolated private rooms, dynamic stakeholder settings, and enhanced VRF multi-token pools.
+            We are preparing the next evolution of the Draw game with an improved on chain engine
           </p>
 
           {/* Features Preview */}
@@ -97,24 +94,28 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
             <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">What's coming next:</h3>
             <ul className="space-y-2.5 text-xs text-[#CBCBCB]">
               <li className="flex items-center gap-2">
-                <span className="text-violet-400">✦</span> Isolated on-chain private room pools
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-violet-400">✦</span> Parameterized multi-token ticket deposits
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-violet-400">✦</span> Circular countdown & live win probabilities
-              </li>
+               <span className="text-violet-400">✦</span> Fully isolated on-chain game rooms
+</li>
+<li className="flex items-center gap-2">
+  <span className="text-violet-400">✦</span> Dynamic stakeholder settings
+</li>
+<li className="flex items-center gap-2">
+  <span className="text-violet-400">✦</span> Multi-token entry tickets
+</li>
+<li className="flex items-center gap-2">
+  <span className="text-violet-400">✦</span> Enhanced VRF randomness
+</li>
+<li className="flex items-center gap-2">
+  <span className="text-violet-400">✦</span> Circular countdown & live win probabilities
+</li>
             </ul>
           </div>
-
-          {/* Return button */}
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
             className="inline-flex w-full h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold text-black transition-all hover:bg-[#F5F5F5] active:scale-98"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to Home
           </button>
         </div>
       </div>
