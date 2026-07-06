@@ -74,9 +74,9 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     const timer = window.setTimeout(() => {
       const landedSide: CoinSide = lastFlipResult.result === 0 ? "heads" : "tails";
       const result: FlipResult = lastFlipResult.won ? "win" : "loss";
-      const oarStake = fromOARUnits(lastFlipResult.amount).toFixed(4);
+      const oarStake = fromOARUnits(lastFlipResult.amount);
       const oarPayout = lastFlipResult.won
-        ? (fromOARUnits(lastFlipResult.amount) * 2 * 0.97).toFixed(4)
+        ? (fromOARUnits(lastFlipResult.amount) * 2 * 0.97)
         : oarStake;
       setFlipResult({
         result,
