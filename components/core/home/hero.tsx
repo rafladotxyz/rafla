@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const Hero = () => {
   return (
-    <section className="relative w-full overflow-hidden px-4 pt-28 md:pt-36">
+    <section className="relative w-full overflow-hidden px-4 pt-36 md:pt-40">
       <div className="pointer-events-none absolute left-1/2 top-6 h-40 w-40 -translate-x-1/2 rounded-full bg-white/5 blur-3xl animate-float" />
       <div className="pointer-events-none absolute right-8 top-24 h-24 w-24 rounded-full bg-[#D946EF]/20 blur-3xl animate-float [animation-delay:1.4s]" />
 
