@@ -82,7 +82,7 @@ export function SignInButton() {
       <button
         type="button"
         onClick={() => open()}
-        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
+        className="inline-flex h-9lg:h-11  items-center justify-center rounded-full border border-white/10 bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
       >
         Connect wallet
       </button>

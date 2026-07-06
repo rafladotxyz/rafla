@@ -179,7 +179,7 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   };
 
   return (
-    <div className="px-4 py-0">
+    <div className="px-1 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
 
       {error && (

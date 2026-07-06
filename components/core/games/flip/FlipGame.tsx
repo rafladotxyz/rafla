@@ -34,7 +34,7 @@ export const FlipGame = ({
   isLoading?: boolean;
   isWaitingForChain?: boolean;
 }) => (
-  <div className="flex w-full max-w-2xl mx-auto items-center justify-center px-4 py-8 sm:py-12">
+  <div className="flex w-full max-w-2xl mx-auto items-center justify-center px-1 lg:px-4 py-8 sm:py-12">
     {viewState === "select" && (
       <FlipCard
         selectedSide={selectedSide}

@@ -108,7 +108,7 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
   };
 
   return (
-    <div className="px-4 py-0">
+    <div className="px-1 lg:px-4 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
 
       {error && (

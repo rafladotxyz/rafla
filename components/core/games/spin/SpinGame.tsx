@@ -24,7 +24,7 @@ export const SpinGame = ({
   isWaitingForChain?: boolean;
   isSpinning?: boolean;
 }) => (
-  <div className="w-full px-4 py-8 sm:py-12">
+  <div className="w-full px-0 py-8 lg:px-4sm:py-12">
     <SpinWheel
       onResult={handleSpinResult}
       externalSpinTrigger={externalSpinTrigger}
