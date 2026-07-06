@@ -161,8 +161,8 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
     stopMusic();
     setShowWinLoss(false);
     setLandedSegment(undefined);
-    setLandedAmount("0.0000 OAR");
-    setStakeAmount("0.0000 OAR");
+    setLandedAmount("0 OAR");
+    setStakeAmount("0 OAR");
     setIsWaitingForChain(false);
     setIsSpinning(false);
   };
