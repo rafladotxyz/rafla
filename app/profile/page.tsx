@@ -391,12 +391,12 @@ export default function ProfilePage() {
                       Wallet address
                     </p>
                     <p className="truncate font-mono text-[13px] text-[#E8E8E8]">
-                      {user.wallet}
+                      {shortWallet}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
-                      Twitter / X
+                       X
                     </p>
                     <p className="text-[13px] text-[#E8E8E8]">
                       {user.twitter || (
@@ -410,7 +410,7 @@ export default function ProfilePage() {
                     </p>
                     <p className="text-[13px] text-[#E8E8E8]">
                       {user.telegram || (
-                        <span className="text-[#666]">Not linked</span>
+                        <span className="text-[#E8E8E8]">Not linked</span>
                       )}
                     </p>
                   </div>
@@ -419,7 +419,7 @@ export default function ProfilePage() {
                       Games played
                     </p>
                     <p className="text-[13px] text-[#E8E8E8]">
-                      {history.length} rounds · {winRate}% win rate
+                      {history.length} games · {winRate}% win rate
                     </p>
                   </div>
                 </div>
