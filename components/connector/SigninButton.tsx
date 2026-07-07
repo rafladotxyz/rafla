@@ -69,7 +69,7 @@ export function SignInButton() {
 
   const handleSwitchNetwork = () => {
     setMenuOpen(false);
-    open({ view: "Networks" });
+    open({ view: "Account" });
   };
 
   const handleSignOut = () => {
@@ -96,7 +96,7 @@ export function SignInButton() {
           type="button"
           onClick={signIn}
           disabled={isLoading}
-          className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors ${isLoading ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]" : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"}`}
+          className={`inline-flex h-9 lg:h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors ${isLoading ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]" : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"}`}
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </button>
