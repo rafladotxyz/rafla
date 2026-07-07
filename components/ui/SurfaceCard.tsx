@@ -7,7 +7,7 @@ type SurfaceCardProps = {
 };
 
 const baseClasses =
-  "relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/25 backdrop-blur-xl";
+  "relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.02] shadow-2xl shadow-black/25 backdrop-blur-xl";
 
 export function SurfaceCard({
   children,
