@@ -69,7 +69,7 @@ export function SignInButton() {
 
   const handleSwitchNetwork = () => {
     setMenuOpen(false);
-    open({ view: "Networks" });
+    open({ view: "Account" });
   };
 
   const handleSignOut = () => {
@@ -96,7 +96,7 @@ export function SignInButton() {
           type="button"
           onClick={signIn}
           disabled={isLoading}
-          className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors ${isLoading ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]" : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"}`}
+          className={`inline-flex h-9 lg:h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors ${isLoading ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]" : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"}`}
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </button>
@@ -118,7 +118,7 @@ export function SignInButton() {
         onClick={() => setMenuOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className="group inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-2 pl-2 pr-2 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="group inline-flex h-9 lg:h-11 items-center gap-1 rounded-full border border-white/10 bg-white/5 py-2 px-2 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
         {user?.avatar ? (
           <Image
@@ -129,7 +129,7 @@ export function SignInButton() {
             height={32}
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-[#F3F3F3]">
+          <div className="flex h-6 w-6 lg:h-8 lg:w-8 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-[#F3F3F3]">
             {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
           </div>
         )}
