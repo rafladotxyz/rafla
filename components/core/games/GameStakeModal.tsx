@@ -81,6 +81,8 @@ type GameStakeModalProps = {
   isSubmitting?: boolean;
   defaultAmount?: number;
   defaultSide?: CoinSide;
+  feeNotice?: string;
+  payoutNotice?: string;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -97,6 +99,8 @@ export function GameStakeModal({
   isSubmitting = false,
   defaultAmount,
   defaultSide,
+  feeNotice,
+  payoutNotice,
 }: GameStakeModalProps) {
   const [selectedSide, setSelectedSide] = useState<CoinSide>(defaultSide ?? "heads");
   const [selectedToken, setSelectedToken] = useState<StakeToken>(availableTokens[0]);
@@ -361,6 +365,20 @@ export function GameStakeModal({
                 ? "Ready to submit the transaction."
                 : `Enter at least ${formatAmount(meta.minAmount)} ${meta.symbol} to continue.`}
             </p>
+            {feeNotice || payoutNotice ? (
+              <div className="mt-3 space-y-1.5 rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
+                {feeNotice ? (
+                  <p className="text-xs leading-relaxed text-[#BDBDBD]">
+                    {feeNotice}
+                  </p>
+                ) : null}
+                {payoutNotice ? (
+                  <p className="text-xs leading-relaxed text-[#8A8A8A]">
+                    {payoutNotice}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 sm:justify-self-end">

@@ -216,7 +216,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
+      <div className="flex min-h-[70vh] items-center justify-center bg-[#050505] px-4">
         <div className="h-10 w-10 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
       </div>
     );
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4 text-center">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 bg-[#050505] px-4 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/10 bg-white/5">
           <UserRound className="h-9 w-9 text-[#9A9A9A]" />
         </div>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
+    <div className="min-h-screen bg-[#050505] px-4 pb-12 pt-24 md:pt-28">
       <header className="fixed left-0 right-0 top-4 z-50 flex justify-center pt-6 md:top-6">
         <Navbar />
       </header>
@@ -621,7 +621,8 @@ export default function ProfilePage() {
             onClose={() => setEditing(false)}
             title="Edit profile"
             description="Update your username, bio, and social handles."
-            className="max-w-[640px]"
+            className="sm:max-w-[640px]"
+            mobileSheet
           >
             <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
               <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-4">
@@ -737,7 +738,8 @@ export default function ProfilePage() {
             onClose={() => setSelectedHistoryItem(null)}
             title="Game details"
             description="Overview of your round outcome and transaction status."
-            className="max-w-[480px]"
+            className="sm:max-w-[480px]"
+            mobileSheet
           >
             <div className="space-y-6">
               {/* Outcome Banner */}

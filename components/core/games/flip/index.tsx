@@ -155,6 +155,8 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
         description="Pick a side, set your OAR stake, and confirm to launch the flip. The result is settled on-chain instantly."
         showSideSelector
         availableTokens={["OAR"]}
+        feeNotice="Rafla takes a 3% fee from winning flip payouts."
+        payoutNotice="A winning flip pays 1.94x your stake after the fee. A loss pays 0."
         defaultSide={selectedSide ?? undefined}
         onClose={() => setShowStakeModal(false)}
         onConfirm={(amount, side) => {

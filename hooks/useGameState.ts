@@ -252,13 +252,14 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
       recordedTxs.current.add(lastSpinResult.transactionHash);
       const stakeOAR = Number(lastSpinResult.amount) / 1e18;
+      const payoutOAR = Number(lastSpinResult.payout) / 1e18;
       const won = lastSpinResult.payout > 0n;
       void recordGame({
         gameType: "spin",
         stakeAmount: stakeOAR,
         txHash: lastSpinResult.transactionHash,
         won,
-        prizeAmount: won ? stakeOAR * 2 * 0.97 : 0, // 3% fee
+        prizeAmount: payoutOAR,
       });
     }
   }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
