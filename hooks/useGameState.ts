@@ -213,10 +213,11 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
     const recordGame = async (payload: {
       gameType: "flip" | "spin";
-      stakeAmount: number;
+      stakeAmount: string | number;
       txHash: string;
       won: boolean;
-      prizeAmount: number;
+      prizeAmount: string | number;
+      token: StakeToken;
     }) => {
       try {
         const res = await fetch("/api/games/record", {
@@ -240,26 +241,27 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
 
     if (lastFlipResult && !recordedTxs.current.has(lastFlipResult.transactionHash)) {
       recordedTxs.current.add(lastFlipResult.transactionHash);
-      // amount / payout are raw OAR bigints — convert to float for the API
-      const stakeOAR = Number(lastFlipResult.amount) / 1e18;
+      const rawPrize = lastFlipResult.won
+        ? (lastFlipResult.amount * 2n * 97n) / 100n
+        : 0n;
       void recordGame({
         gameType: "flip",
-        stakeAmount: stakeOAR,
+        stakeAmount: lastFlipResult.amount.toString(),
         txHash: lastFlipResult.transactionHash,
         won: lastFlipResult.won,
-        prizeAmount: lastFlipResult.won ? stakeOAR * 2 * 0.97 : 0, // 3% fee
+        prizeAmount: rawPrize.toString(),
+        token: "OAR",
       });
     } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
       recordedTxs.current.add(lastSpinResult.transactionHash);
-      const stakeOAR = Number(lastSpinResult.amount) / 1e18;
-      const payoutOAR = Number(lastSpinResult.payout) / 1e18;
       const won = lastSpinResult.payout > 0n;
       void recordGame({
         gameType: "spin",
-        stakeAmount: stakeOAR,
+        stakeAmount: lastSpinResult.amount.toString(),
         txHash: lastSpinResult.transactionHash,
         won,
-        prizeAmount: payoutOAR,
+        prizeAmount: lastSpinResult.payout.toString(),
+        token: "OAR",
       });
     }
   }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
