@@ -74,6 +74,36 @@ function formatDisplayAmount(val: number | string): string {
   return parseFloat(num.toFixed(6)).toString();
 }
 
+function getHistoryToken(item: Pick<GameHistoryItem, "gameType" | "token">) {
+  if (item.token) return item.token;
+  return item.gameType === "flip" || item.gameType === "spin" ? "OAR" : "USDC";
+}
+
+function getTokenDecimals(token: string) {
+  return token === "USDC" ? 6 : 18;
+}
+
+function toDisplayTokenAmount(
+  value: string | number | null | undefined,
+  token: string,
+  legacyDisplayUnits = false,
+) {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return 0;
+  if (legacyDisplayUnits) return amount;
+  return amount / 10 ** getTokenDecimals(token);
+}
+
+function formatTokenAmount(amount: number, token: string, sign = "") {
+  const formatted = formatDisplayAmount(amount);
+  if (token === "USDC") return `${sign}$${formatted}`;
+  return `${sign}${formatted} ${token}`;
+}
+
+function isLegacyInstantHistoryItem(item: Pick<GameHistoryItem, "gameType" | "token">) {
+  return !item.token && (item.gameType === "flip" || item.gameType === "spin");
+}
+
 export default function ProfilePage() {
   const {
     user,
@@ -183,16 +213,25 @@ export default function ProfilePage() {
   const wins = history.filter((h) => h.isWin).length;
 
   const totalWonUSDC = history
-    .filter((h) => h.isWin && (!h.token || h.token === "USDC"))
-    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1_000_000, 0);
+    .filter((h) => h.isWin && getHistoryToken(h) === "USDC")
+    .reduce(
+      (acc, h) => acc + toDisplayTokenAmount(h.prizeAmount, "USDC", isLegacyInstantHistoryItem(h)),
+      0,
+    );
 
   const totalWonOAR = history
-    .filter((h) => h.isWin && h.token === "OAR")
-    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1e18, 0);
+    .filter((h) => h.isWin && getHistoryToken(h) === "OAR")
+    .reduce(
+      (acc, h) => acc + toDisplayTokenAmount(h.prizeAmount, "OAR", isLegacyInstantHistoryItem(h)),
+      0,
+    );
 
   const totalWonETH = history
-    .filter((h) => h.isWin && h.token === "ETH")
-    .reduce((acc, h) => acc + Number(h.prizeAmount) / 1e18, 0);
+    .filter((h) => h.isWin && getHistoryToken(h) === "ETH")
+    .reduce(
+      (acc, h) => acc + toDisplayTokenAmount(h.prizeAmount, "ETH", isLegacyInstantHistoryItem(h)),
+      0,
+    );
 
   const formattedTotalWon = () => {
     const parts = [];
@@ -216,7 +255,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
+      <div className="flex min-h-[70vh] items-center justify-center bg-[#050505] px-4">
         <div className="h-10 w-10 rounded-full border-2 border-[#CBCBCB] border-t-transparent animate-spin" />
       </div>
     );
@@ -224,7 +263,7 @@ export default function ProfilePage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4 text-center">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 bg-[#050505] px-4 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/10 bg-white/5">
           <UserRound className="h-9 w-9 text-[#9A9A9A]" />
         </div>
@@ -255,7 +294,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
+    <div className="min-h-screen bg-[#050505] px-4 pb-12 pt-24 md:pt-28">
       <header className="fixed left-0 right-0 top-4 z-50 flex justify-center pt-6 md:top-6">
         <Navbar />
       </header>
@@ -560,14 +599,20 @@ export default function ProfilePage() {
             ) : (
               <div className="grid gap-3">
                 {history.slice(0, 10).map((item) => {
-                  const formattedPrize = () => {
-                    if (!item.isWin) return "—";
-                    const token = item.token || "USDC";
-                    const decimals = token === "USDC" ? 6 : 18;
-                    const amount = Number(item.prizeAmount) / (10 ** decimals);
-                    const formatted = formatDisplayAmount(amount);
-                    return token === "USDC" ? `+$${formatted}` : `+${formatted} ${token}`;
-                  };
+                  const token = getHistoryToken(item);
+                  const stakeAmount = toDisplayTokenAmount(
+                    item.stakeAmount,
+                    token,
+                    isLegacyInstantHistoryItem(item),
+                  );
+                  const prizeAmount = toDisplayTokenAmount(
+                    item.prizeAmount,
+                    token,
+                    isLegacyInstantHistoryItem(item),
+                  );
+                  const formattedResultAmount = item.isWin
+                    ? formatTokenAmount(prizeAmount, token, "+")
+                    : formatTokenAmount(stakeAmount, token, "-");
 
                   return (
                     <div
@@ -602,7 +647,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-semibold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
-                          {formattedPrize()}
+                          {formattedResultAmount}
                         </p>
                         <p className={`mt-1 text-[10px] uppercase tracking-[0.24em] ${item.isWin ? "text-emerald-400/70" : "text-red-400/70"}`}>
                           {item.isWin ? "Won" : "Loss"}
@@ -621,7 +666,8 @@ export default function ProfilePage() {
             onClose={() => setEditing(false)}
             title="Edit profile"
             description="Update your username, bio, and social handles."
-            className="max-w-[640px]"
+            className="sm:max-w-[640px]"
+            mobileSheet
           >
             <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
               <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-4">
@@ -737,7 +783,8 @@ export default function ProfilePage() {
             onClose={() => setSelectedHistoryItem(null)}
             title="Game details"
             description="Overview of your round outcome and transaction status."
-            className="max-w-[480px]"
+            className="sm:max-w-[480px]"
+            mobileSheet
           >
             <div className="space-y-6">
               {/* Outcome Banner */}
@@ -760,17 +807,30 @@ export default function ProfilePage() {
                     <>
                       You won{" "}
                       <span className="font-semibold text-emerald-400">
-                        {(() => {
-                          const token = selectedHistoryItem.token || "USDC";
-                          const decimals = token === "USDC" ? 6 : 18;
-                          const amount = Number(selectedHistoryItem.prizeAmount) / (10 ** decimals);
-                          const formatted = formatDisplayAmount(amount);
-                          return token === "USDC" ? `$${formatted}` : `${formatted} ${token}`;
-                        })()}
+                        {formatTokenAmount(
+                          toDisplayTokenAmount(
+                            selectedHistoryItem.prizeAmount,
+                            getHistoryToken(selectedHistoryItem),
+                            isLegacyInstantHistoryItem(selectedHistoryItem),
+                          ),
+                          getHistoryToken(selectedHistoryItem),
+                        )}
                       </span>
                     </>
                   ) : (
-                    "Better luck next time!"
+                    <>
+                      You lost{" "}
+                      <span className="font-semibold text-red-300">
+                        {formatTokenAmount(
+                          toDisplayTokenAmount(
+                            selectedHistoryItem.stakeAmount,
+                            getHistoryToken(selectedHistoryItem),
+                            isLegacyInstantHistoryItem(selectedHistoryItem),
+                          ),
+                          getHistoryToken(selectedHistoryItem),
+                        )}
+                      </span>
+                    </>
                   )}
                 </p>
               </div>
@@ -787,13 +847,30 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between py-3.5">
                   <span className="text-xs text-[#8A8A8A]">Stake amount</span>
                   <span className="text-sm font-medium text-[#F3F3F3]">
-                    {(() => {
-                      const token = selectedHistoryItem.token || "USDC";
-                      const decimals = token === "USDC" ? 6 : 18;
-                      const amount = Number(selectedHistoryItem.stakeAmount || 0) / (10 ** decimals);
-                      const formatted = formatDisplayAmount(amount);
-                      return token === "USDC" ? `$${formatted}` : `${formatted} ${token}`;
-                    })()}
+                    {formatTokenAmount(
+                      toDisplayTokenAmount(
+                        selectedHistoryItem.stakeAmount,
+                        getHistoryToken(selectedHistoryItem),
+                        isLegacyInstantHistoryItem(selectedHistoryItem),
+                      ),
+                      getHistoryToken(selectedHistoryItem),
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Won amount</span>
+                  <span className={`text-sm font-medium ${selectedHistoryItem.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
+                    {selectedHistoryItem.isWin
+                      ? formatTokenAmount(
+                          toDisplayTokenAmount(
+                            selectedHistoryItem.prizeAmount,
+                            getHistoryToken(selectedHistoryItem),
+                            isLegacyInstantHistoryItem(selectedHistoryItem),
+                          ),
+                          getHistoryToken(selectedHistoryItem),
+                        )
+                      : formatTokenAmount(0, getHistoryToken(selectedHistoryItem))}
                   </span>
                 </div>
 

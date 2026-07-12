@@ -80,11 +80,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         const polledResult = lastSpinResultRef.current;
         if (polledResult || attempts >= MAX_ATTEMPTS) {
           clearInterval(poll);
-          const isLoss = polledResult ? polledResult.payout < polledResult.amount : true;
+          const isLoss = polledResult ? polledResult.payout === 0n : true;
           const rawStake = polledResult ? fromOARUnits(polledResult.amount) : 0;
+          const rawPayout = polledResult ? fromOARUnits(polledResult.payout) : 0;
           const oarStake = formatDisplayAmount(rawStake);
-          // Net payout is double (2x) the stake, minus 3% platform fee
-          const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawStake * 2 * 0.97);
+          const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawPayout);
           const displayAmount = `${isLoss ? oarStake : oarPayout} OAR`;
           setIsWaitingForChain(false);
           setIsSpinning(false);
@@ -101,11 +101,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       return;
     }
 
-    const isLoss = result.payout < result.amount;
+    const isLoss = result.payout === 0n;
     const rawStake = fromOARUnits(result.amount);
+    const rawPayout = fromOARUnits(result.payout);
     const oarStake = formatDisplayAmount(rawStake);
-    // Net payout is double (2x) the stake, minus 3% platform fee
-    const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawStake * 2 * 0.97);
+    const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawPayout);
     const displayAmount = `${isLoss ? oarStake : oarPayout} OAR`;
 
     setIsWaitingForChain(false);
@@ -135,11 +135,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
   };
 
   const targetIndex = lastSpinResult
-    ? lastSpinResult.payout > lastSpinResult.amount
-      ? 2 // win
-      : lastSpinResult.payout === lastSpinResult.amount
-        ? 1 // breakeven
-        : 0 // loss
+    ? lastSpinResult.payout === 0n
+      ? 0 // loss
+      : lastSpinResult.payout <= (lastSpinResult.amount * 150n) / 100n
+        ? 1 // win
+        : 2 // big win
     : null;
 
   useEffect(() => {
@@ -234,6 +234,8 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
         actionLabel="Spin now"
         description="Set your OAR stake and confirm. The wheel launches once your transaction is confirmed on-chain."
         availableTokens={["OAR"]}
+        feeNotice="Spin payouts are set by the live on-chain prize tiers."
+        payoutNotice="Current tiers do not include breakeven. Results are loss, 1.5x, 3x, or 10x."
         onClose={() => setShowStakeModal(false)}
         onConfirm={(amount) => {
           playSound("click");

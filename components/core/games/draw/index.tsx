@@ -189,6 +189,8 @@ export const DrawView = ({ roomId }: { roomId?: string }) => {
         actionLabel="Enter draw"
         description="Choose the token you want to stake and set your entry amount. All three are accepted — your win-weight is proportional to your deposit value."
         availableTokens={["USDC", "OAR", "ETH"]}
+        feeNotice="Rafla takes a 5% fee from the draw prize pool before the winner is paid."
+        payoutNotice="Your entry increases your win weight. The final prize depends on the total pool."
         onClose={() => setShowStakeModal(false)}
         onConfirm={handleConfirmStake}
         isSubmitting={loading}

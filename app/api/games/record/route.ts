@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { gameType, stakeAmount, txHash, won, prizeAmount, contractRound } = body;
+    const { gameType, stakeAmount, txHash, won, prizeAmount, contractRound, token = "OAR" } = body;
 
     if (!gameType || !stakeAmount || !txHash) {
       return NextResponse.json(
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       data: {
         gameType,
         stakeAmount: String(stakeAmount),
+        token: String(token),
         contractRound: contractRound ? BigInt(contractRound) : 0,
         status: "completed",
         creatorId: auth.userId,

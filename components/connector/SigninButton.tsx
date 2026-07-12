@@ -156,18 +156,18 @@ export function SignInButton() {
               <Image
                 src={user.avatar}
                 alt={user?.username ?? "Profile avatar"}
-                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                className="h-7 w-7 shrink-0 rounded-full object-cover"
                 width={36}
                 height={36}
               />
             ) : (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[13px] font-semibold text-[#F3F3F3]">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[13px] font-semibold text-[#F3F3F3]">
                 {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
               </div>
             )}
             <div className="flex min-w-0 flex-1 flex-col items-start">
          
-              <span className="flex items-center gap-1 text-[11px tracking-[0.2em] text-[#8A8A8A]">
+              <span className="flex items-center gap-1 text-[9px] tracking-[0.2em] text-[#8A8A8A]">
                 Profile
               </span>
             </div>
@@ -182,7 +182,7 @@ export function SignInButton() {
             onClick={handleSwitchNetwork}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 p-1.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/0 bg-white/5 p-1.5">
               <Image
                 height={18}
                 width={18}

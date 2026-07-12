@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Yay from "@/assets/yay.svg";
-import Breakeven from "@/assets/eq.svg";
 import Nay from "@/assets/nay.svg";
 import Image from "next/image";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
@@ -17,13 +16,13 @@ type Segment = {
 const SEGMENTS: Segment[] = [
   { label: "You Lose!", asset: Nay, color: "#161616", strokeColor: "#2a2a2a" },
   {
-    label: "Breakeven!",
-    asset: Breakeven,
+    label: "You Win!",
+    asset: Yay,
     color: "#1e1e1e",
     strokeColor: "#2a2a2a",
   },
   {
-    label: "Yaay you won!",
+    label: "Big Win!",
     asset: Yay,
     color: "#121212",
     strokeColor: "#2a2a2a",
