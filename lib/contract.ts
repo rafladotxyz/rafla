@@ -174,4 +174,42 @@ export const RAFFLE_PRIVATE_ROOM_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [{ internalType: "bytes32", name: "roomId", type: "bytes32" }],
+    name: "getPrivateRoom",
+    outputs: [
+      { internalType: "bytes32", name: "id", type: "bytes32" },
+      { internalType: "enum Raffle.TokenType", name: "tokenType", type: "uint8" },
+      { internalType: "uint256", name: "stakeAmount", type: "uint256" },
+      { internalType: "uint256", name: "minPlayers", type: "uint256" },
+      { internalType: "uint256", name: "endTime", type: "uint256" },
+      { internalType: "uint256", name: "prizePool", type: "uint256" },
+      { internalType: "address", name: "winner", type: "address" },
+      { internalType: "bool", name: "vrfRequested", type: "bool" },
+      { internalType: "uint256", name: "vrfRequestId", type: "uint256" },
+      { internalType: "bool", name: "settled", type: "bool" },
+      { internalType: "bool", name: "cancelled", type: "bool" },
+      { internalType: "uint256", name: "playerCount", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "bytes32", name: "roomId", type: "bytes32" }],
+    name: "getPrivateRoomPlayers",
+    outputs: [
+      {
+        components: [
+          { internalType: "address", name: "addr", type: "address" },
+          { internalType: "uint256", name: "amount", type: "uint256" },
+        ],
+        internalType: "struct Raffle.PrivatePlayer[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
+

@@ -33,7 +33,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
-      <header className="fixed top-4 md:top-6 left-0 right-0 z-50 flex justify-center pt-6">
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <Navbar />
       </header>
 

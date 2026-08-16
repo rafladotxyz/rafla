@@ -231,7 +231,7 @@ contract Raffle is VRFConsumerBaseV2Plus, ReentrancyGuard, Pausable {
         usdc.safeTransferFrom(msg.sender, address(this), amount);
         roundUsdcPool[currentRoundId]                       += amount;
         playerUsdcDeposits[currentRoundId][msg.sender]      += amount;
-        _processDeposit(currentRoundId, msg.sender, amount);
+        _processDeposit(currentRoundId, msg.sender, amount * 1e12);
 
         emit Deposited(currentRoundId, msg.sender, amount, TokenType.USDC);
     }
@@ -388,7 +388,7 @@ contract Raffle is VRFConsumerBaseV2Plus, ReentrancyGuard, Pausable {
 
         if (room.endTime == 0) revert RoundNotActive();
         if (room.settled || room.cancelled) revert RoundAlreadyEnded();
-        if (block.timestamp < room.endTime) revert RoundNotEnded();
+        if (block.timestamp < room.endTime && room.playerCount < room.minPlayers) revert RoundNotEnded();
         if (room.vrfRequested) revert VRFAlreadyRequested();
 
         if (room.playerCount < room.minPlayers) {
@@ -566,6 +566,37 @@ contract Raffle is VRFConsumerBaseV2Plus, ReentrancyGuard, Pausable {
         PrivateRoom storage room = privateRooms[roomId];
         if (room.prizePool == 0) return 0;
         return (playerPrivateDeposits[roomId][player] * 10000) / room.prizePool;
+    }
+
+    function getPrivateRoom(bytes32 roomId) external view returns (
+        bytes32 id,
+        TokenType tokenType,
+        uint256 stakeAmount,
+        uint256 minPlayers,
+        uint256 endTime,
+        uint256 prizePool,
+        address winner,
+        bool vrfRequested,
+        uint256 vrfRequestId,
+        bool settled,
+        bool cancelled,
+        uint256 playerCount
+    ) {
+        PrivateRoom storage room = privateRooms[roomId];
+        return (
+            room.roomId,
+            room.tokenType,
+            room.stakeAmount,
+            room.minPlayers,
+            room.endTime,
+            room.prizePool,
+            room.winner,
+            room.vrfRequested,
+            room.vrfRequestId,
+            room.settled,
+            room.cancelled,
+            room.playerCount
+        );
     }
 
     // ============ Internal Functions (Public Game) ============

@@ -295,7 +295,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#050505] px-4 pb-12 pt-24 md:pt-28">
-      <header className="fixed left-0 right-0 top-4 z-50 flex justify-center pt-6 md:top-6">
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <Navbar />
       </header>
 
