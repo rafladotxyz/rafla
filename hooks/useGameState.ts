@@ -206,6 +206,51 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
     settle();
   }, [lastWinner, roomId, authHeaders, isEmptyState]);
 
+  // ── Settle Private Room on PrivateWinnerSelected contract event ───────────
+
+  useEffect(() => {
+    if (!lastPrivateWinner || isEmptyState) return;
+    const currentRoomBytes32 = roomIdToBytes32(roomId);
+    if (lastPrivateWinner.roomId.toLowerCase() !== currentRoomBytes32.toLowerCase()) return;
+
+    async function settlePrivate() {
+      try {
+        const prize = lastPrivateWinner!.usdcPrize > 0n
+          ? lastPrivateWinner!.usdcPrize.toString()
+          : lastPrivateWinner!.oarPrize > 0n
+          ? lastPrivateWinner!.oarPrize.toString()
+          : lastPrivateWinner!.ethPrize.toString();
+
+        const res = await fetch(`/api/rooms/${roomId}/settle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            winnerWallet: lastPrivateWinner!.winner,
+            prizeAmount: prize,
+            vrfRequestId: lastPrivateWinner!.roomId,
+            txHash: `private-vrf-${lastPrivateWinner!.roomId}`,
+          }),
+        });
+
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(
+            json?.error || "Failed to save the settled private room in the database",
+          );
+        }
+      } catch (err) {
+        console.error("[useGameState] private settle error:", err);
+        setPersistenceError("Private room settlement synced on-chain, but saving it failed.");
+      }
+    }
+
+    settlePrivate();
+  }, [lastPrivateWinner, roomId, authHeaders, isEmptyState]);
+
+
   // ── Record Instant Games (Flip/Spin) ──────────────────────────────────────
 
   useEffect(() => {
@@ -252,7 +297,9 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
         prizeAmount: rawPrize.toString(),
         token: "OAR",
       });
-    } else if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
+    }
+
+    if (lastSpinResult && !recordedTxs.current.has(lastSpinResult.transactionHash)) {
       recordedTxs.current.add(lastSpinResult.transactionHash);
       const won = lastSpinResult.payout > 0n;
       void recordGame({
@@ -265,6 +312,7 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
       });
     }
   }, [lastFlipResult, lastSpinResult, isEmptyState, authHeaders]);
+
 
   // ── Derived game state ────────────────────────────────────────────────────
 

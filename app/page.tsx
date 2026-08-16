@@ -5,7 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-start overflow-x-hidden font-sans pb-10 md:pb-16">
-      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6">
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <Navbar />
       </header>
       <Hero />

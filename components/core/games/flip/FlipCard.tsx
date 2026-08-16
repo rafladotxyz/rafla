@@ -66,7 +66,7 @@ export const FlipCard = ({
                     {item.label}
                   </p>
                   <p className="mt-1 text-base font-medium text-[#F3F3F3]">
-                    2x payout if you call it right.
+                    1.94x payout if you call it right.
                   </p>
                 </div>
               </button>
