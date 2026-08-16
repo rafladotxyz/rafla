@@ -15,7 +15,6 @@ import {
   LogOut,
   Send,
   Trophy,
-  Twitter,
   UserRound,
   X,
   ExternalLink,
@@ -287,10 +286,16 @@ export default function ProfilePage() {
   }
 
   const statTiles = [
-    { label: "Games", value: history.length, icon: Gamepad2 },
-    { label: "Wins", value: wins, icon: Trophy },
-    { label: "Win rate", value: `${winRate}%`, icon: History },
-    { label: "Total won", value: formattedTotalWon(), icon: DollarSign },
+    { label: "Games played", value: history.length, icon: Gamepad2, color: "text-[#8B9DE8]" },
+    { label: "Rounds won", value: wins, icon: Trophy, color: "text-[#F5A623]" },
+    { label: "Win rate", value: `${winRate}%`, icon: History, color: "text-emerald-400" },
+    { label: "Total winnings", value: formattedTotalWon(), icon: DollarSign, color: "text-purple-400" },
+  ];
+
+  const balanceTiles = [
+    { label: "USDC Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.USDC.formatted), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
+    { label: "OAR Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.OAR.formatted), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
+    { label: "ETH Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.ETH.formatted), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
   ];
 
   return (
@@ -300,211 +305,166 @@ export default function ProfilePage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
-        <SurfaceCard as="section" className="overflow-hidden">
-          {/* Cover */}
-          <div className="relative h-24 w-full overflow-hidden sm:h-32">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#171226] via-[#100e1c] to-[#0a0a0f]" />
-            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-emerald-500/20 blur-[70px]" />
-            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-violet-500/25 blur-[80px]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.08)_1px,transparent_0)] bg-[length:18px_18px]" />
-            <div className="absolute left-5 top-4 inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-[#C9C9C9] backdrop-blur-sm">
-              Profile
+        {/* Hero Profile Card */}
+        <SurfaceCard as="section" className="overflow-hidden p-0">
+          {/* Cover Header */}
+          <div className="relative h-28 w-full overflow-hidden sm:h-36">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-950/60 via-purple-900/40 to-slate-950" />
+            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-violet-500/20 blur-[70px]" />
+            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-pink-500/20 blur-[80px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-[length:20px_20px]" />
+            
+            <div className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#E8E8E8] backdrop-blur-md">
+              <UserRound className="h-3 w-3 text-violet-400" />
+              Profile Overview
             </div>
           </div>
 
-          <div className="relative z-10 px-5 pb-5 md:px-8 md:pb-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex-1 space-y-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                  <div className="relative -mt-12 shrink-0 sm:-mt-14">
-                    <div className="h-24 w-24 overflow-hidden rounded-[28px] border-4 border-white/10 bg-black/40 shadow-[0_10px_30px_rgba(0,0,0,0.5)] sm:h-28 sm:w-28">
-                      {avatarPreview ? (
-                        <Image
-                          src={avatarPreview}
-                          alt="Profile avatar"
-                          width={112}
-                          height={112}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-white/5 text-[34px] font-semibold text-[#F3F3F3]">
-                          {(user.username ?? user.wallet ?? "A")[0].toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={triggerPicker}
-                      disabled={isUploading}
-                      className="absolute inset-0 flex items-center justify-center rounded-[28px] bg-black/55 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
-                      aria-label="Upload avatar"
-                    >
-                      {isUploading ? (
-                        <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      ) : (
-                        <Camera className="h-5 w-5 text-white" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={triggerPicker}
-                      disabled={isUploading}
-                      aria-label="Upload avatar"
-                      className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black/60 bg-white text-black shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-transform hover:scale-105 active:scale-95"
-                    >
-                      {isUploading ? (
-                        <div className="h-3.5 w-3.5 rounded-full border-2 border-black/40 border-t-transparent animate-spin" />
-                      ) : (
-                        <Camera className="h-3.5 w-3.5" />
-                      )}
-                    </button>
+          {/* Profile Header Content */}
+          <div className="relative z-10 px-5 pb-6 pt-0 md:px-8 md:pb-8">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              
+              {/* Left: Avatar & Identity info */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                {/* Avatar with Camera Trigger */}
+                <div className="relative -mt-14 shrink-0 sm:-mt-16">
+                  <div className="h-24 w-24 overflow-hidden rounded-[28px] border-4 border-[#050505] bg-neutral-900 shadow-[0_10px_30px_rgba(0,0,0,0.6)] sm:h-28 sm:w-28">
+                    {avatarPreview ? (
+                      <Image
+                        src={avatarPreview}
+                        alt="Profile avatar"
+                        width={112}
+                        height={112}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/30 to-purple-900/40 text-3xl font-semibold text-white">
+                        {(user.username ?? user.wallet ?? "A")[0].toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={triggerPicker}
+                    disabled={isUploading}
+                    className="absolute inset-0 flex items-center justify-center rounded-[28px] bg-black/60 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+                    aria-label="Upload avatar"
+                  >
+                    {isUploading ? (
+                      <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-white" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={triggerPicker}
+                    disabled={isUploading}
+                    aria-label="Upload avatar"
+                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#050505] bg-white text-black shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  >
+                    {isUploading ? (
+                      <div className="h-3.5 w-3.5 rounded-full border-2 border-black/40 border-t-transparent animate-spin" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Identity Header */}
+                <div className="min-w-0 space-y-1.5 pt-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-2xl font-bold tracking-tight text-[#F3F3F3] sm:text-3xl">
+                      {displayName}
+                    </h1>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      </span>
+                      Connected
+                    </span>
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-2 pt-1">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h1 className="text-2xl font-semibold tracking-tight text-[#F3F3F3] sm:text-3xl">
-                        {displayName}
-                      </h1>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
-                        <span className="relative flex h-1.5 w-1.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        </span>
-                        Connected
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Wallet Copy Button */}
+                    <button
+                      type="button"
+                      onClick={copyWallet}
+                      className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                    >
+                      <span className="font-mono text-[#CBCBCB]">
+                        {shortWallet}
                       </span>
-                    </div>
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5 text-[#8A8A8A]" />
+                      )}
+                    </button>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={copyWallet}
-                        className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    {/* Social Links */}
+                    {user.twitter ? (
+                      <a
+                        href={`https://twitter.com/${user.twitter.replace("@", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Twitter profile"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                       >
-                        <span className="font-mono text-[12px] text-[#CBCBCB]">
-                          {shortWallet}
-                        </span>
-                        {copied ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+                        <X className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
 
-                      {user.twitter ? (
-                        <a
-                          href={`https://twitter.com/${user.twitter.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Twitter profile"
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
-                        >
-                          <Twitter className="h-4 w-4" />
-                        </a>
-                      ) : null}
-
-                      {user.telegram ? (
-                        <a
-                          href={`https://t.me/${user.telegram.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Telegram profile"
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
-                        >
-                          <Send className="h-4 w-4" />
-                        </a>
-                      ) : null}
-                    </div>
+                    {user.telegram ? (
+                      <a
+                        href={`https://t.me/${user.telegram.replace("@", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Telegram profile"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
                   </div>
-                </div>
-
-                {user.bio ? (
-                  <p className="max-w-3xl rounded-[24px] border border-white/10 bg-black/20 px-4 py-4 text-sm leading-relaxed text-[#CBCBCB]">
-                    {user.bio}
-                  </p>
-                ) : null}
-
-                {/* Details */}
-                <div className="grid gap-x-6 gap-y-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2 sm:p-5">
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
-                      Wallet address
-                    </p>
-                    <p className="truncate font-mono text-[13px] text-[#E8E8E8]">
-                      {shortWallet}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
-                       X
-                    </p>
-                    <p className="text-[13px] text-[#E8E8E8]">
-                      {user.twitter || (
-                        <span className="text-[#666]">Not linked</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
-                      Telegram
-                    </p>
-                    <p className="text-[13px] text-[#E8E8E8]">
-                      {user.telegram || (
-                        <span className="text-[#E8E8E8]">Not linked</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#737373]">
-                      Games played
-                    </p>
-                    <p className="text-[13px] text-[#E8E8E8]">
-                      {history.length} games · {winRate}% win rate
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    Edit profile
-                  </button>
-                  <button
-                    type="button"
-                    onClick={signOut}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/30 hover:bg-red-500/10"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
                 </div>
               </div>
 
-              <div className="grid flex-1 grid-cols-2 gap-3 xl:max-w-[420px]">
-                {statTiles.map(({ label, value, icon: Icon }) => (
-                  <div
-                    key={label}
-                    className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <Icon className="h-4 w-4 text-[#8A8A8A]" />
-                      <span className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">
-                        {label}
-                      </span>
-                    </div>
-                    <p className="mt-4 break-words text-xl font-semibold text-[#F3F3F3] sm:text-2xl">
-                      {value}
-                    </p>
-                  </div>
-                ))}
+              {/* Right: Actions */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:scale-98"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  Edit profile
+                </button>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/30 hover:bg-red-500/20 active:scale-98"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
               </div>
+
             </div>
+
+            {/* Bio text if provided */}
+            {user.bio ? (
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-sm leading-relaxed text-[#CBCBCB]">
+                  {user.bio}
+                </p>
+              </div>
+            ) : null}
           </div>
         </SurfaceCard>
 
+        {/* Upload error banner if any */}
         {uploadError ? (
           <div className="flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -528,42 +488,71 @@ export default function ProfilePage() {
           onChange={handleFileChange}
         />
 
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {[
-            { label: "USDC Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.USDC.formatted), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
-            { label: "OAR Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.OAR.formatted), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
-            { label: "ETH Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.ETH.formatted), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
-          ].map(({ label, value, symbol, color, bg, icon }) => (
-            <SurfaceCard key={label} className="p-4">
-              <div className="flex items-center gap-2 text-[#8A8A8A]">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-md ${bg} ${color} text-xs font-bold`}>
-                  {icon}
+        {/* Wallet Balances Section */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+              Token Balances
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {balanceTiles.map(({ label, value, symbol, color, bg, icon }) => (
+              <SurfaceCard key={label} className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2 text-[#8A8A8A]">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">
+                    {label}
+                  </span>
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${bg} ${color} text-xs font-bold`}>
+                    {icon}
+                  </div>
                 </div>
-                <span className="text-[11px] uppercase tracking-[0.18em]">
-                  {label}
-                </span>
-              </div>
-              <p className="mt-4 text-2xl font-semibold text-[#F3F3F3]">
-                {value} <span className="text-sm font-medium text-[#8A8A8A]">{symbol}</span>
-              </p>
-            </SurfaceCard>
-          ))}
+                <p className="mt-3 text-2xl font-bold tracking-tight text-[#F3F3F3] sm:text-3xl">
+                  {value} <span className="text-sm font-medium text-[#8A8A8A]">{symbol}</span>
+                </p>
+              </SurfaceCard>
+            ))}
+          </div>
         </section>
 
+        {/* Game Stats Section */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+              Performance Stats
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {statTiles.map(({ label, value, icon: Icon, color }) => (
+              <SurfaceCard key={label} className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8A8A]">
+                    {label}
+                  </span>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+                <p className="mt-3 break-words text-xl font-bold text-[#F3F3F3] sm:text-2xl">
+                  {value}
+                </p>
+              </SurfaceCard>
+            ))}
+          </div>
+        </section>
+
+        {/* Game History Feed */}
         <SurfaceCard as="section" className="p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#8A8A8A]">
-                Game history
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+                Activity
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-[#F3F3F3]">
-                Recent rounds
+              <h2 className="mt-1 text-xl font-bold text-[#F3F3F3]">
+                Recent Rounds
               </h2>
             </div>
             {history.length > 0 ? (
-              <p className="text-sm text-[#9A9A9A]">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#9A9A9A]">
                 Last {Math.min(history.length, 10)} games
-              </p>
+              </span>
             ) : null}
           </div>
 
@@ -573,27 +562,27 @@ export default function ProfilePage() {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="h-20 rounded-[22px] border border-white/10 bg-white/[0.04] animate-pulse"
+                    className="h-20 rounded-2xl border border-white/10 bg-white/[0.04] animate-pulse"
                   />
                 ))}
               </div>
             ) : history.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-4 rounded-[26px] border border-white/10 bg-black/20 px-4 py-16 text-center">
+              <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-16 text-center">
                 <Gamepad2 className="h-8 w-8 text-[#737373]" />
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <p className="text-base font-medium text-[#F3F3F3]">
-                    No games yet
+                    No games played yet
                   </p>
                   <p className="text-sm text-[#9A9A9A]">
-                    Join a room to start building your history.
+                    Join a Spin, Flip, or Draw room to build your activity history.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => router.push("/")}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                 >
-                  Browse games
+                  Explore games
                 </button>
               </div>
             ) : (
@@ -618,11 +607,11 @@ export default function ProfilePage() {
                     <div
                       key={item.id}
                       onClick={() => setSelectedHistoryItem(item)}
-                      className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 transition-all hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"}`}
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"}`}
                         >
                           {item.isWin ? (
                             <Trophy className="h-4 w-4" />
@@ -631,10 +620,10 @@ export default function ProfilePage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-[#F3F3F3] capitalize">
+                          <p className="truncate text-sm font-semibold text-[#F3F3F3] capitalize">
                             Rafla {item.gameType}
                           </p>
-                          <p className="mt-1 text-xs text-[#8A8A8A]">
+                          <p className="mt-0.5 text-xs text-[#8A8A8A]">
                             {new Date(item.settledAt).toLocaleDateString(undefined, {
                               month: "short",
                               day: "numeric",
@@ -646,10 +635,10 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-semibold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
+                        <p className={`text-sm font-bold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
                           {formattedResultAmount}
                         </p>
-                        <p className={`mt-1 text-[10px] uppercase tracking-[0.24em] ${item.isWin ? "text-emerald-400/70" : "text-red-400/70"}`}>
+                        <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] ${item.isWin ? "text-emerald-400/80" : "text-red-400/80"}`}>
                           {item.isWin ? "Won" : "Loss"}
                         </p>
                       </div>
@@ -661,31 +650,32 @@ export default function ProfilePage() {
           </div>
         </SurfaceCard>
 
+        {/* Edit Profile Modal */}
         {editing ? (
           <ModalShell
             onClose={() => setEditing(false)}
-            title="Edit profile"
+            title="Edit Profile"
             description="Update your username, bio, and social handles."
-            className="sm:max-w-[640px]"
+            className="sm:max-w-[600px]"
             mobileSheet
           >
-            <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
-              <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+            <div className="grid gap-5 sm:grid-cols-[200px_1fr]">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
                   Avatar
                 </p>
-                <div className="mt-4 flex flex-col items-center gap-4 text-center">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-[28px] border border-white/10 bg-black/20">
+                <div className="mt-4 flex flex-col items-center gap-3">
+                  <div className="relative h-24 w-24 overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
                     {avatarPreview ? (
                       <Image
                         src={avatarPreview}
                         alt="avatar preview"
-                        width={112}
-                        height={112}
+                        width={96}
+                        height={96}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[38px] font-semibold text-[#F3F3F3]">
+                      <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-[#F3F3F3]">
                         {(user.username ?? "A")[0].toUpperCase()}
                       </div>
                     )}
@@ -694,9 +684,9 @@ export default function ProfilePage() {
                     type="button"
                     onClick={triggerPicker}
                     disabled={isUploading}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-[#4A4A4A]"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-[#4A4A4A]"
                   >
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-3.5 w-3.5" />
                     {isUploading ? "Uploading..." : "Change avatar"}
                   </button>
                 </div>
@@ -706,8 +696,8 @@ export default function ProfilePage() {
                 {PROFILE_FIELDS.map(({ key, label, placeholder, autoComplete }) => {
                   const isBio = key === "bio";
                   return (
-                    <div key={key} className="grid gap-2">
-                      <label className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+                    <div key={key} className="space-y-1.5">
+                      <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
                         {label}
                       </label>
                       {isBio ? (
@@ -721,8 +711,8 @@ export default function ProfilePage() {
                           }
                           placeholder={placeholder}
                           autoComplete={autoComplete}
-                          rows={4}
-                          className="min-h-[120px] rounded-[22px] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
+                          rows={3}
+                          className="min-h-[100px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
                         />
                       ) : (
                         <input
@@ -735,7 +725,7 @@ export default function ProfilePage() {
                           }
                           placeholder={placeholder}
                           autoComplete={autoComplete}
-                          className="h-12 rounded-[22px] border border-white/10 bg-white/[0.03] px-4 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
+                          className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
                         />
                       )}
                     </div>
@@ -743,17 +733,17 @@ export default function ProfilePage() {
                 })}
 
                 {saveError ? (
-                  <div className="flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {saveError}
                   </div>
                 ) : null}
 
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 pt-2 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => setEditing(false)}
-                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
                   >
                     Cancel
                   </button>
@@ -761,7 +751,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className={`inline-flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition-colors ${saving ? "cursor-not-allowed bg-white/5 text-[#4A4A4A]" : "bg-white text-black hover:bg-[#F5F5F5]"}`}
+                    className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-colors ${saving ? "cursor-not-allowed bg-white/5 text-[#4A4A4A]" : "bg-white text-black hover:bg-[#F5F5F5]"}`}
                   >
                     {saving ? "Saving..." : "Save changes"}
                   </button>
@@ -778,6 +768,7 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
+        {/* Game Details Modal */}
         {selectedHistoryItem ? (
           <ModalShell
             onClose={() => setSelectedHistoryItem(null)}
@@ -786,20 +777,20 @@ export default function ProfilePage() {
             className="sm:max-w-[480px]"
             mobileSheet
           >
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Outcome Banner */}
-              <div className={`flex flex-col items-center justify-center rounded-[24px] border p-6 text-center ${selectedHistoryItem.isWin ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400" : "border-white/10 bg-white/[0.02] text-[#9A9A9A]"}`}>
-                <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${selectedHistoryItem.isWin ? "bg-emerald-500/10" : "bg-white/5"}`}>
+              <div className={`flex flex-col items-center justify-center rounded-2xl border p-5 text-center ${selectedHistoryItem.isWin ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400" : "border-white/10 bg-white/[0.02] text-[#9A9A9A]"}`}>
+                <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${selectedHistoryItem.isWin ? "bg-emerald-500/10" : "bg-white/5"}`}>
                   {selectedHistoryItem.isWin ? (
                     <Trophy className="h-6 w-6" />
                   ) : (
                     <Gamepad2 className="h-6 w-6" />
                   )}
                 </div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#8A8A8A]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
                   Outcome
                 </p>
-                <h3 className="mt-1 text-3xl font-bold">
+                <h3 className="mt-1 text-2xl font-bold">
                   {selectedHistoryItem.isWin ? "Won" : "Loss"}
                 </h3>
                 <p className="mt-2 text-sm text-[#CBCBCB]">
@@ -836,17 +827,17 @@ export default function ProfilePage() {
               </div>
 
               {/* Details List */}
-              <div className="divide-y divide-white/5 rounded-[24px] border border-white/10 bg-white/[0.02] px-4 py-2">
-                <div className="flex items-center justify-between py-3.5">
+              <div className="divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-1">
+                <div className="flex items-center justify-between py-3">
                   <span className="text-xs text-[#8A8A8A]">Game type</span>
-                  <span className="text-sm font-medium text-[#F3F3F3] capitalize">
+                  <span className="text-sm font-semibold text-[#F3F3F3] capitalize">
                     Rafla {selectedHistoryItem.gameType}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-3.5">
+                <div className="flex items-center justify-between py-3">
                   <span className="text-xs text-[#8A8A8A]">Stake amount</span>
-                  <span className="text-sm font-medium text-[#F3F3F3]">
+                  <span className="text-sm font-semibold text-[#F3F3F3]">
                     {formatTokenAmount(
                       toDisplayTokenAmount(
                         selectedHistoryItem.stakeAmount,
@@ -858,9 +849,9 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-3.5">
+                <div className="flex items-center justify-between py-3">
                   <span className="text-xs text-[#8A8A8A]">Won amount</span>
-                  <span className={`text-sm font-medium ${selectedHistoryItem.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
+                  <span className={`text-sm font-semibold ${selectedHistoryItem.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
                     {selectedHistoryItem.isWin
                       ? formatTokenAmount(
                           toDisplayTokenAmount(
@@ -874,14 +865,14 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-3.5">
+                <div className="flex items-center justify-between py-3">
                   <span className="text-xs text-[#8A8A8A]">Status</span>
                   <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${selectedHistoryItem.status === "completed" || selectedHistoryItem.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/10 text-[#A3A3A3]"}`}>
                     {selectedHistoryItem.status || "Settled"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-3.5">
+                <div className="flex items-center justify-between py-3">
                   <span className="text-xs text-[#8A8A8A]">Date & time</span>
                   <span className="text-sm font-medium text-[#F3F3F3]">
                     {new Date(selectedHistoryItem.settledAt).toLocaleString(undefined, {
@@ -894,7 +885,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 py-3.5">
+                <div className="flex items-center justify-between gap-4 py-3">
                   <span className="text-xs text-[#8A8A8A]">Room ID</span>
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="truncate font-mono text-xs text-[#CBCBCB]">
@@ -916,7 +907,7 @@ export default function ProfilePage() {
                 </div>
 
                 {selectedHistoryItem.txHash ? (
-                  <div className="flex items-center justify-between gap-4 py-3.5">
+                  <div className="flex items-center justify-between gap-4 py-3">
                     <span className="text-xs text-[#8A8A8A]">Transaction</span>
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="truncate font-mono text-xs text-[#CBCBCB]">
@@ -952,7 +943,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setSelectedHistoryItem(null)}
-                className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-black transition-colors hover:bg-[#F5F5F5]"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-[#F5F5F5]"
               >
                 Close details
               </button>
