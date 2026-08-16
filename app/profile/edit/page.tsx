@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Camera, Check, UserRound } from "lucide-react";
+import { AlertCircle, Camera, Check, UserRound, ArrowLeft } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { Navbar } from "@/components/layout/Navbar";
@@ -64,9 +64,7 @@ export default function EditProfilePage() {
     triggerPicker,
     handleFileChange,
     clearError,
-  } = useAvatarUpload(user?.avatar, () => {
-    // avatar updated
-  });
+  } = useAvatarUpload(user?.avatar);
 
   useEffect(() => {
     if (!user) return;
@@ -141,135 +139,148 @@ export default function EditProfilePage() {
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 animate-fade-up">
         <GameHeader gameName="Edit Profile" />
 
-        <SurfaceCard as="section" className="p-6 md:p-8">
-          <div className="mb-6 space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-              Account Settings
-            </p>
-            <h1 className="text-2xl font-bold text-[#F3F3F3] sm:text-3xl">
-              Edit Your Profile
-            </h1>
-            <p className="text-sm leading-relaxed text-[#A3A3A3]">
-              Update your public display avatar, username, bio, and social handles.
-            </p>
+        <SurfaceCard as="section" className="overflow-hidden p-0">
+          {/* Cover Header */}
+          <div className="relative h-28 w-full overflow-hidden sm:h-36">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-950/60 via-purple-900/40 to-slate-950" />
+            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-violet-500/20 blur-[70px]" />
+            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-pink-500/20 blur-[80px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-[length:20px_20px]" />
+
+            <div className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#E8E8E8] backdrop-blur-md">
+              <UserRound className="h-3.5 w-3.5 text-violet-400" />
+              Profile Settings
+            </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-[220px_1fr]">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-                Avatar
+          <div className="p-6 md:p-8">
+            <div className="mb-6 space-y-1">
+              <h1 className="text-2xl font-bold text-[#F3F3F3] sm:text-3xl">
+                Edit Your Profile
+              </h1>
+              <p className="text-sm leading-relaxed text-[#A3A3A3]">
+                Update your public display avatar, handle, bio, and linked social profiles.
               </p>
-              <div className="mt-4 flex flex-col items-center gap-4">
-                <div className="relative h-28 w-28 overflow-hidden rounded-[28px] border-2 border-white/10 bg-black/40 shadow-xl">
-                  {avatarPreview ? (
-                    <Image
-                      src={avatarPreview}
-                      alt="avatar preview"
-                      width={112}
-                      height={112}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/30 to-purple-900/40 text-4xl font-semibold text-[#F3F3F3]">
-                      {(user.username ?? "A")[0].toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={triggerPicker}
-                  disabled={isUploading}
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-[#4A4A4A]"
-                >
-                  <Camera className="h-4 w-4" />
-                  {isUploading ? "Uploading..." : "Change avatar"}
-                </button>
-              </div>
             </div>
 
-            {/* Input Fields */}
-            <div className="grid gap-4">
-              {PROFILE_FIELDS.map(({ key, label, placeholder, autoComplete }) => {
-                const isBio = key === "bio";
-                return (
-                  <div key={key} className="space-y-1.5">
-                    <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-                      {label}
-                    </label>
-                    {isBio ? (
-                      <textarea
-                        value={form[key]}
-                        onChange={(e) =>
-                          setForm((current) => ({
-                            ...current,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        placeholder={placeholder}
-                        autoComplete={autoComplete}
-                        rows={4}
-                        className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
+            <div className="grid gap-6 sm:grid-cols-[220px_1fr]">
+              {/* Avatar Section */}
+              <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+                  Profile Avatar
+                </p>
+                <div className="mt-4 flex flex-col items-center gap-4">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-[28px] border-2 border-white/10 bg-black/40 shadow-xl">
+                    {avatarPreview ? (
+                      <Image
+                        src={avatarPreview}
+                        alt="avatar preview"
+                        width={112}
+                        height={112}
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <input
-                        value={form[key]}
-                        onChange={(e) =>
-                          setForm((current) => ({
-                            ...current,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        placeholder={placeholder}
-                        autoComplete={autoComplete}
-                        className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/25 focus-visible:ring-2 focus-visible:ring-white/20"
-                      />
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/30 to-purple-900/40 text-4xl font-semibold text-[#F3F3F3]">
+                        {(user.username ?? "A")[0].toUpperCase()}
+                      </div>
                     )}
                   </div>
-                );
-              })}
-
-              {uploadError ? (
-                <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{uploadError}</span>
                   <button
                     type="button"
-                    onClick={clearError}
-                    className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-red-200"
+                    onClick={triggerPicker}
+                    disabled={isUploading}
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-[#4A4A4A]"
                   >
-                    ×
+                    <Camera className="h-4 w-4" />
+                    {isUploading ? "Uploading..." : "Change avatar"}
                   </button>
                 </div>
-              ) : null}
+              </div>
 
-              {saveError ? (
-                <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {saveError}
+              {/* Input Fields */}
+              <div className="grid gap-4">
+                {PROFILE_FIELDS.map(({ key, label, placeholder, autoComplete }) => {
+                  const isBio = key === "bio";
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+                        {label}
+                      </label>
+                      {isBio ? (
+                        <textarea
+                          value={form[key]}
+                          onChange={(e) =>
+                            setForm((current) => ({
+                              ...current,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          placeholder={placeholder}
+                          autoComplete={autoComplete}
+                          rows={4}
+                          className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/30 focus-visible:ring-2 focus-visible:ring-white/20 transition-colors"
+                        />
+                      ) : (
+                        <input
+                          value={form[key]}
+                          onChange={(e) =>
+                            setForm((current) => ({
+                              ...current,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          placeholder={placeholder}
+                          autoComplete={autoComplete}
+                          className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-[#F3F3F3] outline-none placeholder:text-[#666] focus:border-white/30 focus-visible:ring-2 focus-visible:ring-white/20 transition-colors"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+
+                {uploadError ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{uploadError}</span>
+                    <button
+                      type="button"
+                      onClick={clearError}
+                      className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-red-200"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : null}
+
+                {saveError ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {saveError}
+                  </div>
+                ) : null}
+
+                <div className="grid gap-3 pt-4 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/profile")}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={`inline-flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition-transform active:scale-98 ${
+                      saving
+                        ? "cursor-not-allowed bg-white/5 text-[#4A4A4A]"
+                        : "bg-white text-black hover:bg-[#F5F5F5]"
+                    }`}
+                  >
+                    {saving ? "Saving..." : "Save changes"}
+                  </button>
                 </div>
-              ) : null}
-
-              <div className="grid gap-3 pt-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => router.push("/profile")}
-                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className={`inline-flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition-transform active:scale-98 ${
-                    saving
-                      ? "cursor-not-allowed bg-white/5 text-[#4A4A4A]"
-                      : "bg-white text-black hover:bg-[#F5F5F5]"
-                  }`}
-                >
-                  {saving ? "Saving..." : "Save changes"}
-                </button>
               </div>
             </div>
           </div>
