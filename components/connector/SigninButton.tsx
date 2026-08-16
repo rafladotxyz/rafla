@@ -82,7 +82,7 @@ export function SignInButton() {
       <button
         type="button"
         onClick={() => open()}
-        className="inline-flex h-9 lg:h-11  items-center justify-center rounded-full border border-white/10 bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
+        className="inline-flex h-9 lg:h-10 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
       >
         Connect wallet
       </button>
@@ -96,11 +96,19 @@ export function SignInButton() {
           type="button"
           onClick={signIn}
           disabled={isLoading}
-          className={`inline-flex h-9 lg:h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors ${isLoading ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]" : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"}`}
+          className={`inline-flex h-9 lg:h-10 items-center justify-center rounded-full border px-4 text-xs font-semibold transition-colors ${
+            isLoading
+              ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]"
+              : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"
+          }`}
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </button>
-        {error ? <span className="max-w-[180px] text-right text-[12px] text-red-400">{error}</span> : null}
+        {error ? (
+          <span className="max-w-[180px] text-right text-[11px] text-red-400">
+            {error}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -109,80 +117,98 @@ export function SignInButton() {
     ? `@${user.username}`
     : `${user?.wallet.slice(0, 6)}...${user?.wallet.slice(-4)}`;
 
-  const networkName = caipNetwork?.name || "Base";
+  const networkName = caipNetwork?.name || "Base Sepolia";
 
   return (
     <div ref={menuRef} className="relative">
+      {/* Navbar User Pill Trigger */}
       <button
         type="button"
         onClick={() => setMenuOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className="group inline-flex h-9 lg:h-11 items-center gap-1 rounded-full border border-white/10 bg-white/5 py-2 px-2 transition-all hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="group inline-flex h-9 lg:h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] p-1.5 pr-3 transition-all hover:border-white/20 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
-        {user?.avatar ? (
-          <Image
-            src={user.avatar}
-            alt={user?.username ?? "Profile avatar"}
-            className="h-8 w-8 rounded-full object-cover"
-            width={32}
-            height={32}
-          />
-        ) : (
-          <div className="flex h-6 w-6 lg:h-8 lg:w-8 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-[#F3F3F3]">
-            {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
-          </div>
-        )}
+        <div className="relative shrink-0">
+          {user?.avatar ? (
+            <Image
+              src={user.avatar}
+              alt={user?.username ?? "Profile avatar"}
+              className="h-7 w-7 rounded-full object-cover border border-white/10"
+              width={28}
+              height={28}
+            />
+          ) : (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-800 text-[11px] font-bold text-white shadow-sm">
+              {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
+            </div>
+          )}
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 border border-black" />
+          </span>
+        </div>
 
-       
+        <span className="hidden sm:inline-block max-w-[110px] truncate text-xs font-semibold text-[#F3F3F3]">
+          {displayName}
+        </span>
 
         <ChevronDown
-          className={`h-4 w-4 text-[#8A8A8A] transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 text-[#8A8A8A] transition-transform duration-200 group-hover:text-white ${
+            menuOpen ? "rotate-180 text-white" : ""
+          }`}
         />
       </button>
 
+      {/* User Dropdown Card */}
       {menuOpen ? (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+10px)] w-[min(16rem,calc(100vw-2rem))] origin-top-right animate-[fadeIn_0.15s_ease-out] overflow-hidden rounded-2xl border border-white/10 bg-black/80 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+          className="absolute right-0 top-[calc(100%+12px)] w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden rounded-2xl border border-white/10 bg-black/90 p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-50"
         >
+          {/* Profile Item */}
           <button
             type="button"
             role="menuitem"
             onClick={navigateToProfile}
-            className="group/item flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
+            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/5"
           >
-            {user?.avatar ? (
-              <Image
-                src={user.avatar}
-                alt={user?.username ?? "Profile avatar"}
-                className="h-7 w-7 shrink-0 rounded-full object-cover"
-                width={36}
-                height={36}
-              />
-            ) : (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[13px] font-semibold text-[#F3F3F3]">
-                {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
-              </div>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col items-start">
-         
-              <span className="flex items-center gap-1 text-[9px] tracking-[0.2em] text-[#8A8A8A]">
-                Profile
+            <div className="relative shrink-0">
+              {user?.avatar ? (
+                <Image
+                  src={user.avatar}
+                  alt={user?.username ?? "Profile avatar"}
+                  className="h-9 w-9 rounded-full object-cover border border-white/10"
+                  width={36}
+                  height={36}
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-800 text-sm font-bold text-white">
+                  {(user?.username ?? user?.wallet ?? "?")[0].toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-xs font-bold text-[#F3F3F3]">
+                {displayName}
+              </span>
+              <span className="text-[10px] font-medium text-emerald-400">
+                View Profile & Activity
               </span>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A] transition-transform group-hover/item:translate-x-0.5" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
           </button>
 
-          <div className="mx-4 h-px bg-white/10" />
+          <div className="my-1 h-px bg-white/10" />
 
+          {/* Network Switcher Item */}
           <button
             type="button"
             role="menuitem"
             onClick={handleSwitchNetwork}
-            className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
+            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/5"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/0 bg-white/5 p-1.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1.5">
               <Image
                 height={18}
                 width={18}
@@ -190,26 +216,38 @@ export function SignInButton() {
                 alt={networkName}
                 className="h-full w-full rounded-full object-contain"
               />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col items-start">
-              <span className="truncate text-[13px] font-medium text-[#F3F3F3]">
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-xs font-semibold text-[#F3F3F3]">
                 {networkName}
               </span>
-             
+              <span className="text-[10px] text-[#8A8A8A]">
+                Switch Network
+              </span>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
           </button>
 
-          <div className="mx-4 h-px bg-white/10" />
+          <div className="my-1 h-px bg-white/10" />
 
+          {/* Sign Out Item */}
           <button
             type="button"
             role="menuitem"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
           >
-           
-            <span className="text-[13px] font-medium">Sign out</span>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10">
+              <LogOut className="h-4 w-4 text-red-400" />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="text-xs font-semibold text-red-300">
+                Sign out
+              </span>
+              <span className="text-[10px] text-red-400/60">
+                Disconnect wallet session
+              </span>
+            </div>
           </button>
         </div>
       ) : null}
