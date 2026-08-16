@@ -53,7 +53,6 @@ export default function LeaderboardPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
-        <GameHeader gameName="Leaderboard" />
 
         {/* Timeframe Filter Tab Bar (Reference UI style) */}
         <div className="flex justify-center">

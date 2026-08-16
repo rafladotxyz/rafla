@@ -31,10 +31,22 @@ interface GameHistoryItem {
   status?: string;
 }
 
-function formatDisplayAmount(val: number | string): string {
+function formatDisplayAmount(val: number | string, token?: string): string {
   const num = Number(val);
   if (isNaN(num)) return String(val);
-  return parseFloat(num.toFixed(6)).toString();
+  if (token === "OAR" || Math.abs(num) >= 100) {
+    return Math.round(num).toLocaleString("en-US");
+  }
+  if (token === "ETH") {
+    if (num === 0) return "0";
+    if (Math.abs(num) < 0.001) return num.toFixed(6);
+    return parseFloat(num.toFixed(4)).toString();
+  }
+  const rounded = Math.round(num * 100) / 100;
+  return rounded.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 }
 
 function getHistoryToken(item: Pick<GameHistoryItem, "gameType" | "token">) {
@@ -58,7 +70,7 @@ function toDisplayTokenAmount(
 }
 
 function formatTokenAmount(amount: number, token: string, sign = "") {
-  const formatted = formatDisplayAmount(amount);
+  const formatted = formatDisplayAmount(amount, token);
   if (token === "USDC") return `${sign}$${formatted}`;
   return `${sign}${formatted} ${token}`;
 }
@@ -196,7 +208,6 @@ export default function GameDetailsPage({
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 animate-fade-up">
-        <GameHeader gameName="Game Details" />
 
         <SurfaceCard as="section" className="overflow-hidden p-0">
           {/* Cover Header */}
