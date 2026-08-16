@@ -48,7 +48,7 @@ export function GameHeader({ gameName }: { gameName?: string }) {
 
       {/* ── Title ───────────────────────────────────────────────────── */}
       {gameName && (
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-[15px] font-semibold text-[#E8E8E8] tracking-[-0.01em] pointer-events-none select-none">
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-xs xs:text-[15px] font-semibold text-[#E8E8E8] tracking-[-0.01em] pointer-events-none select-none max-w-[150px] sm:max-w-none truncate">
           {gameName}
         </h1>
       )}

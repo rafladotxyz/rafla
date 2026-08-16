@@ -78,11 +78,11 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
       const poll = setInterval(() => {
         attempts++;
         const polledResult = lastSpinResultRef.current;
-        if (polledResult || attempts >= MAX_ATTEMPTS) {
+        if (polledResult) {
           clearInterval(poll);
-          const isLoss = polledResult ? polledResult.payout === 0n : true;
-          const rawStake = polledResult ? fromOARUnits(polledResult.amount) : 0;
-          const rawPayout = polledResult ? fromOARUnits(polledResult.payout) : 0;
+          const isLoss = polledResult.payout === 0n;
+          const rawStake = fromOARUnits(polledResult.amount);
+          const rawPayout = fromOARUnits(polledResult.payout);
           const oarStake = formatDisplayAmount(rawStake);
           const oarPayout = formatDisplayAmount(isLoss ? rawStake : rawPayout);
           const displayAmount = `${isLoss ? oarStake : oarPayout} OAR`;
@@ -96,6 +96,12 @@ export const SpinView = ({ roomId }: { roomId?: string }) => {
           const label = segment.label.toLowerCase();
           if (label.includes("won") || label.includes("win")) playSound("win");
           else if (label.includes("lose") || label.includes("loss")) playSound("loss");
+        } else if (attempts >= MAX_ATTEMPTS) {
+          clearInterval(poll);
+          setIsWaitingForChain(false);
+          setIsSpinning(false);
+          setExternalSpinTrigger(false);
+          stopMusic();
         }
       }, 500);
       return;
