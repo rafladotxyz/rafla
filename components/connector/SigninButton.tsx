@@ -4,7 +4,15 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, LogOut, User } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  History,
+  LogOut,
+  Trophy,
+  User,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Base from "@/assets/base.png";
 import BaseSepolia from "@/assets/baseSepolia.png";
@@ -62,9 +70,9 @@ export function SignInButton() {
     }
   };
 
-  const navigateToProfile = () => {
+  const navigateTo = (path: string) => {
     setMenuOpen(false);
-    router.push("/profile");
+    router.push(path);
   };
 
   const handleSwitchNetwork = () => {
@@ -166,13 +174,8 @@ export function SignInButton() {
           role="menu"
           className="absolute right-0 top-[calc(100%+12px)] w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden rounded-2xl border border-white/10 bg-black/90 p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-50"
         >
-          {/* Profile Item */}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={navigateToProfile}
-            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/5"
-          >
+          {/* User Identity Header */}
+          <div className="flex items-center gap-3 px-3 py-2.5">
             <div className="relative shrink-0">
               {user?.avatar ? (
                 <Image
@@ -192,12 +195,61 @@ export function SignInButton() {
               <span className="truncate text-xs font-bold text-[#F3F3F3]">
                 {displayName}
               </span>
-              <span className="text-[10px] font-medium text-emerald-400">
-                View Profile & Activity
+              <span className="font-mono text-[10px] text-[#8A8A8A]">
+                {user?.wallet.slice(0, 6)}...{user?.wallet.slice(-4)}
               </span>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
-          </button>
+          </div>
+
+          <div className="my-1 h-px bg-white/10" />
+
+          {/* Navigation Links */}
+          <div className="space-y-0.5">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => navigateTo("/profile")}
+              className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/5"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-[#A3A3A3] group-hover/item:text-white">
+                <User className="h-3.5 w-3.5" />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#F3F3F3]">
+                Profile Overview
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
+            </button>
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => navigateTo("/leaderboard")}
+              className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/5"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+                <Trophy className="h-3.5 w-3.5" />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#F3F3F3]">
+                Leaderboard
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
+            </button>
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => navigateTo("/history")}
+              className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/5"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                <History className="h-3.5 w-3.5" />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#F3F3F3]">
+                Game History
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
+            </button>
+          </div>
 
           <div className="my-1 h-px bg-white/10" />
 
@@ -206,12 +258,12 @@ export function SignInButton() {
             type="button"
             role="menuitem"
             onClick={handleSwitchNetwork}
-            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/5"
+            className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/5"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1">
               <Image
-                height={18}
-                width={18}
+                height={16}
+                width={16}
                 src={getNetworkIcon(networkName)}
                 alt={networkName}
                 className="h-full w-full rounded-full object-contain"
@@ -221,11 +273,8 @@ export function SignInButton() {
               <span className="truncate text-xs font-semibold text-[#F3F3F3]">
                 {networkName}
               </span>
-              <span className="text-[10px] text-[#8A8A8A]">
-                Switch Network
-              </span>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[#737373] transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-white" />
+            <span className="text-[10px] text-emerald-400 font-semibold">Active</span>
           </button>
 
           <div className="my-1 h-px bg-white/10" />
@@ -235,19 +284,14 @@ export function SignInButton() {
             type="button"
             role="menuitem"
             onClick={handleSignOut}
-            className="group/item flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+            className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-red-400 transition-colors hover:bg-red-500/10"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10">
-              <LogOut className="h-4 w-4 text-red-400" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10">
+              <LogOut className="h-3.5 w-3.5 text-red-400" />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="text-xs font-semibold text-red-300">
-                Sign out
-              </span>
-              <span className="text-[10px] text-red-400/60">
-                Disconnect wallet session
-              </span>
-            </div>
+            <span className="flex-1 text-xs font-semibold text-red-300">
+              Sign out
+            </span>
           </button>
         </div>
       ) : null}
