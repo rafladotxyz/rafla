@@ -17,6 +17,7 @@ import {
   Trophy,
   UserRound,
   X,
+  ChevronRight,
 } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
@@ -500,9 +501,14 @@ export default function ProfilePage() {
               </h2>
             </div>
             {history.length > 0 ? (
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#9A9A9A]">
-                Last {Math.min(history.length, 10)} games
-              </span>
+              <button
+                type="button"
+                onClick={() => router.push("/history")}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+              >
+                View All History
+                <ChevronRight className="h-3.5 w-3.5 text-[#8A8A8A]" />
+              </button>
             ) : null}
           </div>
 
