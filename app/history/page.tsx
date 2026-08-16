@@ -31,10 +31,22 @@ interface GameHistoryItem {
   status?: string;
 }
 
-function formatDisplayAmount(val: number | string): string {
+function formatDisplayAmount(val: number | string, token?: string): string {
   const num = Number(val);
   if (isNaN(num)) return String(val);
-  return parseFloat(num.toFixed(6)).toString();
+  if (token === "OAR" || Math.abs(num) >= 100) {
+    return Math.round(num).toLocaleString("en-US");
+  }
+  if (token === "ETH") {
+    if (num === 0) return "0";
+    if (Math.abs(num) < 0.001) return num.toFixed(6);
+    return parseFloat(num.toFixed(4)).toString();
+  }
+  const rounded = Math.round(num * 100) / 100;
+  return rounded.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 }
 
 function getHistoryToken(item: Pick<GameHistoryItem, "gameType" | "token">) {
@@ -58,7 +70,7 @@ function toDisplayTokenAmount(
 }
 
 function formatTokenAmount(amount: number, token: string, sign = "") {
-  const formatted = formatDisplayAmount(amount);
+  const formatted = formatDisplayAmount(amount, token);
   if (token === "USDC") return `${sign}$${formatted}`;
   return `${sign}${formatted} ${token}`;
 }
@@ -130,13 +142,13 @@ export default function FullHistoryPage() {
 
   const winningBadges: WinningBadge[] = [];
   if (totalWonUSDC > 0 || (totalWonOAR === 0 && totalWonETH === 0)) {
-    winningBadges.push({ symbol: "USDC", amount: `$${formatDisplayAmount(totalWonUSDC)}`, color: "text-[#2775CA]", bg: "bg-[#2775CA]/10" });
+    winningBadges.push({ symbol: "USDC", amount: `$${formatDisplayAmount(totalWonUSDC, "USDC")}`, color: "text-[#2775CA]", bg: "bg-[#2775CA]/10" });
   }
   if (totalWonOAR > 0) {
-    winningBadges.push({ symbol: "OAR", amount: `${formatDisplayAmount(totalWonOAR)} OAR`, color: "text-[#F5A623]", bg: "bg-[#F5A623]/10" });
+    winningBadges.push({ symbol: "OAR", amount: `${formatDisplayAmount(totalWonOAR, "OAR")} OAR`, color: "text-[#F5A623]", bg: "bg-[#F5A623]/10" });
   }
   if (totalWonETH > 0) {
-    winningBadges.push({ symbol: "ETH", amount: `${formatDisplayAmount(totalWonETH)} ETH`, color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10" });
+    winningBadges.push({ symbol: "ETH", amount: `${formatDisplayAmount(totalWonETH, "ETH")} ETH`, color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10" });
   }
 
   // Filtered History
@@ -203,7 +215,6 @@ export default function FullHistoryPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
-        <GameHeader gameName="Full History" />
 
         {/* Hero Feature Box */}
         <SurfaceCard as="section" className="p-6 md:p-8">

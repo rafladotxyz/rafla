@@ -24,7 +24,7 @@ type Segment = {
 function formatDisplayAmount(val: number | string): string {
   const num = Number(val);
   if (isNaN(num)) return String(val);
-  return parseFloat(num.toFixed(6)).toString();
+  return Math.round(num).toLocaleString("en-US");
 }
 
 export const SpinView = ({ roomId }: { roomId?: string }) => {
