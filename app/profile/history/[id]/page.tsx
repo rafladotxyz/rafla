@@ -10,6 +10,7 @@ import {
   Trophy,
   UserRound,
   ArrowLeft,
+  History,
 } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
@@ -164,11 +165,11 @@ export default function GameDetailsPage({
             </div>
             <button
               type="button"
-              onClick={() => router.push("/profile")}
+              onClick={() => router.push("/history")}
               className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-semibold text-black hover:bg-[#F5F5F5]"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Profile
+              Back to History
             </button>
           </SurfaceCard>
         </main>
@@ -197,168 +198,183 @@ export default function GameDetailsPage({
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 animate-fade-up">
         <GameHeader gameName="Game Details" />
 
-        <SurfaceCard as="section" className="p-6 md:p-8 space-y-6">
-          {/* Outcome Banner */}
-          <div
-            className={`flex flex-col items-center justify-center rounded-2xl border p-6 text-center ${
-              item.isWin
-                ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400"
-                : "border-white/10 bg-white/[0.02] text-[#9A9A9A]"
-            }`}
-          >
-            <div
-              className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${
-                item.isWin ? "bg-emerald-500/10" : "bg-white/5"
-              }`}
-            >
-              {item.isWin ? (
-                <Trophy className="h-6 w-6" />
-              ) : (
-                <Gamepad2 className="h-6 w-6" />
-              )}
+        <SurfaceCard as="section" className="overflow-hidden p-0">
+          {/* Cover Header */}
+          <div className="relative h-28 w-full overflow-hidden sm:h-36">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-950/60 via-purple-900/40 to-slate-950" />
+            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-violet-500/20 blur-[70px]" />
+            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-pink-500/20 blur-[80px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-[length:20px_20px]" />
+
+            <div className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#E8E8E8] backdrop-blur-md">
+              <History className="h-3.5 w-3.5 text-violet-400" />
+              Round Receipt
             </div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-              Outcome
-            </p>
-            <h1 className="mt-1 text-3xl font-bold">
-              {item.isWin ? "Won" : "Loss"}
-            </h1>
-            <p className="mt-2 text-base text-[#CBCBCB]">
-              {item.isWin ? (
-                <>
-                  You won{" "}
-                  <span className="font-bold text-emerald-400">
-                    {formatTokenAmount(prizeAmount, token)}
-                  </span>
-                </>
-              ) : (
-                <>
-                  You lost{" "}
-                  <span className="font-bold text-red-300">
-                    {formatTokenAmount(stakeAmount, token)}
-                  </span>
-                </>
-              )}
-            </p>
           </div>
 
-          {/* Details Table */}
-          <div className="divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-2">
-            <div className="flex items-center justify-between py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Game type</span>
-              <span className="text-sm font-semibold text-[#F3F3F3] capitalize">
-                Rafla {item.gameType}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Stake amount</span>
-              <span className="text-sm font-semibold text-[#F3F3F3]">
-                {formatTokenAmount(stakeAmount, token)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Won amount</span>
-              <span
-                className={`text-sm font-semibold ${
-                  item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"
+          <div className="p-6 md:p-8 space-y-6">
+            {/* Outcome Banner */}
+            <div
+              className={`flex flex-col items-center justify-center rounded-2xl border p-6 text-center ${
+                item.isWin
+                  ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400"
+                  : "border-white/10 bg-white/[0.02] text-[#9A9A9A]"
+              }`}
+            >
+              <div
+                className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${
+                  item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"
                 }`}
               >
-                {item.isWin
-                  ? formatTokenAmount(prizeAmount, token)
-                  : formatTokenAmount(0, token)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Status</span>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                  item.status === "completed" || item.isWin
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "bg-white/10 text-[#A3A3A3]"
-                }`}
-              >
-                {item.status || "Settled"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Date & time</span>
-              <span className="text-sm font-medium text-[#F3F3F3]">
-                {new Date(item.settledAt).toLocaleString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 py-3.5">
-              <span className="text-xs text-[#8A8A8A]">Room ID</span>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="truncate font-mono text-xs text-[#CBCBCB]">
-                  {item.roomId}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(item.roomId, "roomId")}
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
-                  aria-label="Copy Room ID"
-                >
-                  {copiedItemField === "roomId" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                {item.isWin ? (
+                  <Trophy className="h-7 w-7" />
+                ) : (
+                  <Gamepad2 className="h-7 w-7" />
+                )}
               </div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+                Outcome
+              </p>
+              <h1 className="mt-1 text-3xl font-bold">
+                {item.isWin ? "Won" : "Loss"}
+              </h1>
+              <p className="mt-2 text-base text-[#CBCBCB]">
+                {item.isWin ? (
+                  <>
+                    You won{" "}
+                    <span className="font-bold text-emerald-400">
+                      {formatTokenAmount(prizeAmount, token)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    You lost{" "}
+                    <span className="font-bold text-red-300">
+                      {formatTokenAmount(stakeAmount, token)}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
 
-            {item.txHash ? (
+            {/* Details Table */}
+            <div className="divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-2">
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-[#8A8A8A]">Game type</span>
+                <span className="text-sm font-semibold text-[#F3F3F3] capitalize">
+                  Rafla {item.gameType}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-[#8A8A8A]">Stake amount</span>
+                <span className="text-sm font-semibold text-[#F3F3F3]">
+                  {formatTokenAmount(stakeAmount, token)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-[#8A8A8A]">Won amount</span>
+                <span
+                  className={`text-sm font-semibold ${
+                    item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"
+                  }`}
+                >
+                  {item.isWin
+                    ? formatTokenAmount(prizeAmount, token)
+                    : formatTokenAmount(0, token)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-[#8A8A8A]">Status</span>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                    item.status === "completed" || item.isWin
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : "bg-white/10 text-[#A3A3A3]"
+                  }`}
+                >
+                  {item.status || "Settled"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-[#8A8A8A]">Date & time</span>
+                <span className="text-sm font-medium text-[#F3F3F3]">
+                  {new Date(item.settledAt).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between gap-4 py-3.5">
-                <span className="text-xs text-[#8A8A8A]">Transaction</span>
+                <span className="text-xs text-[#8A8A8A]">Room ID</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="truncate font-mono text-xs text-[#CBCBCB]">
-                    {item.txHash.slice(0, 6)}...{item.txHash.slice(-4)}
+                    {item.roomId}
                   </span>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard(item.txHash!, "txHash")}
+                    onClick={() => copyToClipboard(item.roomId, "roomId")}
                     className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
-                    aria-label="Copy Tx Hash"
+                    aria-label="Copy Room ID"
                   >
-                    {copiedItemField === "txHash" ? (
+                    {copiedItemField === "roomId" ? (
                       <Check className="h-3.5 w-3.5 text-emerald-400" />
                     ) : (
                       <Copy className="h-3.5 w-3.5" />
                     )}
                   </button>
-                  <a
-                    href={`https://sepolia.basescan.org/tx/${item.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
-                    aria-label="View on BaseScan"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
                 </div>
               </div>
-            ) : null}
-          </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/profile")}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Profile
-          </button>
+              {item.txHash ? (
+                <div className="flex items-center justify-between gap-4 py-3.5">
+                  <span className="text-xs text-[#8A8A8A]">Transaction</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="truncate font-mono text-xs text-[#CBCBCB]">
+                      {item.txHash.slice(0, 6)}...{item.txHash.slice(-4)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(item.txHash!, "txHash")}
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
+                      aria-label="Copy Tx Hash"
+                    >
+                      {copiedItemField === "txHash" ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    <a
+                      href={`https://sepolia.basescan.org/tx/${item.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:bg-white/10"
+                      aria-label="View on BaseScan"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => router.push("/history")}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to History
+            </button>
+          </div>
         </SurfaceCard>
       </main>
     </div>
