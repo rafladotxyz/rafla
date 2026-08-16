@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Medal, Trophy, Users, Award, Crown, Sparkles } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Medal, Trophy, Users, Award, Crown, Sparkles, UserCheck } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface LeaderboardEntry {
   rank: number;
@@ -19,8 +20,10 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
+  const { user } = useAuthContext();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState<"all" | "monthly" | "weekly">("all");
 
   useEffect(() => {
     fetch("/api/leaderboard")
@@ -33,10 +36,15 @@ export default function LeaderboardPage() {
   const top3 = leaderboard.slice(0, 3);
   const rest = leaderboard.slice(3);
 
-  const totalPrizeDistributed = leaderboard.reduce(
-    (acc, curr) => acc + Number(curr.totalPrize ?? 0) / 1_000_000,
-    0,
-  );
+  // User's personal rank entry if logged in
+  const userRankEntry = useMemo(() => {
+    if (!user) return null;
+    return leaderboard.find(
+      (entry) =>
+        entry.user.id === user.id ||
+        entry.user.wallet.toLowerCase() === user.wallet.toLowerCase(),
+    );
+  }, [user, leaderboard]);
 
   return (
     <div className="min-h-screen bg-[#050505] px-4 pb-12 pt-24 md:pt-28">
@@ -47,58 +55,28 @@ export default function LeaderboardPage() {
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 animate-fade-up">
         <GameHeader gameName="Leaderboard" />
 
-        {/* Hero Feature Banner */}
-        <SurfaceCard as="section" className="overflow-hidden p-0 border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent shadow-2xl">
-          <div className="relative p-6 md:p-8">
-            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-amber-500/15 blur-[80px]" />
-            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-violet-500/15 blur-[90px]" />
-
-            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-2.5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300 backdrop-blur-md">
-                  <Crown className="h-3.5 w-3.5 text-amber-400" />
-                  Global Standings
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#F3F3F3] sm:text-4xl">
-                  Rafla Champions Hall
-                </h1>
-                <p className="max-w-2xl text-sm leading-relaxed text-[#A3A3A3]">
-                  Real-time victory leaderboard ranking top players by round wins and total prize earnings.
-                </p>
-              </div>
-
-              {/* Metrics Strip */}
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
-                  <Users className="h-5 w-5 text-[#8A8A8A]" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8A8A8A]">
-                      Players
-                    </p>
-                    <p className="text-base font-bold text-[#F3F3F3]">
-                      {leaderboard.length}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 backdrop-blur-md">
-                  <Trophy className="h-5 w-5 text-amber-400" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-400/80">
-                      Prize Won
-                    </p>
-                    <p className="text-base font-bold text-amber-300">
-                      ${totalPrizeDistributed.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Timeframe Filter Tab Bar (Reference UI style) */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center rounded-full border border-white/10 bg-black/60 p-1 shadow-2xl backdrop-blur-xl">
+            {(["all", "monthly", "weekly"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTimeframe(t)}
+                className={`rounded-full px-5 py-2 text-xs font-bold capitalize transition-all ${
+                  timeframe === t
+                    ? "bg-white text-black shadow-md"
+                    : "text-[#8A8A8A] hover:text-white"
+                }`}
+              >
+                {t === "all" ? "All-Time" : t}
+              </button>
+            ))}
           </div>
-        </SurfaceCard>
+        </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-24">
             <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
           </div>
         ) : leaderboard.length === 0 ? (
@@ -115,58 +93,58 @@ export default function LeaderboardPage() {
           </SurfaceCard>
         ) : (
           <div className="space-y-8">
-            {/* Top 3 Podium Cards */}
+            {/* 3D Stage Podium Section (Reference UI Style) */}
             {top3.length > 0 ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-end">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-end pt-4">
                 
-                {/* 2nd Place Silver Card */}
+                {/* #2 Left Podium (Runner-Up) */}
                 {top3[1] ? (
-                  <SurfaceCard className="relative overflow-hidden border-slate-300/30 bg-gradient-to-b from-slate-300/10 via-slate-300/5 to-black/70 p-6 text-center shadow-[0_12px_40px_rgba(203,203,203,0.12)] md:order-1">
-                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-300/10 px-3 py-1 text-xs font-bold text-slate-200">
+                  <div className="relative flex flex-col items-center rounded-[28px] border border-slate-300/30 bg-gradient-to-b from-slate-300/10 via-slate-300/[0.03] to-black/90 p-6 text-center shadow-[0_12px_40px_rgba(203,203,203,0.12)] backdrop-blur-xl md:order-1 min-h-[260px] justify-between">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-300/10 px-3 py-1 text-xs font-bold text-slate-200">
                       🥈 2nd Place
                     </div>
 
-                    <div className="mt-8 flex flex-col items-center">
-                      <div className="h-20 w-20 overflow-hidden rounded-[24px] border-2 border-slate-300/40 bg-white/5 shadow-xl p-0.5">
-                        {top3[1].user.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={top3[1].user.avatar} alt="" className="h-full w-full rounded-[20px] object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center rounded-[20px] bg-slate-800 text-2xl font-bold text-slate-200">
-                            {(top3[1].user.username ?? top3[1].user.wallet)[0].toUpperCase()}
-                          </div>
-                        )}
+                    <div className="my-4 flex flex-col items-center">
+                      <div className="h-20 w-20 p-1 rounded-[24px] bg-gradient-to-br from-slate-300 to-slate-500 shadow-xl">
+                        <div className="h-full w-full overflow-hidden rounded-[20px] bg-neutral-900">
+                          {top3[1].user.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={top3[1].user.avatar} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-200">
+                              {(top3[1].user.username ?? top3[1].user.wallet)[0].toUpperCase()}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <h3 className="mt-4 text-lg font-bold text-[#F3F3F3] truncate max-w-[180px]">
+                      <h3 className="mt-3 text-base font-bold text-[#F3F3F3] truncate max-w-[160px]">
                         {top3[1].user.username ? `@${top3[1].user.username}` : `${top3[1].user.wallet.slice(0, 6)}...`}
                       </h3>
-                      <p className="font-mono text-xs text-[#8A8A8A]">
+                      <p className="font-mono text-[11px] text-[#8A8A8A]">
                         {top3[1].user.wallet.slice(0, 6)}...{top3[1].user.wallet.slice(-4)}
                       </p>
-
-                      <div className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs">
-                        <div className="text-left">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">Wins</p>
-                          <p className="text-base font-bold text-[#F3F3F3]">{top3[1].wins}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">Prize Won</p>
-                          <p className="text-base font-bold text-slate-200">${(Number(top3[1].totalPrize) / 1_000_000).toFixed(2)}</p>
-                        </div>
-                      </div>
                     </div>
-                  </SurfaceCard>
+
+                    <div className="w-full rounded-2xl border border-white/10 bg-black/50 p-3">
+                      <p className="text-xl font-extrabold text-[#F3F3F3]">
+                        ${(Number(top3[1].totalPrize) / 1_000_000).toFixed(2)}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">
+                        {top3[1].wins} {top3[1].wins === 1 ? "win" : "wins"}
+                      </p>
+                    </div>
+                  </div>
                 ) : null}
 
-                {/* 1st Place Gold Champion Card (Elevated Center) */}
+                {/* #1 Center Champion Podium (Tallest Stage) */}
                 {top3[0] ? (
-                  <SurfaceCard className="relative overflow-hidden border-amber-500/40 bg-gradient-to-b from-amber-500/20 via-amber-500/5 to-black/80 p-6 text-center md:-translate-y-3 md:order-2 shadow-[0_16px_50px_rgba(245,166,35,0.25)]">
-                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/20 px-3.5 py-1 text-xs font-bold text-amber-300">
+                  <div className="relative flex flex-col items-center rounded-[32px] border border-amber-500/40 bg-gradient-to-b from-amber-500/20 via-amber-500/[0.05] to-black/95 p-7 text-center shadow-[0_20px_60px_rgba(245,166,35,0.25)] backdrop-blur-xl md:-translate-y-4 md:order-2 min-h-[310px] justify-between">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/20 px-4 py-1 text-xs font-extrabold text-amber-300">
                       👑 #1 Champion
                     </div>
 
-                    <div className="mt-8 flex flex-col items-center">
+                    <div className="my-4 flex flex-col items-center">
                       <div className="h-24 w-24 p-1 rounded-[28px] bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-2xl">
                         <div className="h-full w-full overflow-hidden rounded-[24px] bg-neutral-900">
                           {top3[0].user.avatar ? (
@@ -180,94 +158,126 @@ export default function LeaderboardPage() {
                         </div>
                       </div>
 
-                      <h3 className="mt-4 text-xl font-bold text-amber-200 truncate max-w-[200px]">
+                      <h3 className="mt-3 text-lg font-extrabold text-amber-200 truncate max-w-[180px]">
                         {top3[0].user.username ? `@${top3[0].user.username}` : `${top3[0].user.wallet.slice(0, 6)}...`}
                       </h3>
                       <p className="font-mono text-xs text-[#8A8A8A]">
                         {top3[0].user.wallet.slice(0, 6)}...{top3[0].user.wallet.slice(-4)}
                       </p>
-
-                      <div className="mt-5 flex w-full items-center justify-between rounded-xl border border-amber-500/30 bg-black/60 px-4 py-3 text-xs">
-                        <div className="text-left">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">Wins</p>
-                          <p className="text-xl font-extrabold text-amber-300">{top3[0].wins}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">Prize Won</p>
-                          <p className="text-xl font-extrabold text-amber-300">${(Number(top3[0].totalPrize) / 1_000_000).toFixed(2)}</p>
-                        </div>
-                      </div>
                     </div>
-                  </SurfaceCard>
+
+                    <div className="w-full rounded-2xl border border-amber-500/30 bg-black/60 p-3.5">
+                      <p className="text-2xl font-black text-amber-300">
+                        ${(Number(top3[0].totalPrize) / 1_000_000).toFixed(2)}
+                      </p>
+                      <p className="text-[11px] font-extrabold uppercase tracking-wider text-amber-400/80">
+                        {top3[0].wins} {top3[0].wins === 1 ? "win" : "wins"}
+                      </p>
+                    </div>
+                  </div>
                 ) : null}
 
-                {/* 3rd Place Bronze Card */}
+                {/* #3 Right Podium (Third Place) */}
                 {top3[2] ? (
-                  <SurfaceCard className="relative overflow-hidden border-amber-700/40 bg-gradient-to-b from-amber-700/15 via-amber-700/5 to-black/70 p-6 text-center shadow-[0_12px_40px_rgba(180,83,9,0.15)] md:order-3">
-                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-amber-700/40 bg-amber-700/15 px-3 py-1 text-xs font-bold text-amber-400">
+                  <div className="relative flex flex-col items-center rounded-[28px] border border-amber-700/40 bg-gradient-to-b from-amber-700/15 via-amber-700/[0.03] to-black/90 p-6 text-center shadow-[0_12px_40px_rgba(180,83,9,0.15)] backdrop-blur-xl md:order-3 min-h-[240px] justify-between">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-700/40 bg-amber-700/15 px-3 py-1 text-xs font-bold text-amber-400">
                       🥉 3rd Place
                     </div>
 
-                    <div className="mt-8 flex flex-col items-center">
-                      <div className="h-20 w-20 overflow-hidden rounded-[24px] border-2 border-amber-700/40 bg-white/5 shadow-xl p-0.5">
-                        {top3[2].user.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={top3[2].user.avatar} alt="" className="h-full w-full rounded-[20px] object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center rounded-[20px] bg-amber-950 text-2xl font-bold text-amber-400">
-                            {(top3[2].user.username ?? top3[2].user.wallet)[0].toUpperCase()}
-                          </div>
-                        )}
+                    <div className="my-4 flex flex-col items-center">
+                      <div className="h-20 w-20 p-1 rounded-[24px] bg-gradient-to-br from-amber-700 to-amber-900 shadow-xl">
+                        <div className="h-full w-full overflow-hidden rounded-[20px] bg-neutral-900">
+                          {top3[2].user.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={top3[2].user.avatar} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-amber-400">
+                              {(top3[2].user.username ?? top3[2].user.wallet)[0].toUpperCase()}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <h3 className="mt-4 text-lg font-bold text-[#F3F3F3] truncate max-w-[180px]">
+                      <h3 className="mt-3 text-base font-bold text-[#F3F3F3] truncate max-w-[160px]">
                         {top3[2].user.username ? `@${top3[2].user.username}` : `${top3[2].user.wallet.slice(0, 6)}...`}
                       </h3>
-                      <p className="font-mono text-xs text-[#8A8A8A]">
+                      <p className="font-mono text-[11px] text-[#8A8A8A]">
                         {top3[2].user.wallet.slice(0, 6)}...{top3[2].user.wallet.slice(-4)}
                       </p>
-
-                      <div className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs">
-                        <div className="text-left">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">Wins</p>
-                          <p className="text-base font-bold text-[#F3F3F3]">{top3[2].wins}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">Prize Won</p>
-                          <p className="text-base font-bold text-amber-400">${(Number(top3[2].totalPrize) / 1_000_000).toFixed(2)}</p>
-                        </div>
-                      </div>
                     </div>
-                  </SurfaceCard>
+
+                    <div className="w-full rounded-2xl border border-white/10 bg-black/50 p-3">
+                      <p className="text-xl font-extrabold text-[#F3F3F3]">
+                        ${(Number(top3[2].totalPrize) / 1_000_000).toFixed(2)}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8A]">
+                        {top3[2].wins} {top3[2].wins === 1 ? "win" : "wins"}
+                      </p>
+                    </div>
+                  </div>
                 ) : null}
+
               </div>
             ) : null}
 
-            {/* Remaining Rankings Table (#4+) */}
+            {/* Personal User Rank Summary Banner (Reference UI style) */}
+            {user ? (
+              <div className="flex justify-center">
+                <div className="inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-violet-500/30 bg-violet-500/10 px-6 py-2.5 text-xs font-semibold text-violet-300 shadow-xl backdrop-blur-xl">
+                  <UserCheck className="h-4 w-4 text-violet-400" />
+                  {userRankEntry ? (
+                    <span>
+                      Your Personal Rank:{" "}
+                      <strong className="text-white">#{userRankEntry.rank}</strong> ·{" "}
+                      <strong className="text-white">{userRankEntry.wins} wins</strong> ·{" "}
+                      <strong className="text-emerald-400">${(Number(userRankEntry.totalPrize) / 1_000_000).toFixed(2)} won</strong>
+                    </span>
+                  ) : (
+                    <span>
+                      You haven’t ranked yet. Play a round to get listed!
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Sleek Leaderboard Table (Ranks #4+) */}
             {rest.length > 0 ? (
               <SurfaceCard className="p-5 md:p-6 space-y-4">
-                <div className="flex items-center justify-between px-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#8A8A8A]">
-                    Rankings Ledger (#4 - #{leaderboard.length})
-                  </p>
+                {/* Table Header Row */}
+                <div className="grid grid-cols-[50px_1fr_100px_120px] items-center gap-4 border-b border-white/10 px-4 pb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8A8A8A]">
+                  <span>Rank</span>
+                  <span>Participant</span>
+                  <span className="text-center">Wins</span>
+                  <span className="text-right">Total Won</span>
                 </div>
 
-                <div className="grid gap-2.5">
+                {/* Table List Items */}
+                <div className="grid gap-2">
                   {rest.map((entry) => {
                     const short = `${entry.user.wallet.slice(0, 6)}...${entry.user.wallet.slice(-4)}`;
                     const prize = (Number(entry.totalPrize) / 1_000_000).toFixed(2);
                     const displayName = entry.user.username ? `@${entry.user.username}` : short;
+                    const isCurrentUser =
+                      user &&
+                      (entry.user.id === user.id ||
+                        entry.user.wallet.toLowerCase() === user.wallet.toLowerCase());
 
                     return (
                       <div
                         key={entry.user.id}
-                        className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 transition-all hover:border-white/20 hover:bg-white/[0.06]"
+                        className={`grid grid-cols-[50px_1fr_100px_120px] items-center gap-4 rounded-2xl border px-4 py-3 transition-colors ${
+                          isCurrentUser
+                            ? "border-violet-500/40 bg-violet-500/10"
+                            : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]"
+                        }`}
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <span className="w-8 text-center text-xs font-bold text-[#8A8A8A]">
-                            #{entry.rank}
-                          </span>
-                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-xs font-bold text-[#CBCBCB]">
+                        <span className="text-center text-xs font-bold text-[#8A8A8A]">
+                          #{entry.rank}
+                        </span>
+
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-xs font-bold text-[#CBCBCB]">
                             {entry.user.avatar ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={entry.user.avatar} alt="" className="h-full w-full object-cover" />
@@ -276,22 +286,30 @@ export default function LeaderboardPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#F3F3F3]">
+                            <p className="truncate text-xs font-bold text-[#F3F3F3]">
                               {displayName}
+                              {isCurrentUser ? (
+                                <span className="ml-1.5 rounded-full bg-violet-500/30 px-2 py-0.5 text-[9px] font-extrabold text-violet-300">
+                                  You
+                                </span>
+                              ) : null}
                             </p>
-                            <p className="font-mono text-xs text-[#8A8A8A]">
+                            <p className="font-mono text-[11px] text-[#8A8A8A]">
                               {short}
                             </p>
                           </div>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-[#F3F3F3]">
-                            {entry.wins} {entry.wins === 1 ? "win" : "wins"}
-                          </p>
-                          <p className="text-xs font-medium text-[#8A8A8A]">
-                            ${prize} won
-                          </p>
+                        <div className="text-center">
+                          <span className="text-xs font-bold text-[#F3F3F3]">
+                            {entry.wins}
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-emerald-400">
+                            ${prize}
+                          </span>
                         </div>
                       </div>
                     );
