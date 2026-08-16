@@ -121,7 +121,6 @@ export default function EditProfilePage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 animate-fade-up">
-        <GameHeader gameName="Edit Profile" />
 
         <SurfaceCard as="section" className="overflow-hidden p-0 border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent shadow-2xl">
           {/* Hero Cover Banner */}
