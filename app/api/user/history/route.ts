@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { joinedAt: "desc" },
-      take: 50,
+      take: 200,
     });
 
     const history = participations.map((p) => ({
