@@ -9,6 +9,7 @@ import { FlipGame } from "./FlipGame";
 import { useGameState } from "@/hooks/useGameState";
 import { useSound } from "@/hooks/useSound";
 import { GameStakeModal } from "../GameStakeModal";
+import { GameLoadingOverlay } from "../GameLoadingOverlay";
 import { fromOARUnits } from "@/lib/contract";
 
 const EMPTY_ID = "3455654";
@@ -107,9 +108,17 @@ export const FlipView = ({ roomId }: { roomId?: string }) => {
     setShowPnl(true);
   };
 
+  const isOverlayOpen = loading || (isWaitingForChain && viewState === "flipping");
+
   return (
-    <div className="px-1 lg:px-4 py-0">
+    <div className="px-1 lg:px-4 py-0 relative">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
+
+      <GameLoadingOverlay
+        isOpen={isOverlayOpen}
+        gameType="flip"
+        stage={loading ? "tx" : "vrf"}
+      />
 
       {error && (
         <div className="mx-auto mb-4 w-full max-w-2xl rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">

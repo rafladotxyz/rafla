@@ -28,7 +28,7 @@ const shortcuts = [
   {
     title: "Game history",
     description: "Track rooms, rounds, and settled outcomes.",
-    href: "/draw",
+    href: "/history",
     icon: History,
   },
   {
@@ -43,6 +43,12 @@ export default function DashboardPage() {
   return <DashboardContent />;
 }
 
+interface UserStats {
+  gamesPlayed: number;
+  wins: number;
+  transactions: number;
+}
+
 function DashboardContent() {
   const { user, isAuthenticated, signIn, signOut, authHeaders } = useAuthContext();
   const displayName = user?.username ? `@${user.username}` : "Anonymous";
@@ -50,15 +56,37 @@ function DashboardContent() {
     ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`
     : "Not connected";
 
-  const [gameCount, setGameCount] = useState<number | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) { setGameCount(null); return; }
-    fetch("/api/user/history", { headers: authHeaders() })
+    if (!isAuthenticated) {
+      setStats(null);
+      return;
+    }
+    setLoadingStats(true);
+    fetch("/api/user/profile", { headers: authHeaders() })
       .then((r) => r.json())
-      .then(({ history }) => setGameCount(Array.isArray(history) ? history.length : 0))
-      .catch(() => setGameCount(0));
+      .then(({ user: profileUser }) => {
+        if (profileUser?._count) {
+          setStats({
+            gamesPlayed: profileUser._count.rooms ?? 0,
+            wins: profileUser._count.results ?? 0,
+            transactions: profileUser._count.transactions ?? 0,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("[Dashboard] Error fetching profile stats:", err);
+        setStats({ gamesPlayed: 0, wins: 0, transactions: 0 });
+      })
+      .finally(() => setLoadingStats(false));
   }, [isAuthenticated, authHeaders]);
+
+  const winRate =
+    stats && stats.gamesPlayed > 0
+      ? `${Math.round((stats.wins / stats.gamesPlayed) * 100)}%`
+      : "0%";
 
   return (
     <div className="min-h-screen px-4 pb-12 pt-24 md:pt-28">
@@ -161,17 +189,41 @@ function DashboardContent() {
           </div>
 
           <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6 backdrop-blur-xl animate-fade-up">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373]">Quick stats</p>
+            <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373]">Real-time stats</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {[
-                { label: "Games", value: isAuthenticated ? (gameCount === null ? "…" : String(gameCount)) : "—" },
-                { label: "Modes", value: "Public / Private" },
-                { label: "Network", value: "Base Sepolia" },
-                { label: "Status", value: isAuthenticated ? "Signed in" : "Guest" },
+                {
+                  label: "Games Played",
+                  value: isAuthenticated
+                    ? loadingStats
+                      ? "…"
+                      : String(stats?.gamesPlayed ?? 0)
+                    : "—",
+                },
+                {
+                  label: "Rounds Won",
+                  value: isAuthenticated
+                    ? loadingStats
+                      ? "…"
+                      : String(stats?.wins ?? 0)
+                    : "—",
+                },
+                {
+                  label: "Win Rate",
+                  value: isAuthenticated
+                    ? loadingStats
+                      ? "…"
+                      : winRate
+                    : "—",
+                },
+                {
+                  label: "Account Status",
+                  value: isAuthenticated ? "Signed in" : "Guest",
+                },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <p className="text-[11px] uppercase tracking-[0.16em] text-[#737373]">{item.label}</p>
-                  <p className="mt-2 text-sm text-[#F3F3F3]">{item.value}</p>
+                  <p className="mt-2 text-sm font-semibold text-[#F3F3F3]">{item.value}</p>
                 </div>
               ))}
             </div>

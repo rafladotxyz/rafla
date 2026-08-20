@@ -7,6 +7,26 @@ export function formatCurrency(amount: number): string {
   return amount.toFixed(2);
 }
 
+export function formatCompactCurrency(amount: number): string {
+  if (isNaN(amount) || !isFinite(amount) || amount === 0) return "0";
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+
+  if (abs >= 1_000_000_000) {
+    const val = (abs / 1_000_000_000).toFixed(1);
+    return `${sign}${val.endsWith(".0") ? val.slice(0, -2) : val}B`;
+  }
+  if (abs >= 1_000_000) {
+    const val = (abs / 1_000_000).toFixed(1);
+    return `${sign}${val.endsWith(".0") ? val.slice(0, -2) : val}M`;
+  }
+  if (abs >= 1_000) {
+    const val = (abs / 1_000).toFixed(1);
+    return `${sign}${val.endsWith(".0") ? val.slice(0, -2) : val}k`;
+  }
+  return `${sign}${abs % 1 === 0 ? abs.toLocaleString() : abs.toFixed(2)}`;
+}
+
 export function getTimeRemaining(targetTime: number): {
   minutes: number;
   seconds: number;
