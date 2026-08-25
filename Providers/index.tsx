@@ -8,7 +8,8 @@ import { type ReactNode } from "react";
 import { config } from "@/config";
 import { baseSepolia, base } from "viem/chains";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+});
 
 const privyAppId = process.env.PRIVY_APP_ID;
 
@@ -34,7 +35,7 @@ export default function ContextProvider({ children }: { children: ReactNode }) {
 
   return (
     <PrivyProvider
-      appId={hasValidAppId ? privyAppId! : FALLBACK_APP_ID}
+      appId={privyAppId!}
       config={{
         // Every login method Privy offers, so non-crypto friends can play.
         loginMethods: [
