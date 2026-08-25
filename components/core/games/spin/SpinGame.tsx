@@ -15,6 +15,8 @@ export const SpinGame = ({
   isLoading,
   isWaitingForChain,
   isSpinning,
+  vrfTimedOut,
+  onVrfRetry,
 }: {
   handleSpinResult: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
@@ -23,8 +25,10 @@ export const SpinGame = ({
   isLoading?: boolean;
   isWaitingForChain?: boolean;
   isSpinning?: boolean;
+  vrfTimedOut?: boolean;
+  onVrfRetry?: () => void;
 }) => (
-  <div className="w-full px-0 py-8 lg:px-4sm:py-12">
+  <div className="w-full px-0 py-8 sm:py-12 lg:px-4">
     <SpinWheel
       onResult={handleSpinResult}
       externalSpinTrigger={externalSpinTrigger}
@@ -33,6 +37,8 @@ export const SpinGame = ({
       isLoading={isLoading}
       isWaitingForChain={isWaitingForChain}
       isSpinning={isSpinning}
+      vrfTimedOut={vrfTimedOut}
+      onVrfRetry={onVrfRetry}
     />
   </div>
 );

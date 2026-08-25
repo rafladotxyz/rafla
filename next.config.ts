@@ -5,9 +5,6 @@ const nextConfig = {
   transpilePackages: [
     "@coinbase/cdp-sdk",
     "@base-org/account",
-    "@reown/appkit",
-    "@reown/appkit-adapter-wagmi",
-    "@wagmi/connectors",
   ],
 };
 

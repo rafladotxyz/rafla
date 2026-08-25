@@ -1,29 +1,23 @@
 "use client";
 
-import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
+import { useChainId, useSwitchChain } from "wagmi";
+import { base, baseSepolia } from "viem/chains";
 import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSound } from "@/hooks/useSound";
 import Base from "@/assets/base.png";
 import BaseSepolia from "@/assets/baseSepolia.png";
-import Monad from "@/assets/monad.svg";
 import Image from "next/image";
 
 export function GameHeader({ gameName }: { gameName?: string }) {
   const router = useRouter();
-  const { open } = useAppKit();
-  const { caipNetwork } = useAppKitNetwork();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const { isSoundEnabled, toggleSound } = useSound();
 
-  const getNetworkIcon = (name: string) => {
-    switch (name) {
-      case "Base Sepolia": return BaseSepolia;
-      case "Base":         return Base;
-      case "Monad":
-      case "Monad Testnet": return Monad;
-      default:             return Base;
-    }
-  };
+  const activeChain = chainId === base.id ? base : baseSepolia;
+  const otherChain = chainId === base.id ? baseSepolia : base;
+  const networkName = activeChain.name;
 
   return (
     <div className="flex items-center justify-between py-1">
@@ -68,23 +62,21 @@ export function GameHeader({ gameName }: { gameName?: string }) {
           }
         </button>
 
-        {/* Network pill */}
+        {/* Network pill — tap to toggle Base / Base Sepolia */}
         <button
-          onClick={() => open()}
-          className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          onClick={() => switchChain?.({ chainId: otherChain.id })}
+          title={`Switch to ${otherChain.name}`}
+          className="focus-ring flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/[0.09]"
         >
           <Image
             height={20}
             width={20}
-            src={
-              caipNetwork?.assets?.imageUrl ||
-              getNetworkIcon(caipNetwork?.name || "Base")
-            }
-            alt="Network"
+            src={activeChain.id === base.id ? Base : BaseSepolia}
+            alt={networkName}
             className="h-[18px] w-[18px] rounded-full object-cover"
           />
           <span className="hidden text-[13px] font-medium text-[#D4D4D4] xs:inline">
-            {caipNetwork?.name ?? "Base"}
+            {networkName}
           </span>
         </button>
       </div>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useAuthContext } from "@/context/AuthContext";
-import { useAppKit, useAppKitNetwork } from "@reown/appkit/react";
+import { useChainId, useSwitchChain } from "wagmi";
+import { base, baseSepolia } from "viem/chains";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
-  Globe,
   History,
   LogOut,
   Trophy,
@@ -16,11 +16,9 @@ import {
 import { useEffect, useRef, useState } from "react";
 import Base from "@/assets/base.png";
 import BaseSepolia from "@/assets/baseSepolia.png";
-import Monad from "@/assets/monad.svg";
 
 export function SignInButton() {
   const {
-    isConnected,
     isAuthenticated,
     isLoading,
     user,
@@ -28,8 +26,8 @@ export function SignInButton() {
     signOut,
     error,
   } = useAuthContext();
-  const { open } = useAppKit();
-  const { caipNetwork } = useAppKitNetwork();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -55,20 +53,8 @@ export function SignInButton() {
     };
   }, [menuOpen]);
 
-  const getNetworkIcon = (name: string) => {
-    switch (name) {
-      case "Base Sepolia":
-        return BaseSepolia;
-      case "Base":
-        return Base;
-      case "Monad":
-        return Monad;
-      case "Monad Testnet":
-        return Monad;
-      default:
-        return Base;
-    }
-  };
+  const activeChain = chainId === base.id ? base : baseSepolia;
+  const otherChain = chainId === base.id ? baseSepolia : base;
 
   const navigateTo = (path: string) => {
     setMenuOpen(false);
@@ -77,25 +63,13 @@ export function SignInButton() {
 
   const handleSwitchNetwork = () => {
     setMenuOpen(false);
-    open({ view: "Account" });
+    switchChain?.({ chainId: otherChain.id });
   };
 
   const handleSignOut = () => {
     setMenuOpen(false);
-    signOut();
+    void signOut();
   };
-
-  if (!isConnected) {
-    return (
-      <button
-        type="button"
-        onClick={() => open()}
-        className="inline-flex h-9 lg:h-10 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:translate-y-0"
-      >
-        Connect wallet
-      </button>
-    );
-  }
 
   if (!isAuthenticated) {
     return (
@@ -104,13 +78,13 @@ export function SignInButton() {
           type="button"
           onClick={signIn}
           disabled={isLoading}
-          className={`inline-flex h-9 lg:h-10 items-center justify-center rounded-full border px-4 text-xs font-semibold transition-colors ${
+          className={`focus-ring inline-flex h-9 lg:h-10 items-center justify-center rounded-full border px-4 text-xs font-semibold transition-colors ${
             isLoading
               ? "cursor-not-allowed border-white/10 bg-white/5 text-[#4A4A4A]"
               : "border-white/10 bg-white text-black hover:bg-[#F5F5F5]"
           }`}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "Opening sign-in…" : "Sign in"}
         </button>
         {error ? (
           <span className="max-w-[180px] text-right text-[11px] text-red-400">
@@ -125,7 +99,9 @@ export function SignInButton() {
     ? `@${user.username}`
     : `${user?.wallet.slice(0, 6)}...${user?.wallet.slice(-4)}`;
 
-  const networkName = caipNetwork?.name || "Base Sepolia";
+  const networkName = activeChain.name;
+
+  const getNetworkIcon = (id: number) => (id === base.id ? Base : BaseSepolia);
 
   return (
     <div ref={menuRef} className="relative">
@@ -264,7 +240,7 @@ export function SignInButton() {
               <Image
                 height={16}
                 width={16}
-                src={getNetworkIcon(networkName)}
+                src={getNetworkIcon(activeChain.id)}
                 alt={networkName}
                 className="h-full w-full rounded-full object-contain"
               />
