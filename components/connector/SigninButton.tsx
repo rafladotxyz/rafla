@@ -71,6 +71,19 @@ export function SignInButton() {
     void signOut();
   };
 
+  if (isLoading) {
+    return (
+      <div
+        className="inline-flex h-9 lg:h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-[#A3A3A3]"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-transparent" />
+        Checking session…
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-end gap-1">
