@@ -61,8 +61,8 @@ export function useAuth() {
       const token = await getAccessToken();
       tokenRef.current = token;
       return token;
-    } catch {
-      // Token is no longer obtainable — the session is dead.
+    } catch (err) {
+      console.error("[auth] getAccessToken failed:", err);
       clearAuth();
       return null;
     }
@@ -73,7 +73,19 @@ export function useAuth() {
       const res = await fetch("/api/user/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error(
+          `[auth] profile fetch failed: HTTP ${res.status} — server could not verify the Privy token. Check PRIVY_APP_SECRET and the server logs.`,
+        );
+        setState((s) => ({
+          ...s,
+          error:
+            res.status === 401
+              ? "Signed in, but the server rejected the session. Is PRIVY_APP_SECRET set on the server?"
+              : `Profile request failed (${res.status}).`,
+        }));
+        return;
+      }
 
       const { user } = await res.json();
       setState({
@@ -82,8 +94,12 @@ export function useAuth() {
         isAuthenticated: true,
         error: null,
       });
-    } catch {
-      // Network hiccup — keep any existing state; next refresh retries.
+    } catch (err) {
+      console.error("[auth] profile fetch threw:", err);
+      setState((s) => ({
+        ...s,
+        error: "Couldn't reach the server for your profile.",
+      }));
     } finally {
       setProfileSettled(true);
     }
@@ -127,8 +143,13 @@ export function useAuth() {
     setState((s) => ({ ...s, error: null }));
     try {
       await login();
-    } catch {
-      // User closed the modal — not an error.
+    } catch (err) {
+      console.error("[auth] Privy login() failed or was dismissed:", err);
+      setState((s) => ({
+        ...s,
+        error:
+          "The sign-in window failed to open. Check the console and your connection.",
+      }));
     }
   }, [ready, authenticated, login]);
 
