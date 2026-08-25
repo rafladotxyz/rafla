@@ -17,14 +17,14 @@ const privyAppId = process.env.PRIVY_APP_ID;
 // works) even before real credentials land in the environment.
 const FALLBACK_APP_ID = "00000000-0000-0000-0000-000000000000";
 
-// Privy app IDs are either legacy UUIDs or the newer 24-char base62 format.
+// Privy app IDs are either legacy UUIDs or newer variable-length base62 IDs.
 const hasValidAppId =
   !!privyAppId &&
   !privyAppId.includes("your-") &&
   (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     privyAppId,
   ) ||
-    /^[a-z0-9]{24}$/.test(privyAppId));
+    /^[a-z0-9]{16,64}$/.test(privyAppId));
 
 export default function ContextProvider({ children }: { children: ReactNode }) {
   if (!hasValidAppId && typeof window !== "undefined") {
