@@ -1,81 +1,253 @@
-
 "use client";
 
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { GameHeader } from "@/components/core/games/GameHeader";
 import { Disclaimer } from "../cards/DisclaimerCard";
+import { PnL } from "../cards/PnLCard";
+import { RevealStage } from "../RevealStage";
 import { useDisclaimer } from "@/hooks/useDisclaimer";
-import { Sparkles, Clock, ArrowRight, ShieldCheck, Coins } from "lucide-react";
+import { useGameState } from "@/hooks/useGameState";
+import { useAuthContext } from "@/context/AuthContext";
+import { RoomGate } from "./RoomGate";
+import { GameUI } from "./GameUi";
+import { Trophy } from "lucide-react";
 import { SurfaceCard } from "@/components/ui/SurfaceCard";
+
+type StakeToken = "USDC" | "OAR" | "ETH";
+
+function formatAmount(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  if (value >= 100 || value % 1 === 0) return Math.round(value).toLocaleString("en-US");
+  return parseFloat(value.toFixed(4)).toLocaleString("en-US");
+}
+
+interface WinnerPrize {
+  parts: string[];
+  totalLabel: string;
+}
+
+function formatWinnerPrizes(prizes: {
+  usdcPrize: bigint;
+  oarPrize: bigint;
+  ethPrize: bigint;
+}): WinnerPrize {
+  const parts: string[] = [];
+  if (prizes.usdcPrize > 0n)
+    parts.push(`$${formatAmount(Number(prizes.usdcPrize) / 1_000_000)}`);
+  if (prizes.oarPrize > 0n)
+    parts.push(`${formatAmount(Number(prizes.oarPrize) / 1e18)} OAR`);
+  if (prizes.ethPrize > 0n)
+    parts.push(`${formatAmount(Number(prizes.ethPrize) / 1e18)} ETH`);
+  return { parts, totalLabel: parts.join(" + ") };
+}
 
 export const DrawView = ({ roomId }: { roomId?: string }) => {
   const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
 
+  // ── Solo path: create or join a room ───────────────────────────────────────
+  if (!roomId) {
+    return (
+      <div className="relative min-h-[70vh] flex flex-col items-center px-4 py-0">
+        {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
+        <div className="mx-auto w-full max-w-2xl py-4">
+          <GameHeader gameName="Rafla Draw" />
+        </div>
+        <RoomGate gameType="draw" />
+      </div>
+    );
+  }
+
+  // ── Live room path ──────────────────────────────────────────────────────────
   return (
-    <div className="px-4 py-0 relative min-h-[70vh] flex flex-col items-center">
+    <LiveDrawRoom key={roomId} roomId={roomId} />
+  );
+};
+
+const LiveDrawRoom = ({ roomId }: { roomId: string }) => {
+  const { showDisclaimer, acceptDisclaimer } = useDisclaimer();
+  const router = useRouter();
+  const { user } = useAuthContext();
+  const {
+    gameState,
+    players,
+    roomToken,
+    roomStakeRaw,
+    loading,
+    addEntry,
+    lastPrivateWinner,
+    error,
+  } = useGameState(roomId, "draw");
+
+  const [showPnl, setShowPnl] = useState(false);
+  const [pnlData, setPnlData] = useState<{ amount: string; isWin: boolean } | null>(null);
+  // Reveal each winner event exactly once, even after refreshes/re-renders.
+  const revealedRoundRef = useRef<string | null>(null);
+  const [reveal, setReveal] = useState<{
+    youWon: boolean;
+    winnerShort: string;
+    prizeLabel: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!lastPrivateWinner || !user) return;
+    const roundKey = `${lastPrivateWinner.roomId}:${lastPrivateWinner.winner}`;
+    if (revealedRoundRef.current === roundKey) return;
+    revealedRoundRef.current = roundKey;
+
+    // Defer one frame so the reveal state update doesn't run synchronously
+    // inside the effect body.
+    const winnerShort = `${lastPrivateWinner.winner.slice(0, 6)}...${lastPrivateWinner.winner.slice(-4)}`;
+    const raf = requestAnimationFrame(() => {
+      setReveal({
+        youWon:
+          !!user.wallet &&
+          lastPrivateWinner.winner.toLowerCase() === user.wallet.toLowerCase(),
+        winnerShort,
+        prizeLabel: formatWinnerPrizes(lastPrivateWinner).totalLabel,
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [lastPrivateWinner, user]);
+
+  const stake =
+    Number(roomStakeRaw ?? 0) /
+    (roomToken === "USDC" ? 1_000_000 : 1e18);
+
+  const handleJoin = () => {
+    if (!Number.isFinite(stake) || stake <= 0) return;
+    void addEntry(stake, { token: roomToken as StakeToken });
+  };
+
+  const handleCloseReveal = () => {
+    setReveal(null);
+  };
+
+  const handleShareResult = () => {
+    if (!reveal) return;
+    setPnlData({
+      amount: reveal.prizeLabel,
+      isWin: reveal.youWon,
+    });
+    setShowPnl(true);
+  };
+
+  const isNewRoundAvailable = gameState.status !== "completed";
+  const isCancelled = gameState.status === "cancelled" && !reveal;
+
+  return (
+    <div className="relative flex min-h-[70vh] flex-col items-center px-4 py-0">
       {showDisclaimer && <Disclaimer toggle={acceptDisclaimer} />}
 
-      <div className="w-full max-w-2xl mx-auto py-4">
+      {error ? (
+        <div
+          role="alert"
+          className="mx-auto mt-4 w-full max-w-2xl rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <div className="mx-auto w-full max-w-2xl py-4">
         <GameHeader gameName="Rafla Draw" />
       </div>
 
-      <div className="w-full max-w-2xl mx-auto my-6 animate-fade-up">
-        <SurfaceCard className="relative overflow-hidden p-6 md:p-10 text-center border border-amber-500/30 bg-gradient-to-b from-amber-500/10 via-black/80 to-black/95 shadow-2xl backdrop-blur-xl">
-          {/* Ambient Glow Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest text-amber-300 shadow-lg mb-6">
-            <Clock className="h-4 w-4 animate-spin [animation-duration:8s]" />
-            <span>Coming Soon • Phase 2</span>
-          </div>
-
-          <h2 className="text-2xl md:text-4xl font-extrabold text-[#F3F3F3] tracking-tight">
-            Rafla Draw is Under Construction
-          </h2>
-
-          <p className="mt-4 text-sm md:text-base leading-relaxed text-[#A3A3A3] max-w-lg mx-auto">
-            Our multi-player pooled raffle contracts and Chainlink VRF Phase 2 infrastructure are currently undergoing final auditing. The Draw mode will launch shortly!
+      {isCancelled ? (
+        <SurfaceCard className="mx-auto mt-8 flex w-full max-w-[560px] flex-col items-center gap-4 p-8 text-center animate-fade-up">
+          <p className="text-xl font-semibold text-[#F3F3F3]">
+            This room was cancelled
           </p>
-
-          {/* Feature Highlights Grid */}
-          <div className="my-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <Sparkles className="h-5 w-5 text-amber-400 mb-2" />
-              <p className="text-xs font-bold text-white">Pooled Multi-Player</p>
-              <p className="text-[11px] text-[#8A8A8A] mt-1">Join shared rooms with tiered tickets.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <ShieldCheck className="h-5 w-5 text-emerald-400 mb-2" />
-              <p className="text-xs font-bold text-white">Chainlink VRF</p>
-              <p className="text-[11px] text-[#8A8A8A] mt-1">100% tamper-proof on-chain random winner.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <Coins className="h-5 w-5 text-purple-400 mb-2" />
-              <p className="text-xs font-bold text-white">Multi-Token Staking</p>
-              <p className="text-[11px] text-[#8A8A8A] mt-1">Stake USDC, OAR, or ETH to win the pool.</p>
-            </div>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-white/10">
-            <p className="text-xs font-semibold text-[#8A8A8A]">In the meantime, try live games:</p>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/flip"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-bold text-black transition-transform hover:-translate-y-0.5"
-              >
-                <span>Play Rafla Flip</span>
-                <ArrowRight size={14} />
-              </Link>
-              <Link
-                href="/spin"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-white/10"
-              >
-                <span>Play Rafla Spin</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
+          <p className="max-w-sm text-sm leading-relaxed text-[#9A9A9A]">
+            It didn&apos;t reach its minimum player count before closing, so no
+            draw ran. Check your profile history for how your deposit settled.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push("/history")}
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 text-sm font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+          >
+            View history
+          </button>
         </SurfaceCard>
-      </div>
+      ) : (
+        <GameUI
+          roomId={roomId}
+          gameState={gameState}
+          players={players}
+          roomToken={roomToken}
+          roomStakeRaw={roomStakeRaw}
+          isJoining={loading}
+          onJoin={handleJoin}
+        />
+      )}
+
+      {showPnl && pnlData && (
+        <PnL
+          amount={pnlData.amount}
+          isWin={pnlData.isWin}
+          gameType="draw"
+          handleClick={() => setShowPnl(false)}
+          shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/draw/${roomId}`}
+        />
+      )}
+
+      {reveal ? (
+        <RevealStage label="Draw result" onClose={handleCloseReveal}>
+          <div className="flex flex-col items-center px-5 pb-6 pt-5 text-center sm:px-6 sm:pt-6">
+            <div className="mb-4 flex h-24 w-24 items-end justify-center rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+              <Trophy
+                className={`h-full w-full ${reveal.youWon ? "text-[#D9D9D9]" : "text-[#737373]"}`}
+              />
+            </div>
+
+            <p className="text-[15px] font-medium uppercase tracking-[0.22em] text-[#737373]">
+              {reveal.youWon ? "You won the pool" : "The pot went to"}
+            </p>
+            {reveal.youWon ? (
+              <p className="mt-1 text-[42px] font-bold leading-tight text-[#1C9DF7] sm:text-[52px]">
+                +{reveal.prizeLabel || "the pool"}
+              </p>
+            ) : (
+              <p className="mt-2 font-mono text-lg font-semibold text-[#E8E8E8]">
+                {reveal.winnerShort}
+              </p>
+            )}
+            {!reveal.youWon && reveal.prizeLabel ? (
+              <p className="mt-1 text-[13px] text-[#737373]">
+                Winning share: {reveal.prizeLabel}
+              </p>
+            ) : null}
+
+            <div className="mt-6 grid w-full gap-2.5">
+              {isNewRoundAvailable ? (
+                <button
+                  type="button"
+                  onClick={() => router.push("/draw")}
+                  className="focus-ring h-12 rounded-full bg-white text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:scale-[0.98]"
+                >
+                  Start a new room
+                </button>
+              ) : null}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleShareResult}
+                  className="focus-ring h-12 rounded-full border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/[0.10]"
+                >
+                  Share result
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseReveal}
+                  className="focus-ring h-12 rounded-full border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/[0.10]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </RevealStage>
+      ) : null}
     </div>
   );
 };

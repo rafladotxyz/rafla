@@ -2,27 +2,27 @@
 
 interface CircularProgressProps {
   progress: number;
-  size?: number;
   strokeWidth?: number;
+  className?: string;
 }
 
+// ViewBox-based so the parent controls rendered size (stays responsive).
 export function CircularProgress({
   progress,
-  size = 384,
   strokeWidth = 2,
+  className,
 }: CircularProgressProps) {
+  const size = 100;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
     <svg
-      width={size}
-      height={size}
-      className="transform -rotate-90"
-      style={{ filter: "drop-shadow(0 0 20px rgba(100, 100, 100, 0.3))" }}
+      viewBox={`0 0 ${size} ${size}`}
+      className={`h-full w-full -rotate-90 ${className ?? ""}`}
+      aria-hidden
     >
-      {/* Background Circle */}
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -31,14 +31,12 @@ export function CircularProgress({
         stroke="#2A2A2A"
         strokeWidth={strokeWidth}
       />
-
-      {/* Progress Circle */}
       <circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#525252"
+        stroke="#D9D9D9"
         strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={offset}

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Coins, ArrowRight, Wallet } from "lucide-react";
+import { Coins, Wallet } from "lucide-react";
 import head from "@/assets/head1.svg";
 import tail from "@/assets/tail.svg";
 import { ModalShell } from "@/components/ui/ModalShell";
@@ -129,7 +129,12 @@ export function GameStakeModal({
     return preset ?? 0;
   }, [customAmount, preset]);
 
-  const canSubmit = amount >= meta.minAmount && !isSubmitting;
+  const balanceNum = Number(balances[selectedToken]?.formatted ?? NaN);
+  const hasBalance = !loadingBalances && Number.isFinite(balanceNum);
+  const exceedsBalance = hasBalance && amount > balanceNum;
+  const belowMinimum = amount < meta.minAmount;
+  const canSubmit =
+    !belowMinimum && !exceedsBalance && !isSubmitting && hasBalance;
 
   const formatAmount = (n: number) => {
     if (selectedToken === "ETH") return n.toFixed(4);
@@ -195,33 +200,9 @@ export function GameStakeModal({
           </div>
         )}
 
-        {/* ── Top cards row ───────────────────────────────────────────────────── */}
-        <div className="grid gap-3 sm:grid-cols-[1.08fr_0.92fr]">
-          {/* Info card */}
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#8A8A8A]">
-                  Stake preview
-                </p>
-                <h3 className="text-lg font-semibold text-[#F3F3F3] sm:text-xl">
-                  Choose an amount, then confirm.
-                </h3>
-                <p className="max-w-sm text-sm leading-relaxed text-[#A3A3A3]">
-                  {availableTokens.length > 1
-                    ? `Pick your preferred token and set a stake before the game starts.`
-                    : `Use a preset or enter a custom ${meta.symbol} amount.`}
-                </p>
-              </div>
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-lg font-bold transition-colors ${meta.borderColor} ${meta.bgColor} ${meta.color}`}>
-                {selectedToken === "ETH" ? "Ξ" : selectedToken === "USDC" ? "$" : "◈"}
-              </div>
-            </div>
-          </div>
-
-          {/* Side selector (Flip) OR token info card */}
-          {showSideSelector ? (
-            <div className="grid gap-3 sm:grid-cols-1">
+        {/* ── Side selector (Flip) ──────────────────────────────────────────── */}
+        {showSideSelector ? (
+          <div className="grid gap-3 sm:grid-cols-2">
               {(["heads", "tails"] as const).map((side) => {
                 const active = selectedSide === side;
                 return (
@@ -260,28 +241,8 @@ export function GameStakeModal({
                   </button>
                 );
               })}
-            </div>
-          ) : (
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#8A8A8A]">
-                    {gameName} ready
-                  </p>
-                  <p className="mt-2 text-base font-medium text-[#F3F3F3]">
-                    Set your stake before launching.
-                  </p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#CBCBCB]">
-                  <ArrowRight className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-[#9A9A9A]">
-                The game starts once your transaction is confirmed on-chain.
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : null}
 
         {/* ── Amount selector ─────────────────────────────────────────────────── */}
         <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
@@ -361,9 +322,13 @@ export function GameStakeModal({
               {availableTokens.length > 1 && ` via ${meta.label}`}
             </p>
             <p className="mt-1 text-sm text-[#9A9A9A]">
-              {canSubmit
-                ? "Ready to submit the transaction."
-                : `Enter at least ${formatAmount(meta.minAmount)} ${meta.symbol} to continue.`}
+              {exceedsBalance
+                ? `That's more than your balance${hasBalance ? ` (${formatAmount(balanceNum)} ${meta.symbol})` : ""}.`
+                : belowMinimum
+                  ? `Enter at least ${formatAmount(meta.minAmount)} ${meta.symbol} to continue.`
+                  : loadingBalances
+                    ? "Checking your balance…"
+                    : "Ready to submit the transaction."}
             </p>
             {feeNotice || payoutNotice ? (
               <div className="mt-3 space-y-1.5 rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">

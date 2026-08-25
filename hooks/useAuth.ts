@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useAccount, useSignMessage, useDisconnect } from "wagmi";
-import { SiweMessage } from "siwe";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useAccount } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
 
 export interface RaflaUser {
   id: string;
@@ -18,146 +18,128 @@ interface AuthState {
   user: RaflaUser | null;
   token: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
   error: string | null;
 }
 
-const TOKEN_KEY = "rafla_jwt";
+const TOKEN_REFRESH_MS = 15 * 60_000;
 
 export function useAuth() {
-  const { address, chainId, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const { disconnect } = useDisconnect();
+  const { address } = useAccount();
+  const {
+    ready,
+    authenticated,
+    user: privyUser,
+    login,
+    logout,
+    getAccessToken,
+  } = usePrivy();
 
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
     isAuthenticated: false,
-    isLoading: true,
     error: null,
   });
+  const [profileSettled, setProfileSettled] = useState(false);
 
-  // On mount — restore token + fetch profile if token exists
-  useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (stored) {
-      fetchProfile(stored);
-    } else {
-      setState((s) => ({ ...s, isLoading: false }));
-    }
+  // Synchronous token source for authHeaders(); refreshed below.
+  const tokenRef = useRef<string | null>(null);
+
+  const clearAuth = useCallback(() => {
+    tokenRef.current = null;
+    setProfileSettled(false);
+    setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      error: null,
+    });
   }, []);
 
-  // When wallet disconnects — clear auth
-  useEffect(() => {
-    if (!isConnected && state.isAuthenticated) {
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const token = await getAccessToken();
+      tokenRef.current = token;
+      return token;
+    } catch {
+      // Token is no longer obtainable — the session is dead.
       clearAuth();
+      return null;
     }
-  }, [isConnected]);
+  }, [getAccessToken, clearAuth]);
 
   const fetchProfile = useCallback(async (token: string) => {
     try {
       const res = await fetch("/api/user/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) {
-        // Token expired or invalid
-        clearAuth();
-        return;
-      }
+      if (!res.ok) return;
 
       const { user } = await res.json();
       setState({
         user,
         token,
         isAuthenticated: true,
-        isLoading: false,
         error: null,
       });
     } catch {
-      clearAuth();
+      // Network hiccup — keep any existing state; next refresh retries.
+    } finally {
+      setProfileSettled(true);
     }
   }, []);
 
+  // Prefer the active wagmi wallet; fall back to a Privy linked wallet
+  // (covers embedded-wallet users who logged in via email/social).
+  const linkedWallet = privyUser?.linkedAccounts?.find(
+    (account): account is Extract<typeof account, { address: string }> =>
+      account.type === "wallet" &&
+      typeof (account as { address?: unknown }).address === "string",
+  );
+  const walletAddress =
+    address ?? linkedWallet?.address ?? state.user?.wallet ?? null;
+
+  // Bootstrap + periodic refresh while signed in. All state changes happen in
+  // async continuations, never synchronously inside the effect body.
+  useEffect(() => {
+    if (!ready || !authenticated) return;
+
+    let cancelled = false;
+    void (async () => {
+      const token = await refreshToken();
+      if (cancelled || !token) return;
+      await fetchProfile(token);
+    })();
+
+    const interval = window.setInterval(() => {
+      void refreshToken();
+    }, TOKEN_REFRESH_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [ready, authenticated, refreshToken, fetchProfile]);
+
+  // signIn opens the Privy modal; the bootstrap effect completes auth.
   const signIn = useCallback(async () => {
-    if (!address || !chainId) {
-      setState((s) => ({ ...s, error: "wallet not connected" }));
-      return;
-    }
-
-    setState((s) => ({ ...s, isLoading: true, error: null }));
-
+    if (!ready || authenticated) return;
+    setState((s) => ({ ...s, error: null }));
     try {
-      // 1. Get nonce from server
-      const nonceRes = await fetch(
-        `/api/auth/nonce?wallet=${address.toLowerCase()}`,
-      );
-      if (!nonceRes.ok) throw new Error("failed to get nonce");
-      const { nonce } = await nonceRes.json();
-
-      // 2. Build SIWE message
-      const message = new SiweMessage({
-        domain: window.location.host,
-        address,
-        statement:
-          "Sign in to Rafla. This request will not trigger a blockchain transaction or cost any gas fees.",
-        uri: window.location.origin,
-        version: "1",
-        chainId,
-        nonce,
-      });
-
-      const preparedMessage = message.prepareMessage();
-
-      // 3. Ask wallet to sign
-      const signature = await signMessageAsync({ message: preparedMessage });
-
-      // 4. Verify on server → get JWT + user
-      const verifyRes = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: preparedMessage, signature }),
-      });
-
-      if (!verifyRes.ok) {
-        const { error } = await verifyRes.json();
-        throw new Error(error || "verification failed");
-      }
-
-      const { token, user } = await verifyRes.json();
-
-      // 5. Store JWT in localStorage for persistence
-      localStorage.setItem(TOKEN_KEY, token);
-
-      setState({
-        user,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "sign in failed";
-      // User rejected the signature — don't show error
-      const isUserRejection =
-        message.includes("rejected") || message.includes("denied");
-      setState((s) => ({
-        ...s,
-        isLoading: false,
-        error: isUserRejection ? null : message,
-      }));
+      await login();
+    } catch {
+      // User closed the modal — not an error.
     }
-  }, [address, chainId, signMessageAsync]);
+  }, [ready, authenticated, login]);
 
   const signOut = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      if (logout) await logout();
     } catch {
       // best effort
     }
     clearAuth();
-    disconnect();
-  }, [disconnect]);
+  }, [logout, clearAuth]);
 
   const updateProfile = useCallback(
     async (
@@ -165,7 +147,8 @@ export function useAuth() {
         Pick<RaflaUser, "username" | "avatar" | "bio" | "twitter" | "telegram">
       >,
     ) => {
-      if (!state.token) return { error: "not authenticated" };
+      const token = tokenRef.current ?? (await refreshToken());
+      if (!token) return { error: "not authenticated" };
 
       try {
         const payload = { ...data };
@@ -180,7 +163,7 @@ export function useAuth() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${state.token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         });
@@ -194,33 +177,28 @@ export function useAuth() {
         return { error: "update failed" };
       }
     },
-    [state.token],
+    [refreshToken],
   );
 
-  // Helper — get auth headers for any API call
+  // Sync helper for any API call.
   const authHeaders = useCallback((): Record<string, string> => {
-    if (!state.token) return {};
-    return { Authorization: `Bearer ${state.token}` };
+    const token = tokenRef.current ?? state.token;
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
   }, [state.token]);
 
-  function clearAuth() {
-    localStorage.removeItem(TOKEN_KEY);
-    setState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    });
-  }
-
   return {
-    ...state,
+    user: state.user,
+    token: state.token,
+    isAuthenticated: authenticated && state.isAuthenticated,
+    // Resolving until Privy hydrates; once signed in, until the profile lands.
+    isLoading: !ready || (authenticated && !profileSettled),
+    error: state.error,
     signIn,
     signOut,
     updateProfile,
     authHeaders,
-    address,
-    isConnected,
+    address: walletAddress,
+    isConnected: !!walletAddress,
   };
 }

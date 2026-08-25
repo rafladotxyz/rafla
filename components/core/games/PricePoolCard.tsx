@@ -1,30 +1,23 @@
 "use client";
 
 import { formatCurrency } from "@/utils/utils";
-import Image from "next/image";
-import USD from "@/assets/USD.svg";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { SurfaceCard } from "@/components/ui/SurfaceCard";
+
 interface PricePoolCardProps {
   amount: number;
+  token?: string;
 }
 
-export function PricePoolCard({ amount }: PricePoolCardProps) {
+export function PricePoolCard({ amount, token = "USDC" }: PricePoolCardProps) {
   return (
-    <GlassCard className="bg-[#0A0A0A] p-6">
-      <p className="text-[14px] font-medium text-[#CBCBCB] mb-3">Price Pool</p>
-
-      <div className="flex items-center gap-3">
-        {/* USDC Icon */}
-        <Image src={USD} height={40} width={40} alt="USDC" />
-
-        {/* Amount */}
-        <div className="flex items-baseline gap-2">
-          <span className="text-[40px] font-bold text-[#D9D9D9]">
-            {formatCurrency(amount)}
-          </span>
-          <span className="text-[40px] font-semibold text-[#D9D9D9]">USDC</span>
-        </div>
-      </div>
-    </GlassCard>
+    <SurfaceCard className="p-5">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8A8A8A]">
+        Prize pool
+      </p>
+      <p className="text-4xl font-bold tabular-nums tracking-tight text-[#F3F3F3]">
+        {formatCurrency(amount)}{" "}
+        <span className="text-xl font-semibold text-[#CBCBCB]">{token}</span>
+      </p>
+    </SurfaceCard>
   );
 }

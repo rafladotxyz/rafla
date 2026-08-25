@@ -435,6 +435,8 @@ export function useGameState(roomId: string, gameType: GameType = "draw") {
   return {
     gameState,
     players,
+    roomToken,
+    roomStakeRaw,
     loading: loading || isApproving || isDepositing,
     isSettling,
     addEntry,

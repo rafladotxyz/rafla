@@ -14,7 +14,6 @@ interface Game {
   imageUrl: string;
   url: string;
   about: string;
-  isComingSoon?: boolean;
 }
 
 export const ExploreGames = () => {
@@ -36,8 +35,7 @@ export const ExploreGames = () => {
       imageUrl: Draw,
       url: "/draw",
       about:
-        "Seconds away from a life-changing moment. Take your spot before the timer hits zero.",
-      isComingSoon: true,
+        "Pool a stake with friends. When the room fills, the contract picks one winner.",
     },
   ];
 
@@ -66,7 +64,6 @@ export const ExploreGames = () => {
             about={game.about}
             imageUrl={game.imageUrl}
             url={game.url}
-            isComingSoon={game.isComingSoon}
             routeHandler={handleRoute}
             delay={idx * 110}
           />
@@ -81,7 +78,6 @@ const ExploreCard = ({
   url,
   imageUrl,
   about,
-  isComingSoon,
   routeHandler,
   delay,
 }: {
@@ -89,7 +85,6 @@ const ExploreCard = ({
   url: string;
   imageUrl: string;
   about: string;
-  isComingSoon?: boolean;
   routeHandler: (route: string) => void;
   delay: number;
 }) => {
@@ -112,12 +107,6 @@ const ExploreCard = ({
           alt={name}
           priority
         />
-        {isComingSoon && (
-          <div className="absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-black/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-300 shadow-xl backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-            Coming Soon
-          </div>
-        )}
         <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-100" />
         <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
       </div>

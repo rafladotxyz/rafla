@@ -43,7 +43,8 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  let { username, avatar, bio, twitter, telegram } = body;
+  let { username } = body;
+  const { avatar, bio, twitter, telegram } = body;
 
   // Normalize username: lowercase and remove leading @
   if (username) {
