@@ -11,11 +11,10 @@ import { baseSepolia, base } from "viem/chains";
 const queryClient = new QueryClient({
 });
 
-const privyAppId = process.env.PRIVY_APP_ID;
+const privyAppId = 'cmt7zgcnj00a10clb5zkvu2h0';
 
 // Well-formed stand-in ID so the SDK initializes (and static prerendering
 // works) even before real credentials land in the environment.
-const FALLBACK_APP_ID = "00000000-0000-0000-0000-000000000000";
 
 // Privy app IDs are either legacy UUIDs or newer variable-length base62 IDs.
 const hasValidAppId =
