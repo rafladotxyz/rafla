@@ -1,6 +1,7 @@
 import { FlipCard } from "./FlipCard";
 import { FlipResultCard } from "./FlipResult";
 import { FlippingScreen } from "./FlipScreen";
+import { RevealStage } from "../RevealStage";
 
 type CoinSide = "heads" | "tails";
 type FlipResult = "win" | "loss";
@@ -18,7 +19,9 @@ export const FlipGame = ({
   selectedSide,
   onSelectSide,
   flipResult,
-  handleFlipAgain,
+  handleRunItBack,
+  handleChangeStake,
+  handleCloseResult,
   handleShare,
   onPlay,
   isLoading,
@@ -28,7 +31,9 @@ export const FlipGame = ({
   selectedSide: CoinSide | null;
   onSelectSide: (side: CoinSide) => void;
   flipResult: FlipData;
-  handleFlipAgain: () => void;
+  handleRunItBack: () => void;
+  handleChangeStake: () => void;
+  handleCloseResult: () => void;
   handleShare: (amount: string, result: FlipResult) => void;
   onPlay: () => void;
   isLoading?: boolean;
@@ -47,14 +52,19 @@ export const FlipGame = ({
       <FlippingScreen side={selectedSide} isWaitingForChain={isWaitingForChain} />
     )}
     {viewState === "result" && flipResult && (
-      <FlipResultCard
-        result={flipResult.result}
-        landedSide={flipResult.landedSide}
-        amount={flipResult.amount}
-        stakeAmount={flipResult.stakeAmount}
-        onFlipAgain={handleFlipAgain}
-        onShare={handleShare}
-      />
+      <RevealStage label="Flip result" onClose={handleCloseResult}>
+        <FlipResultCard
+          result={flipResult.result}
+          landedSide={flipResult.landedSide}
+          calledSide={selectedSide ?? undefined}
+          amount={flipResult.amount}
+          stakeAmount={flipResult.stakeAmount}
+          onRunItBack={handleRunItBack}
+          onChangeStake={handleChangeStake}
+          onClose={handleCloseResult}
+          onShare={handleShare}
+        />
+      </RevealStage>
     )}
   </div>
 );

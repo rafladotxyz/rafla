@@ -3,7 +3,7 @@
 import { Users } from "lucide-react";
 import { Player } from "@/type/types";
 import { MinPlayersWarning } from "@/components/core/games/MinPlayersWarning";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { SurfaceCard } from "@/components/ui/SurfaceCard";
 
 interface PlayersCardProps {
   players: Player[];
@@ -55,15 +55,19 @@ export function PlayersCard({
   minPlayers,
 }: PlayersCardProps) {
   return (
-    <GlassCard className="bg-[#0A0A0A] py-6 px-4 w-full max-w-sm mx-auto">
+    <SurfaceCard className="mx-auto w-full max-w-sm px-4 py-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div
+        className="mb-4 flex items-center justify-between"
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2 text-[#E8E8E8]">
           <Users className="w-5 h-5" />
           <span className="text-sm font-medium">Total players</span>
         </div>
-        <div className="w-8 h-8 rounded-full bg-[#78350F]/60 flex items-center justify-center">
-          <span className="text-sm font-bold text-[#FCD34D]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+          <span className="text-sm font-bold tabular-nums text-[#F3F3F3]">
             {totalPlayers}
           </span>
         </div>
@@ -83,6 +87,6 @@ export function PlayersCard({
       </div>
 
       <MinPlayersWarning current={totalPlayers} required={minPlayers} />
-    </GlassCard>
+    </SurfaceCard>
   );
 }

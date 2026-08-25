@@ -13,6 +13,7 @@ export interface CreatedRoom {
   status: string;
   drawTime: string | null;
   contractRound: string | null;
+  minPlayers?: number | null;
 }
 
 export function useRoom() {

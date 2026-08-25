@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Constellation from "@/components/base/Constellation";
-import { headers } from "next/headers";
-import ContextProvider from "@/Providers/ReownProvider";
+import ContextProvider from "@/Providers";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { Suspense } from "react";
@@ -24,13 +23,16 @@ export const metadata: Metadata = {
   title: "Rafla",
   description: "Simple games. Real suspense",
 };
+
+// The provider tree (Privy) initializes network calls on mount, which cannot
+// run during static prerendering. Every route here is client-rendered anyway.
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersObj = await headers();
-  const cookies = headersObj.get("cookie");
   return (
     <html lang="en">
       <body
@@ -40,7 +42,7 @@ export default async function RootLayout({
           <ProgressBar />
         </Suspense>
         <Analytics />
-        <ContextProvider cookies={cookies}>
+        <ContextProvider>
           <AuthProvider>
             <ToastContainer />
             {/* Fixed starry background */}

@@ -12,17 +12,16 @@ export const FlippingScreen = ({
   const isHeads = side === "heads";
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6" role="status" aria-live="polite">
       <p className="text-[32px] font-semibold text-[#D9D9D9] animate-pulse">
         Flipping...
       </p>
-      <div className="animate-bounce" style={{ animationDuration: "0.6s" }}>
+      <div>
         <Image
           src={isHeads ? head : tail}
           height={180}
           width={160}
           alt={side}
-          className="drop-shadow-2xl"
           style={{
             animation: `spin3d ${0.6}s ease-in-out infinite`,
           }}

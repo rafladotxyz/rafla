@@ -8,10 +8,8 @@ import {
   Camera,
   Check,
   Copy,
-  DollarSign,
   Edit3,
   Gamepad2,
-  History,
   LogOut,
   Send,
   Trophy,
@@ -37,6 +35,24 @@ interface GameHistoryItem {
   joinedAt?: string;
   txHash?: string | null;
   status?: string;
+}
+
+interface WinningBadge {
+  symbol: string;
+  amount: string;
+  color: string;
+  bg: string;
+}
+
+function formatHistoryDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
 }
 
 function formatDisplayAmount(val: number | string, token?: string): string {
@@ -164,20 +180,6 @@ export default function ProfilePage() {
       0,
     );
 
-  const formattedTotalWon = () => {
-    const parts = [];
-    if (totalWonUSDC > 0 || (totalWonOAR === 0 && totalWonETH === 0)) {
-      parts.push(`$${formatDisplayAmount(totalWonUSDC)}`);
-    }
-    if (totalWonOAR > 0) {
-      parts.push(`${formatDisplayAmount(totalWonOAR)} OAR`);
-    }
-    if (totalWonETH > 0) {
-      parts.push(`${formatDisplayAmount(totalWonETH)} ETH`);
-    }
-    return parts.join(" + ");
-  };
-
   const winRate = history.length > 0 ? ((wins / history.length) * 100).toFixed(0) : "0";
   const shortWallet = user?.wallet
     ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`
@@ -209,19 +211,12 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={signIn}
-          className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-[15px] font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
+          className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-[15px] font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
         >
           Connect wallet
         </button>
       </div>
     );
-  }
-
-  interface WinningBadge {
-    symbol: string;
-    amount: string;
-    color: string;
-    bg: string;
   }
 
   const winningBadges: WinningBadge[] = [];
@@ -235,19 +230,6 @@ export default function ProfilePage() {
     winningBadges.push({ symbol: "ETH", amount: `${formatDisplayAmount(totalWonETH, "ETH")} ETH`, color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10" });
   }
 
-  const statTiles = [
-    { label: "Games played", value: history.length, icon: Gamepad2, color: "text-[#8B9DE8]", isWinnings: false },
-    { label: "Rounds won", value: wins, icon: Trophy, color: "text-[#F5A623]", isWinnings: false },
-    { label: "Win rate", value: `${winRate}%`, icon: History, color: "text-emerald-400", isWinnings: false },
-    { label: "Total winnings", value: formattedTotalWon(), icon: DollarSign, color: "text-purple-400", isWinnings: true },
-  ];
-
-  const balanceTiles = [
-    { label: "USDC Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.USDC.formatted), symbol: "USDC", color: "text-[#2775CA]", bg: "bg-[#2775CA]/10", icon: "$" },
-    { label: "OAR Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.OAR.formatted), symbol: "OAR", color: "text-[#F5A623]", bg: "bg-[#F5A623]/10", icon: "◈" },
-    { label: "ETH Balance", value: loadingBalances ? "..." : formatDisplayAmount(balances.ETH.formatted), symbol: "ETH", color: "text-[#8B9DE8]", bg: "bg-[#8B9DE8]/10", icon: "Ξ" },
-  ];
-
   return (
     <div className="min-h-screen bg-[#050505] px-4 pb-12 pt-24 md:pt-28">
       <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
@@ -258,16 +240,9 @@ export default function ProfilePage() {
         {/* Hero Profile Card */}
         <SurfaceCard as="section" className="overflow-hidden p-0">
           {/* Cover Header */}
-          <div className="relative h-28 w-full overflow-hidden sm:h-36">
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-950/60 via-purple-900/40 to-slate-950" />
-            <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-violet-500/20 blur-[70px]" />
-            <div className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-pink-500/20 blur-[80px]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-[length:20px_20px]" />
-            
-            <div className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#E8E8E8] backdrop-blur-md">
-              <UserRound className="h-3 w-3 text-violet-400" />
-              Profile Overview
-            </div>
+          <div className="relative h-24 w-full overflow-hidden sm:h-28">
+            <div className="absolute inset-0 bg-[radial-gradient(120%_140%_at_50%_0%,rgba(217,70,239,0.10),transparent_62%)]" />
+            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           </div>
 
           {/* Profile Header Content */}
@@ -276,7 +251,7 @@ export default function ProfilePage() {
               
               {/* Left: Avatar & Identity info */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                {/* Avatar with Camera Trigger */}
+                {/* Avatar with upload trigger */}
                 <div className="relative -mt-14 shrink-0 sm:-mt-16">
                   <div className="h-24 w-24 overflow-hidden rounded-[28px] border-4 border-[#050505] bg-neutral-900 shadow-[0_10px_30px_rgba(0,0,0,0.6)] sm:h-28 sm:w-28">
                     {avatarPreview ? (
@@ -288,7 +263,7 @@ export default function ProfilePage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/30 to-purple-900/40 text-3xl font-semibold text-white">
+                      <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-3xl font-semibold text-[#F3F3F3]">
                         {(user.username ?? user.wallet ?? "A")[0].toUpperCase()}
                       </div>
                     )}
@@ -297,21 +272,9 @@ export default function ProfilePage() {
                     type="button"
                     onClick={triggerPicker}
                     disabled={isUploading}
-                    className="absolute inset-0 flex items-center justify-center rounded-[28px] bg-black/60 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
                     aria-label="Upload avatar"
-                  >
-                    {isUploading ? (
-                      <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    ) : (
-                      <Camera className="h-5 w-5 text-white" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={triggerPicker}
-                    disabled={isUploading}
-                    aria-label="Upload avatar"
-                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#050505] bg-white text-black shadow-lg transition-transform hover:scale-105 active:scale-95"
+                    title="Upload avatar"
+                    className="focus-ring absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#050505] bg-white text-black shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-70"
                   >
                     {isUploading ? (
                       <div className="h-3.5 w-3.5 rounded-full border-2 border-black/40 border-t-transparent animate-spin" />
@@ -341,7 +304,8 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={copyWallet}
-                      className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                      aria-label={copied ? "Wallet address copied" : "Copy wallet address"}
+                      className="focus-ring inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                     >
                       <span className="font-mono text-[#CBCBCB]">
                         {shortWallet}
@@ -360,9 +324,9 @@ export default function ProfilePage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Twitter profile"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-4 w-4" />
                       </a>
                     ) : null}
 
@@ -372,9 +336,9 @@ export default function ProfilePage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Telegram profile"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                       >
-                        <Send className="h-3.5 w-3.5" />
+                        <Send className="h-4 w-4" />
                       </a>
                     ) : null}
                   </div>
@@ -386,7 +350,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => router.push("/profile/edit")}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:scale-98"
+                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:scale-[0.98]"
                 >
                   <Edit3 className="h-4 w-4" />
                   Edit profile
@@ -394,7 +358,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={signOut}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/30 hover:bg-red-500/20 active:scale-98"
+                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-transparent px-5 text-sm font-medium text-[#A3A3A3] transition-colors hover:border-white/20 hover:text-white"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out
@@ -422,7 +386,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={clearError}
-              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-red-200 transition-colors hover:bg-red-500/10"
+              className="focus-ring ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-red-200 transition-colors hover:bg-red-500/10"
               aria-label="Dismiss upload error"
             >
               <X className="h-4 w-4" />
@@ -438,67 +402,104 @@ export default function ProfilePage() {
           onChange={handleFileChange}
         />
 
-        {/* Wallet Balances Section */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-              Token Balances
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {balanceTiles.map(({ label, value, symbol, color, bg, icon }) => (
-              <SurfaceCard key={label} className="p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-2 text-[#8A8A8A]">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">
-                    {label}
-                  </span>
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${bg} ${color} text-xs font-bold`}>
-                    {icon}
-                  </div>
+        {/* Game Performance */}
+        <section aria-labelledby="performance-heading" className="space-y-3">
+          <h2
+            id="performance-heading"
+            className="px-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]"
+          >
+            Performance
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+            <SurfaceCard className="p-4 sm:col-span-3 sm:p-5">
+              <dl className="grid grid-cols-3 divide-x divide-white/10">
+                <div className="pr-2 text-center sm:pr-4">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8A8A]">
+                    Games played
+                  </dt>
+                  <dd className="mt-2.5 text-xl font-bold tabular-nums text-[#F3F3F3] sm:text-2xl">
+                    {history.length}
+                  </dd>
                 </div>
-                <p className="mt-3 text-2xl font-bold tracking-tight text-[#F3F3F3] sm:text-3xl">
-                  {value} <span className="text-sm font-medium text-[#8A8A8A]">{symbol}</span>
-                </p>
-              </SurfaceCard>
-            ))}
+                <div className="px-2 text-center sm:px-4">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8A8A]">
+                    Rounds won
+                  </dt>
+                  <dd className="mt-2.5 text-xl font-bold tabular-nums text-[#F3F3F3] sm:text-2xl">
+                    {wins}
+                  </dd>
+                </div>
+                <div className="pl-2 text-center sm:pl-4">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8A8A]">
+                    Win rate
+                  </dt>
+                  <dd className="mt-2.5 text-xl font-bold tabular-nums text-[#F3F3F3] sm:text-2xl">
+                    {winRate}%
+                  </dd>
+                </div>
+              </dl>
+            </SurfaceCard>
+
+            <SurfaceCard className="flex flex-col justify-center p-4 sm:col-span-2 sm:p-5">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
+                Total winnings
+              </h3>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {winningBadges.map((b) => (
+                  <span
+                    key={b.symbol}
+                    className={`inline-flex items-center rounded-lg border border-white/10 px-2 py-1 text-xs font-bold sm:text-sm ${b.bg} ${b.color}`}
+                  >
+                    {b.amount}
+                  </span>
+                ))}
+              </div>
+            </SurfaceCard>
           </div>
         </section>
 
-        {/* Game Stats Section */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]">
-              Performance Stats
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {statTiles.map(({ label, value, icon: Icon, color, isWinnings }) => (
-              <SurfaceCard key={label} className="p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8A8A]">
-                    {label}
-                  </span>
-                  <Icon className={`h-4 w-4 ${color}`} />
-                </div>
-                {isWinnings ? (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {winningBadges.map((b) => (
-                      <span
-                        key={b.symbol}
-                        className={`inline-flex items-center rounded-lg border border-white/10 ${b.bg} ${b.color} px-2 py-1 text-xs sm:text-sm font-bold`}
-                      >
-                        {b.amount}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 break-words text-xl font-bold text-[#F3F3F3] sm:text-2xl">
-                    {value}
-                  </p>
-                )}
-              </SurfaceCard>
-            ))}
-          </div>
+        {/* Token Balances */}
+        <section aria-labelledby="balances-heading" className="space-y-3">
+          <h2
+            id="balances-heading"
+            className="px-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8A8A]"
+          >
+            Token balances
+          </h2>
+          <SurfaceCard className="p-1.5 sm:p-2">
+            <ul className="divide-y divide-white/[0.06]">
+              {(["USDC", "OAR", "ETH"] as const).map((symbol) => {
+                const chip =
+                  symbol === "USDC"
+                    ? "bg-[#2775CA]/10 text-[#5BA7E8]"
+                    : symbol === "OAR"
+                      ? "bg-[#F5A623]/10 text-[#F5A623]"
+                      : "bg-[#8B9DE8]/10 text-[#8B9DE8]";
+                return (
+                  <li
+                    key={symbol}
+                    className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4"
+                  >
+                    <span
+                      className={`flex h-8 min-w-14 items-center justify-center rounded-lg px-2 text-xs font-bold tracking-wide ${chip}`}
+                    >
+                      {symbol}
+                    </span>
+                    {loadingBalances ? (
+                      <span className="block h-5 w-20 animate-pulse rounded bg-white/10" />
+                    ) : (
+                      <p className="truncate font-mono text-base font-bold tabular-nums text-[#F3F3F3]">
+                        {formatDisplayAmount(balances[symbol].formatted)}
+                        <span className="ml-1.5 text-xs font-medium text-[#8A8A8A]">
+                          {symbol}
+                        </span>
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </SurfaceCard>
         </section>
 
         {/* Game History Feed */}
@@ -516,7 +517,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => router.push("/history")}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
               >
                 View All History
                 <ChevronRight className="h-3.5 w-3.5 text-[#8A8A8A]" />
@@ -548,13 +549,13 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => router.push("/")}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
+                  className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-semibold text-[#E8E8E8] transition-colors hover:border-white/20 hover:bg-white/10"
                 >
                   Explore games
                 </button>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 {history.slice(0, 10).map((item) => {
                   const token = getHistoryToken(item);
                   const stakeAmount = toDisplayTokenAmount(
@@ -572,13 +573,14 @@ export default function ProfilePage() {
                     : formatTokenAmount(stakeAmount, token, "-");
 
                   return (
-                    <div
+                    <button
                       key={item.id}
+                      type="button"
                       onClick={() => router.push(`/profile/history/${item.id}`)}
-                      className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 transition-all hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
+                      className="focus-ring flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left transition-all hover:border-white/20 hover:bg-white/[0.06]"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.isWin ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-[#737373]"}`}
                         >
                           {item.isWin ? (
@@ -586,31 +588,25 @@ export default function ProfilePage() {
                           ) : (
                             <Gamepad2 className="h-4 w-4" />
                           )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-[#F3F3F3] capitalize">
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold capitalize text-[#F3F3F3]">
                             Rafla {item.gameType}
-                          </p>
-                          <p className="mt-0.5 text-xs text-[#8A8A8A]">
-                            {new Date(item.settledAt).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                            {' '}
-                            · {item.roomId.slice(0, 8)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-bold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
+                          </span>
+                          <span className="mt-0.5 block text-xs text-[#8A8A8A]">
+                            {formatHistoryDate(item.settledAt)}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className={`block text-sm font-bold ${item.isWin ? "text-emerald-400" : "text-[#9A9A9A]"}`}>
                           {formattedResultAmount}
-                        </p>
-                        <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] ${item.isWin ? "text-emerald-400/80" : "text-red-400/80"}`}>
+                        </span>
+                        <span className={`mt-0.5 block text-[11px] font-semibold uppercase tracking-[0.18em] ${item.isWin ? "text-emerald-400" : "text-red-400"}`}>
                           {item.isWin ? "Won" : "Loss"}
-                        </p>
-                      </div>
-                    </div>
+                        </span>
+                      </span>
+                    </button>
                   );
                 })}
               </div>

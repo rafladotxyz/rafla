@@ -46,6 +46,8 @@ export const SpinWheel = ({
   isLoading,
   isWaitingForChain,
   isSpinning,
+  vrfTimedOut,
+  onVrfRetry,
 }: {
   onResult?: (segment: Segment) => void;
   externalSpinTrigger?: boolean;
@@ -54,6 +56,8 @@ export const SpinWheel = ({
   isLoading?: boolean;
   isWaitingForChain?: boolean;
   isSpinning?: boolean;
+  vrfTimedOut?: boolean;
+  onVrfRetry?: () => void;
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -87,8 +91,12 @@ export const SpinWheel = ({
 
   useEffect(() => {
     if (externalSpinTrigger && targetIndex !== undefined && targetIndex !== null) {
-      spin(targetIndex);
+      // Defer one frame so the spin's state updates don't run synchronously
+      // inside the effect body.
+      const raf = requestAnimationFrame(() => spin(targetIndex));
+      return () => cancelAnimationFrame(raf);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalSpinTrigger, targetIndex]);
 
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -242,8 +250,38 @@ export const SpinWheel = ({
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
-          {isWaitingForChain ? (
+        <div
+          className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4"
+          role="status"
+          aria-live="polite"
+        >
+          {vrfTimedOut ? (
+            /* VRF poll gave up — explicit, recoverable state */
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-[#CBCBCB]">
+                  !
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#F3F3F3]">
+                    We couldn&apos;t fetch your spin result in time.
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#8A8A8A]">
+                    Your transaction settled on-chain and your stake is safe. Retrying usually resolves this.
+                  </p>
+                </div>
+              </div>
+              {onVrfRetry ? (
+                <button
+                  type="button"
+                  onClick={onVrfRetry}
+                  className="focus-ring h-11 rounded-full bg-white px-5 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5]"
+                >
+                  Check again
+                </button>
+              ) : null}
+            </div>
+          ) : isWaitingForChain ? (
             /* Waiting for VRF result from chain */
             <div className="flex items-center gap-4">
               <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
@@ -291,7 +329,7 @@ export const SpinWheel = ({
                   type="button"
                   onClick={onPlay}
                   disabled={isLoading}
-                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:bg-[#F5F5F5] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Confirming…" : "Set stake"}
                 </button>
