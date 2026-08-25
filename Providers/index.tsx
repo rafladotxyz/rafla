@@ -10,7 +10,7 @@ import { baseSepolia, base } from "viem/chains";
 
 const queryClient = new QueryClient();
 
-const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const privyAppId = process.env.PRIVY_APP_ID;
 
 // Well-formed stand-in ID so the SDK initializes (and static prerendering
 // works) even before real credentials land in the environment.
